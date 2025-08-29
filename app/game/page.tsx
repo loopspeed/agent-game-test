@@ -4,11 +4,24 @@ import { Physics } from "@react-three/rapier";
 import Scene from "../../components/Scene";
 import { useInputStore } from "../../stores/inputStore";
 import WebGPU from "three/examples/jsm/capabilities/WebGPU.js";
-import {
-  WEBGLEnvironment,
-  WebGPUEnvironment,
-} from "@/components/Canvas/Environment";
 import { useWorldStore } from "@/stores/worldStore";
+
+import { Canvas, extend, type ThreeToJSXElements } from "@react-three/fiber";
+import React, { type FC, type PropsWithChildren } from "react";
+import { type WebGPURendererParameters } from "three/src/renderers/webgpu/WebGPURenderer.js";
+import * as THREE from "three/webgpu";
+
+declare module "@react-three/fiber" {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface ThreeElements extends ThreeToJSXElements<typeof THREE> {}
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+extend(THREE as any);
+
+type Props = PropsWithChildren<{
+  isMobile?: boolean;
+}>;
 
 export default function GamePage() {
   const { setKey } = useInputStore();
@@ -88,20 +101,27 @@ export default function GamePage() {
     return () => window.removeEventListener("keydown", handleEnter);
   }, [isPlaying, setIsPlaying]);
 
-  const Environment = WebGPU.isAvailable()
-    ? WebGPUEnvironment
-    : WEBGLEnvironment;
-
   return (
     <main className="relative w-full h-lvh overflow-hidden">
-      <Environment>
+      <Canvas
+        className="!fixed inset-0"
+        performance={{ min: 0.5, debounce: 300 }}
+        camera={{ position: [0, 1, 4], fov: 80 }}
+        gl={async (props) => {
+          const renderer = new THREE.WebGPURenderer(
+            props as WebGPURendererParameters
+          );
+          await renderer.init();
+          return renderer;
+        }}
+      >
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
           <Physics gravity={[0, 0, 0]}>
             <Scene />
           </Physics>
         </Suspense>
-      </Environment>
+      </Canvas>
       {/* Heads-up display overlay */}
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between items-center p-4">
         {/* Future HUD components (score, health, streak, timer) will be inserted here */}
