@@ -1,9 +1,13 @@
 "use client";
-import { Canvas } from "@react-three/fiber";
 import { Suspense, useEffect } from "react";
 import { Physics } from "@react-three/rapier";
 import Scene from "../../components/Scene";
 import { useInputStore } from "../../stores/inputStore";
+import WebGPU from "three/examples/jsm/capabilities/WebGPU.js";
+import {
+  WEBGLEnvironment,
+  WebGPUEnvironment,
+} from "@/components/Canvas/Environment";
 
 export default function GamePage() {
   // Attach keyboard listeners for 4-way movement
@@ -69,20 +73,20 @@ export default function GamePage() {
     };
   }, [setKey]);
 
+  const Environment = WebGPU.isAvailable()
+    ? WebGPUEnvironment
+    : WEBGLEnvironment;
+
   return (
     <main className="relative w-full h-lvh overflow-hidden">
-      {/* use WEBGPU renderer here... */}
-      <Canvas
-        className="!fixed !w-full !h-lvh"
-        camera={{ position: [0, 1, 3], fov: 80 }}
-      >
+      <Environment>
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
           <Physics gravity={[0, 0, 0]}>
             <Scene />
           </Physics>
         </Suspense>
-      </Canvas>
+      </Environment>
       {/* Heads-up display overlay */}
       <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4">
         {/* Future HUD components (score, health, streak, timer) will be inserted here */}
