@@ -1,53 +1,98 @@
 "use client";
-import { useRef } from "react";
-import type { FC, RefObject } from "react";
-import { RigidBody } from "@react-three/rapier";
+
+import { type FC, useEffect, useRef } from "react";
+import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import { useFrame } from "@react-three/fiber";
 import { useInputStore } from "../stores/inputStore";
 import { useWorldStore } from "../stores/worldStore";
-import { Mesh, Object3D } from "three";
+import * as THREE from "three";
 
 const Player: FC = () => {
-  const bodyRef = useRef<RefObject<Mesh>>(null);
+  const bodyRef = useRef<RapierRigidBody>(null);
   const input = useInputStore();
-  const lanesX = useWorldStore((state) => state.laneX || [-2, 0, 2]);
-  // Use a symmetrical vertical lane array for 3×3 grid
-  const lanesY = useWorldStore((state) => state.laneY || [-2, 0, 2]);
-  const currentX = useRef(0);
-  const currentY = useRef(0);
 
-  // Update kinematic position based on input each frame
-  useFrame(() => {
-    // Determine target lane based on input flags
-    let targetX = currentX.current;
-    let targetY = currentY.current;
-    if (input.left)
-      targetX = lanesX[Math.max(0, lanesX.indexOf(currentX.current) - 1)];
-    if (input.right)
-      targetX =
-        lanesX[
-          Math.min(lanesX.length - 1, lanesX.indexOf(currentX.current) + 1)
-        ];
-    if (input.up)
-      targetY =
-        lanesY[
-          Math.min(lanesY.length - 1, lanesY.indexOf(currentY.current) + 1)
-        ];
-    if (input.down)
-      targetY = lanesY[Math.max(0, lanesY.indexOf(currentY.current) - 1)];
-    // Lerp towards target for smooth movement
-    currentX.current += (targetX - currentX.current) * 0.2;
-    currentY.current += (targetY - currentY.current) * 0.2;
-    // Update body translation
+  // lane definitions; use larger numbers here to enlarge the grid
+  const lanesX = useWorldStore((state) => state.laneX || [-1, 0, 1]);
+  const lanesY = useWorldStore((state) => state.laneY || [-1, 0, 1]);
+
+  const laneXIndex = useRef(1);
+  const laneYIndex = useRef(1);
+
+  // current interpolated position
+  const currentX = useRef(lanesX[laneXIndex.current]);
+  const currentY = useRef(lanesY[laneYIndex.current]);
+
+  // remember previous input to detect key presses
+  const prevInput = useRef({
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  });
+
+  // set the initial position once when the body is created
+  useEffect(() => {
     if (bodyRef.current) {
-      // The Rapier kinematic body expects a 3D position; z stays 0 for the player
-      bodyRef.current.position.set(currentX.current, currentY.current, 0);
+      bodyRef.current.setTranslation(
+        { x: currentX.current, y: currentY.current, z: 0 },
+        true
+      );
     }
+  }, []);
+
+  useFrame((_, delta) => {
+    // update lane indices on new key press
+    if (input.left && !prevInput.current.left && laneXIndex.current > 0) {
+      laneXIndex.current--;
+    }
+    if (
+      input.right &&
+      !prevInput.current.right &&
+      laneXIndex.current < lanesX.length - 1
+    ) {
+      laneXIndex.current++;
+    }
+    if (
+      input.up &&
+      !prevInput.current.up &&
+      laneYIndex.current < lanesY.length - 1
+    ) {
+      laneYIndex.current++;
+    }
+    if (input.down && !prevInput.current.down && laneYIndex.current > 0) {
+      laneYIndex.current--;
+    }
+    prevInput.current = { ...input };
+
+    // target lane centre
+    const targetX = lanesX[laneXIndex.current];
+    const targetY = lanesY[laneYIndex.current];
+
+    // use damp to smooth toward the target; 5 is the damping factor
+    currentX.current = THREE.MathUtils.damp(
+      currentX.current,
+      targetX,
+      5,
+      delta
+    );
+    currentY.current = THREE.MathUtils.damp(
+      currentY.current,
+      targetY,
+      5,
+      delta
+    );
+
+    // update the kinematic body’s translation
+    bodyRef.current?.setNextKinematicTranslation({
+      x: currentX.current,
+      y: currentY.current,
+      z: 0,
+    });
   });
 
   return (
-    <RigidBody type="kinematicPosition" colliders="cuboid" position={[0, 0, 0]}>
-      <mesh ref={bodyRef} castShadow receiveShadow>
+    <RigidBody ref={bodyRef} type="kinematicPosition" colliders="cuboid">
+      <mesh castShadow receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#E97449" />
       </mesh>
