@@ -1,5 +1,5 @@
 "use client";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import type { FC } from "react";
 import Player from "./Player";
 import * as THREE from "three";
@@ -23,22 +23,38 @@ const Scene: FC = () => {
   const divisionsX = lanesX.length - 1;
   const divisionsY = lanesY.length - 1;
 
-  // Use the larger dimension for a square grid; if your grid isn’t square, you can render two helpers or a custom line mesh
+  // Use the larger dimension for a square grid
   const gridSize = Math.max(gridSizeX, gridSizeY);
   const divisions = Math.max(divisionsX, divisionsY);
 
+  const { camera } = useThree();
+  const playerPosition = useWorldStore((state) => state.playerPosition);
+
+  useFrame(() => {
+    const [px, py, pz] = playerPosition;
+
+    const offset = new THREE.Vector3(0, 1, 4);
+    const target = new THREE.Vector3(px, py, pz);
+    const desiredPos = target.clone().add(offset);
+
+    // interpolation factor; higher = snappier
+    camera.position.lerp(desiredPos, 0.75);
+
+    camera.lookAt(target);
+  });
+
   return (
     <>
-      {/* Ambient and directional lights for basic illumination */}
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 10, 7.5]} intensity={1} />
-      {/* Player avatar */}
+
       <Player />
       {/* Rings will be spawned here in the future */}
+
       <gridHelper
         args={[gridSize, divisions]}
-        rotation={[Math.PI / 2, 0, 0]} // rotate from XZ to XY plane
-        position={[0, 0, 0]} // centre on the origin; adjust z if needed
+        rotation={[Math.PI / 2.25, 0, 0]}
+        position={[0, 0, 0]}
         material={new THREE.LineBasicMaterial({ color: 0x555555 })}
       />
     </>

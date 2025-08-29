@@ -10,6 +10,8 @@ import * as THREE from "three";
 const Player: FC = () => {
   const bodyRef = useRef<RapierRigidBody>(null);
   const input = useInputStore();
+  const setPlayerPosition = useWorldStore((state) => state.setPlayerPosition);
+
 
   // lane definitions; use larger numbers here to enlarge the grid
   const lanesX = useWorldStore((state) => state.laneX || [-1, 0, 1]);
@@ -88,6 +90,9 @@ const Player: FC = () => {
       y: currentY.current,
       z: 0,
     });
+
+    // Store the current position in the global store
+    setPlayerPosition([currentX.current, currentY.current, 0]);
   });
 
   return (
