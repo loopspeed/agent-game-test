@@ -95,9 +95,6 @@ const Obstacles: FC = () => {
     }
   }, [isPlaying, spawnZ])
 
-  // DEBUG: Add a simple state logger
-  const frameCount = useRef(0)
-
   // Ref for the instanced rigid bodies
   const rigidBodies = useRef<RapierRigidBody[]>(null)
   const gameTime = useRef(0) // Track total game time for staggered spawning
@@ -116,25 +113,12 @@ const Obstacles: FC = () => {
   }, [maxObstacles, spawnZ])
 
   useFrame(({ camera }, delta) => {
-    frameCount.current++
-    if (!rigidBodies.current || !isPlaying) {
-      return
-    }
+    if (!rigidBodies.current || !isPlaying) return
 
     // Update game time for staggered spawning
     gameTime.current += delta
-
     const cameraZ = camera.position.z
     const obstacles = obstaclesData.current
-
-    // DEBUG: Log frame summary less frequently
-    if (frameCount.current % 120 === 0) {
-      console.log('🔄 Physics-based obstacles frame summary', {
-        frameNumber: frameCount.current,
-        gameTime: gameTime.current.toFixed(2),
-        aliveObstacles: obstacles.filter((o) => o.isAlive).length,
-      })
-    }
 
     // Simple spawning: find first dead obstacle and spawn it
     const deadObstacle = obstacles.find((o) => !o.isAlive)
@@ -158,7 +142,7 @@ const Obstacles: FC = () => {
 
         // Set initial velocity in Z direction (toward camera/player)
         // Using setLinvel for consistent, even-paced movement
-        const baseSpeed = speed * 2 // Adjust multiplier as needed
+        const baseSpeed = speed
         const randomizedSpeed = baseSpeed * deadObstacle.velocity
 
         body.setLinvel({ x: 0, y: 0, z: randomizedSpeed }, true)
