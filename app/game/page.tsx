@@ -71,6 +71,7 @@ export default function GamePage() {
 
   return (
     <main className="relative w-full h-lvh overflow-hidden">
+      {/* use WEBGPU renderer here... */}
       <Canvas
         className="!fixed !w-full !h-lvh"
         camera={{ position: [0, 1, 3], fov: 80 }}

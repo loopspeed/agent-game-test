@@ -1,7 +1,7 @@
-'use client';
-import { useFrame } from '@react-three/fiber';
-import type { FC } from 'react';
-import Player from './Player';
+"use client";
+import { useFrame } from "@react-three/fiber";
+import type { FC } from "react";
+import Player from "./Player";
 // Future imports: Ring, spawn logic, world store, etc.
 
 const Scene: FC = () => {
