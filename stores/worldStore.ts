@@ -2,12 +2,6 @@ import { create } from 'zustand'
 
 interface WorldState {
   speed: number
-  accel: number
-  maxSpeed: number
-  spawnZ: number
-  killZ: number
-  // ringSpacing: number;
-  // ringRadius: number;
   maxObstacles: number
   spawnInterval: number
 
@@ -25,14 +19,11 @@ const LANES_X = [-1, 0, 1].map((x) => x * GRID_SCALE)
 const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SCALE)
 console.log({ LANES_X, LANES_Y })
 
+export const SPAWN_OBSTACLE_Z = -20
+export const KILL_OBSTACLE_Z = 2
+
 export const useWorldStore = create<WorldState>((set) => ({
   speed: 8,
-  accel: 0,
-  maxSpeed: 16,
-  spawnZ: -30,
-  killZ: 5,
-  // ringSpacing: 5,
-  // ringRadius: 3,
   maxObstacles: 20,
   spawnInterval: 2,
 

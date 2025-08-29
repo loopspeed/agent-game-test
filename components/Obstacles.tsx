@@ -1,7 +1,7 @@
 'use client'
 import { type FC, useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useWorldStore } from '@/stores/worldStore'
+import { KILL_OBSTACLE_Z, SPAWN_OBSTACLE_Z, useWorldStore } from '@/stores/worldStore'
 import { type RapierRigidBody, InstancedRigidBodies, type InstancedRigidBodyProps } from '@react-three/rapier'
 
 /**
@@ -54,23 +54,21 @@ const Obstacles: FC = () => {
   const lanesY = useWorldStore((s) => s.lanesY)
   const maxObstacles = useWorldStore((s) => s.maxObstacles)
   const speed = useWorldStore((s) => s.speed)
-  const spawnZ = useWorldStore((s) => s.spawnZ)
-  const killZ = useWorldStore((s) => s.killZ)
   const isPlaying = useWorldStore((s) => s.isPlaying)
 
   // Pre-create obstacle slots. They start inactive.
   const obstaclesData = useRef<ObstacleData[]>(
-    generateInitialObstacles({ count: maxObstacles, spawnZ, lanesX, lanesY }),
+    generateInitialObstacles({ count: maxObstacles, spawnZ: SPAWN_OBSTACLE_Z, lanesX, lanesY }),
   )
 
   useEffect(() => {
-    const newObstacles = generateInitialObstacles({ count: maxObstacles, spawnZ, lanesX, lanesY })
+    const newObstacles = generateInitialObstacles({ count: maxObstacles, spawnZ: SPAWN_OBSTACLE_Z, lanesX, lanesY })
     obstaclesData.current = newObstacles
 
     // Reset game time when obstacles are regenerated
     gameTime.current = 0
     console.log('🔄 Obstacles regenerated and game time reset')
-  }, [maxObstacles, spawnZ, lanesX, lanesY])
+  }, [maxObstacles, lanesX, lanesY])
 
   // Reset all obstacles when game starts/stops
   useEffect(() => {
@@ -86,14 +84,17 @@ const Obstacles: FC = () => {
         // Reset physics bodies if available
         if (rigidBodies.current?.[i]) {
           const body = rigidBodies.current[i]
-          body.setTranslation({ x: 0, y: 0, z: spawnZ - 100 }, true)
+          body.setTranslation({ x: 0, y: 0, z: SPAWN_OBSTACLE_Z - 100 }, true)
           body.setLinvel({ x: 0, y: 0, z: 0 }, true)
         }
       })
     } else {
       console.log('🎮 Game started - obstacle spawning enabled')
     }
-  }, [isPlaying, spawnZ])
+  }, [isPlaying])
+
+  // DEBUG: Add a simple state logger
+  const frameCount = useRef(0)
 
   // Ref for the instanced rigid bodies
   const rigidBodies = useRef<RapierRigidBody[]>(null)
@@ -105,20 +106,48 @@ const Obstacles: FC = () => {
     for (let i = 0; i < maxObstacles; i++) {
       instancesArray.push({
         key: `obstacle_${i}`,
-        position: [0, 0, spawnZ - 100], // Start all far away initially
+        position: [0, 0, SPAWN_OBSTACLE_Z - 100], // Start all far away initially
         userData: { kind: 'obstacle' },
       })
     }
     return instancesArray
-  }, [maxObstacles, spawnZ])
+  }, [maxObstacles])
 
   useFrame(({ camera }, delta) => {
-    if (!rigidBodies.current || !isPlaying) return
+    frameCount.current++
+    if (!rigidBodies.current || !isPlaying) {
+      return
+    }
 
     // Update game time for staggered spawning
     gameTime.current += delta
+
     const cameraZ = camera.position.z
     const obstacles = obstaclesData.current
+
+    // DEBUG: Log frame summary less frequently
+    if (frameCount.current % 120 === 0) {
+      const aliveObstacles = obstacles.filter((o) => o.isAlive)
+      const obstaclePositions = aliveObstacles.map((o) => {
+        const actualIndex = obstacles.indexOf(o)
+        const body = rigidBodies.current?.[actualIndex]
+        const pos = body ? body.translation() : { x: 0, y: 0, z: 0 }
+        const vel = body ? body.linvel() : { x: 0, y: 0, z: 0 }
+        return {
+          index: actualIndex,
+          pos: { x: pos.x.toFixed(2), y: pos.y.toFixed(2), z: pos.z.toFixed(2) },
+          vel: { x: vel.x.toFixed(2), y: vel.y.toFixed(2), z: vel.z.toFixed(2) },
+        }
+      })
+
+      console.log('🔄 Physics-based obstacles frame summary', {
+        frameNumber: frameCount.current,
+        gameTime: gameTime.current.toFixed(2),
+        aliveObstacles: aliveObstacles.length,
+        cameraZ: cameraZ.toFixed(2),
+        obstaclePositions: obstaclePositions.slice(0, 3), // Show first 3 for brevity
+      })
+    }
 
     // Simple spawning: find first dead obstacle and spawn it
     const deadObstacle = obstacles.find((o) => !o.isAlive)
@@ -128,26 +157,26 @@ const Obstacles: FC = () => {
       const body = rigidBodies.current[obstacleIndex]
 
       if (body) {
-        console.log(`🚀 Physics spawn obstacle ${obstacleIndex} at time ${gameTime.current.toFixed(2)}s`)
+        console.log(`🚀 SPAWN ${obstacleIndex} at time ${gameTime.current.toFixed(2)}s`)
 
         // Randomize position
         const ix = Math.floor(Math.random() * lanesX.length)
         const iy = Math.floor(Math.random() * lanesY.length)
         deadObstacle.x = lanesX[ix]
         deadObstacle.y = lanesY[iy]
-        deadObstacle.z = spawnZ
+        deadObstacle.z = SPAWN_OBSTACLE_Z
 
         // Position the body at spawn location
         body.setTranslation({ x: deadObstacle.x, y: deadObstacle.y, z: deadObstacle.z }, true)
 
         // Set initial velocity in Z direction (toward camera/player)
         // Using setLinvel for consistent, even-paced movement
-        const baseSpeed = speed
+        const baseSpeed = speed * 0.5 // Increase speed - was 0.2
         const randomizedSpeed = baseSpeed * deadObstacle.velocity
 
         body.setLinvel({ x: 0, y: 0, z: randomizedSpeed }, true)
 
-        console.log(`✅ Set velocity for obstacle ${obstacleIndex}:`, {
+        console.log(`✅ VELOCITY ${obstacleIndex}:`, {
           baseSpeed,
           randomizedSpeed,
           velocityMultiplier: deadObstacle.velocity,
@@ -164,7 +193,7 @@ const Obstacles: FC = () => {
         const body = rigidBodies.current![i]
         const currentPos = body.translation()
 
-        if (currentPos.z > cameraZ + killZ) {
+        if (currentPos.z > cameraZ + KILL_OBSTACLE_Z) {
           console.log(`♻️ Killing obstacle ${i}`)
 
           // Reset obstacle state
@@ -172,7 +201,7 @@ const Obstacles: FC = () => {
           obstacle.velocity = 0.5 + Math.random() * 1.0 // New random velocity
 
           // Move body out of view and stop it
-          body.setTranslation({ x: 0, y: 0, z: spawnZ - 100 }, true)
+          body.setTranslation({ x: 0, y: 0, z: SPAWN_OBSTACLE_Z - 100 }, true)
           body.setLinvel({ x: 0, y: 0, z: 0 }, true)
         }
       }
@@ -196,8 +225,8 @@ const Obstacles: FC = () => {
         canSleep={false}
         sensor={true} // Still sensors for collision detection
         colliders="ball"
-        linearDamping={0.1} // Add some damping to slow down movement over time
-        angularDamping={0.1} // Prevent unwanted rotation
+        // linearDamping={0.1} // Add some damping to slow down movement over time
+        // angularDamping={0.1} // Prevent unwanted rotation
       >
         <instancedMesh args={[undefined, undefined, maxObstacles]} count={maxObstacles}>
           <sphereGeometry args={[0.5, 16, 16]} />
