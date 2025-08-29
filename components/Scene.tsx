@@ -1,6 +1,6 @@
 'use client'
 import { useFrame, useThree } from '@react-three/fiber'
-import type { FC } from 'react'
+import { useEffect, useRef, type FC } from 'react'
 import Player from './Player'
 import * as THREE from 'three'
 import { useWorldStore } from '@/stores/worldStore'
@@ -28,17 +28,19 @@ const Scene: FC = () => {
   const gridSize = Math.max(gridSizeX, gridSizeY)
   const divisions = Math.max(divisionsX, divisionsY)
 
-  const { camera } = useThree()
-  const playerPosition = useWorldStore((state) => state.playerPosition)
+  // Fetch initial state
+  const playerPosition = useRef(useWorldStore.getState().playerPosition)
+  // Connect to the store on mount, disconnect on unmount, catch state-changes in a reference
+  useEffect(() => useWorldStore.subscribe((state) => (playerPosition.current = state.playerPosition)), [])
 
-  // useFrame(() => {
-  // const [px, py, pz] = playerPosition;
-  // const offset = new THREE.Vector3(0, 1, 4);
-  // const target = new THREE.Vector3(px, py, pz);
-  // const desiredPos = target.clone().add(offset);
-  // // interpolation factor; higher = snappier
-  // camera.position.lerp(desiredPos, 0.75);
-  // camera.lookAt(target);
+  // useFrame(({ camera }) => {
+  //   const [px, py, pz] = playerPosition.current
+  //   const offset = new THREE.Vector3(0, 1, 4)
+  //   const target = new THREE.Vector3(px, py, pz)
+  //   const desiredPos = target.clone().add(offset)
+  //   // interpolation factor; higher = snappier
+  //   camera.position.lerp(desiredPos, 0.75)
+  //   camera.lookAt(target)
   // })
 
   return (
