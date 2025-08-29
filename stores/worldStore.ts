@@ -17,7 +17,7 @@ interface WorldState {
   setPlayerPosition: (pos: [number, number, number]) => void;
 
   isPlaying: boolean;
-  setIsPlaying: (playing: boolean) => void;
+  toggleIsPlaying: () => void;
 }
 
 const GRID_SCALE = 2;
@@ -40,5 +40,5 @@ export const useWorldStore = create<WorldState>((set) => ({
   setPlayerPosition: (pos) => set({ playerPosition: pos }),
 
   isPlaying: false,
-  setIsPlaying: (playing) => set({ isPlaying: playing }),
+  toggleIsPlaying: () => set((state) => ({ isPlaying: !state.isPlaying })),
 }));

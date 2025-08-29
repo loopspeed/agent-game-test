@@ -5,8 +5,7 @@ import { useGameStore } from "../stores/gameStore";
 export default function HomePage() {
   const router = useRouter();
 
-  const startGame = () => {
-    // reset game state before starting
+  const onStartClick = () => {
     useGameStore.getState().reset();
     router.push("/game");
   };
@@ -19,7 +18,7 @@ export default function HomePage() {
         answer. Use arrow keys or WASD to move.
       </p>
       <button
-        onClick={startGame}
+        onClick={onStartClick}
         className="px-6 py-3 rounded bg-teal-500 hover:bg-teal-600 text-black font-semibold"
       >
         Start Game
