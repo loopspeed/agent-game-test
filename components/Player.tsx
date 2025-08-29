@@ -1,7 +1,12 @@
 "use client";
 
-import { type FC, useEffect, useRef } from "react";
-import { RigidBody, RapierRigidBody } from "@react-three/rapier";
+import { type FC, useCallback, useEffect, useRef, useState } from "react";
+import {
+  RigidBody,
+  type RapierRigidBody,
+  CuboidCollider,
+  type IntersectionEnterHandler,
+} from "@react-three/rapier";
 import { useFrame } from "@react-three/fiber";
 import { useInputStore } from "../stores/inputStore";
 import { useWorldStore } from "../stores/worldStore";
@@ -30,6 +35,29 @@ const Player: FC = () => {
     left: false,
     right: false,
   });
+
+  // Hit state to flash the player red
+  const [hit, setHit] = useState(false);
+  const hitTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Intersection handler for sensor collisions
+  const handleIntersection: IntersectionEnterHandler = useCallback(
+    ({ other }) => {
+      const otherRB = other.rigidBodyObject;
+      const otherCollider = other.colliderObject;
+
+      const isObstacle =
+        otherRB?.userData?.kind === "obstacle" ||
+        otherCollider?.name === "obstacle";
+
+      if (isObstacle) {
+        setHit(true);
+        if (hitTimeout.current) clearTimeout(hitTimeout.current);
+        hitTimeout.current = setTimeout(() => setHit(false), 500);
+      }
+    },
+    []
+  );
 
   // set the initial position once when the body is created
   useEffect(() => {
@@ -95,11 +123,18 @@ const Player: FC = () => {
   });
 
   return (
-    <RigidBody ref={bodyRef} type="kinematicPosition" colliders="cuboid">
+    <RigidBody ref={bodyRef} type="kinematicPosition" colliders={false}>
       <mesh castShadow receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#E97449" />
+        <meshStandardMaterial color={hit ? "#ff0000" : "#E97449"} />
       </mesh>
+
+      <CuboidCollider
+        // half-extents for 1×1×1 box; tweak if you want a slightly forgiving hitbox
+        args={[0.5, 0.5, 0.5]}
+        sensor
+        onIntersectionEnter={handleIntersection}
+      />
     </RigidBody>
   );
 };

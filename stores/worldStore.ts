@@ -23,15 +23,15 @@ interface WorldState {
 const GRID_SCALE = 2;
 
 export const useWorldStore = create<WorldState>((set) => ({
-  speed: 5,
+  speed: 8,
   accel: 0,
-  maxSpeed: 10,
+  maxSpeed: 16,
   spawnZ: -30,
   killZ: 5,
   // ringSpacing: 5,
   // ringRadius: 3,
   maxObstacles: 5,
-  spawnInterval: 2,
+  spawnInterval: 3,
 
   // Define vertical lanes for a 3×3 grid (mirroring horizontal lanes)
   laneX: [-1, 0, 1].map((x) => x * GRID_SCALE),

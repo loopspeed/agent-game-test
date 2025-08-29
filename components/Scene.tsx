@@ -50,7 +50,7 @@ const Scene: FC = () => {
       <directionalLight position={[5, 10, 7.5]} intensity={1} />
 
       <Player />
-      {/* Rings will be spawned here in the future */}
+
       <Obstacles />
 
       <gridHelper

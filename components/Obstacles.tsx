@@ -2,7 +2,11 @@
 import { type FC, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useWorldStore } from "../stores/worldStore";
-import * as THREE from "three";
+import {
+  type RapierRigidBody,
+  BallCollider,
+  RigidBody,
+} from "@react-three/rapier";
 
 interface ObstacleData {
   x: number;
@@ -32,8 +36,13 @@ const Obstacles: FC = () => {
   );
 
   // Mesh refs for each obstacle slot, timer to control spawning
-  const meshRefs = useRef<(THREE.Mesh | null)[]>([]);
+  // No need for meshRefs if we render meshes conditionally
+  const rigidRefs = useRef<(RapierRigidBody | null)[]>(
+    Array.from({ length: maxObstacles }, () => null)
+  );
+
   const timeSinceSpawn = useRef(0);
+
   const { camera } = useThree();
 
   useFrame((_, delta) => {
@@ -42,31 +51,32 @@ const Obstacles: FC = () => {
 
     // Pause everything if the game is not playing
     if (!isPlaying) {
-      obstacles.forEach((ob, i) => {
-        ob.active = false;
-        const mesh = meshRefs.current[i];
-        if (mesh) mesh.visible = false;
-      });
-      timeSinceSpawn.current = 0;
+      timeSinceSpawn.current = 0; // reset timer
       return;
     }
 
     timeSinceSpawn.current += delta;
 
-    // Only spawn when all mesh refs exist
-    const ready =
-      meshRefs.current.length === maxObstacles &&
-      meshRefs.current.every(Boolean);
+    // Only spawn when all refs ready
+    if (timeSinceSpawn.current >= spawnInterval) {
+      // inactive grid position
+      const idx = obstacles.findIndex(
+        (o, i) => !o.active && rigidRefs.current[i]
+      );
 
-    if (ready && timeSinceSpawn.current >= spawnInterval) {
-      const idx = obstacles.findIndex((o) => !o.active);
       if (idx !== -1) {
         const ix = Math.floor(Math.random() * lanesX.length);
         const iy = Math.floor(Math.random() * lanesY.length);
-        obstacles[idx].x = lanesX[ix];
-        obstacles[idx].y = lanesY[iy];
-        obstacles[idx].z = spawnZ;
-        obstacles[idx].active = true;
+        const ob = obstacles[idx];
+        ob.x = lanesX[ix];
+        ob.y = lanesY[iy];
+        ob.z = spawnZ;
+        ob.active = true;
+
+        // place immediately so it starts moving next tick
+        const body = rigidRefs.current[idx];
+        body?.setNextKinematicTranslation({ x: ob.x, y: ob.y, z: ob.z });
+
         timeSinceSpawn.current = 0;
       }
     }
@@ -74,20 +84,13 @@ const Obstacles: FC = () => {
     // Update active obstacles
     obstacles.forEach((ob, i) => {
       if (!ob.active) return;
-
       ob.z += speed * delta;
+      const body = rigidRefs.current[i]!;
+      body.setNextKinematicTranslation({ x: ob.x, y: ob.y, z: ob.z });
 
+      // Check if out of bounds for recycling
       if (ob.z > cameraZ + killZ) {
         ob.active = false;
-        const mesh = meshRefs.current[i];
-        if (mesh) mesh.visible = false;
-        return;
-      }
-
-      const mesh = meshRefs.current[i];
-      if (mesh) {
-        mesh.visible = true;
-        mesh.position.set(ob.x, ob.y, ob.z);
       }
     });
   });
@@ -95,19 +98,28 @@ const Obstacles: FC = () => {
   return (
     <>
       {obstaclesRef.current.map((obstacle, i) => (
-        <mesh
+        <RigidBody
           key={i}
-          ref={(mesh) => {
-            meshRefs.current[i] = mesh;
-            if (mesh) mesh.visible = false; // invisible to begin with
-          }}
-          // initial position
+          type="dynamic"
+          gravityScale={0}
+          canSleep={false}
+          colliders={false}
           position={[obstacle.x, obstacle.y, obstacle.z]}
+          userData={{ kind: "obstacle" }}
+          ref={(body) => {
+            rigidRefs.current[i] = body;
+          }}
         >
-          {/* half size relative to the player */}
-          <sphereGeometry args={[0.5, 16, 16]} />
-          <meshStandardMaterial color="#2e6f46" />
-        </mesh>
+          {obstacle.active && (
+            <mesh>
+              {/* half size relative to the player */}
+              <sphereGeometry args={[0.5, 16, 16]} />
+              <meshStandardMaterial color="#2e6f46" />
+            </mesh>
+          )}
+          {/* Sensor collider: triggers intersections but doesn’t push the player */}
+          <BallCollider args={[0.5]} name="obstacle" />
+        </RigidBody>
       ))}
     </>
   );
