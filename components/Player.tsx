@@ -13,8 +13,8 @@ const Player: FC = () => {
   const setPlayerPosition = useWorldStore((state) => state.setPlayerPosition)
 
   // lane definitions; use larger numbers here to enlarge the grid
-  const lanesX = useWorldStore((s) => s.laneX)
-  const lanesY = useWorldStore((s) => s.laneY)
+  const lanesX = useWorldStore((s) => s.lanesX)
+  const lanesY = useWorldStore((s) => s.lanesY)
 
   const laneXIndex = useRef(1)
   const laneYIndex = useRef(1)
@@ -57,6 +57,8 @@ const Player: FC = () => {
   }, [])
 
   useFrame((_, delta) => {
+    if (!bodyRef.current) return
+
     // update lane indices on new key press
     if (input.left && !prevInput.current.left && laneXIndex.current > 0) {
       laneXIndex.current--
@@ -81,7 +83,7 @@ const Player: FC = () => {
     currentY.current = THREE.MathUtils.damp(currentY.current, targetY, 5, delta)
 
     // update the kinematic body’s translation
-    bodyRef.current?.setNextKinematicTranslation({
+    bodyRef.current.setNextKinematicTranslation({
       x: currentX.current,
       y: currentY.current,
       z: 0,

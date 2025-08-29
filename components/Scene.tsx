@@ -1,37 +1,14 @@
 'use client'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef, type FC } from 'react'
 import Player from './Player'
 import * as THREE from 'three'
-import { useWorldStore } from '@/stores/worldStore'
+import { GRID_SCALE, useWorldStore } from '@/stores/worldStore'
 import Obstacles from '@/components/Obstacles'
 
 const Scene: FC = () => {
-  // Update world motion each frame if needed
-  useFrame(() => {
-    // Placeholder for world update logic (move rings, check despawn)
-  })
-
-  /* GRID LINES */
-  const lanesX = useWorldStore((state) => state.laneX || [-1, 0, 1])
-  const lanesY = useWorldStore((state) => state.laneY || [-1, 0, 1])
-
-  // Assuming symmetrical lanes, the playable width is (last – first)
-  const gridSizeX = Math.abs(lanesX[lanesX.length - 1] - lanesX[0])
-  const gridSizeY = Math.abs(lanesY[lanesY.length - 1] - lanesY[0])
-
-  // Number of divisions is one less than number of lanes
-  const divisionsX = lanesX.length - 1
-  const divisionsY = lanesY.length - 1
-
-  // Use the larger dimension for a square grid
-  const gridSize = Math.max(gridSizeX, gridSizeY)
-  const divisions = Math.max(divisionsX, divisionsY)
-
-  // Fetch initial state
-  const playerPosition = useRef(useWorldStore.getState().playerPosition)
-  // Connect to the store on mount, disconnect on unmount, catch state-changes in a reference
-  useEffect(() => useWorldStore.subscribe((state) => (playerPosition.current = state.playerPosition)), [])
+  const playerPosition = useRef(useWorldStore.getState().playerPosition) // Fetch initial state
+  useEffect(() => useWorldStore.subscribe((state) => (playerPosition.current = state.playerPosition)), []) // Subscribe to state changes
 
   // useFrame(({ camera }) => {
   //   const [px, py, pz] = playerPosition.current
@@ -53,7 +30,7 @@ const Scene: FC = () => {
       <Obstacles />
 
       <gridHelper
-        args={[gridSize, divisions]}
+        args={[GRID_SCALE * 3, 3]}
         rotation={[Math.PI / 2.25, 0, 0]}
         position={[0, 0, 0]}
         material={new THREE.LineBasicMaterial({ color: 0x555555 })}
