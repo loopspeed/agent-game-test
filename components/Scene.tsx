@@ -4,6 +4,7 @@ import type { FC } from "react";
 import Player from "./Player";
 import * as THREE from "three";
 import { useWorldStore } from "@/stores/worldStore";
+import Obstacles from "@/components/Obstacles";
 
 const Scene: FC = () => {
   // Update world motion each frame if needed
@@ -50,6 +51,7 @@ const Scene: FC = () => {
 
       <Player />
       {/* Rings will be spawned here in the future */}
+      <Obstacles />
 
       <gridHelper
         args={[gridSize, divisions]}

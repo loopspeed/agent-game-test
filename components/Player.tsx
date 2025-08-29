@@ -12,7 +12,6 @@ const Player: FC = () => {
   const input = useInputStore();
   const setPlayerPosition = useWorldStore((state) => state.setPlayerPosition);
 
-
   // lane definitions; use larger numbers here to enlarge the grid
   const lanesX = useWorldStore((state) => state.laneX || [-1, 0, 1]);
   const lanesY = useWorldStore((state) => state.laneY || [-1, 0, 1]);
