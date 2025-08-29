@@ -1,9 +1,9 @@
-'use client';
-import { Canvas } from '@react-three/fiber';
-import { Suspense, useEffect } from 'react';
-import { Physics } from '@react-three/rapier';
-import Scene from '../../components/Scene';
-import { useInputStore } from '../../stores/inputStore';
+"use client";
+import { Canvas } from "@react-three/fiber";
+import { Suspense, useEffect } from "react";
+import { Physics } from "@react-three/rapier";
+import Scene from "../../components/Scene";
+import { useInputStore } from "../../stores/inputStore";
 
 export default function GamePage() {
   // Attach keyboard listeners for 4-way movement
@@ -11,25 +11,25 @@ export default function GamePage() {
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       switch (e.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-          setKey('up', true);
+        case "ArrowUp":
+        case "w":
+        case "W":
+          setKey("up", true);
           break;
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          setKey('down', true);
+        case "ArrowDown":
+        case "s":
+        case "S":
+          setKey("down", true);
           break;
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          setKey('left', true);
+        case "ArrowLeft":
+        case "a":
+        case "A":
+          setKey("left", true);
           break;
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          setKey('right', true);
+        case "ArrowRight":
+        case "d":
+        case "D":
+          setKey("right", true);
           break;
         default:
           break;
@@ -37,41 +37,44 @@ export default function GamePage() {
     };
     const up = (e: KeyboardEvent) => {
       switch (e.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-          setKey('up', false);
+        case "ArrowUp":
+        case "w":
+        case "W":
+          setKey("up", false);
           break;
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-          setKey('down', false);
+        case "ArrowDown":
+        case "s":
+        case "S":
+          setKey("down", false);
           break;
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-          setKey('left', false);
+        case "ArrowLeft":
+        case "a":
+        case "A":
+          setKey("left", false);
           break;
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-          setKey('right', false);
+        case "ArrowRight":
+        case "d":
+        case "D":
+          setKey("right", false);
           break;
         default:
           break;
       }
     };
-    window.addEventListener('keydown', down);
-    window.addEventListener('keyup', up);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
     return () => {
-      window.removeEventListener('keydown', down);
-      window.removeEventListener('keyup', up);
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
     };
   }, [setKey]);
 
   return (
-    <main className="relative w-full h-screen overflow-hidden">
-      <Canvas className="absolute inset-0">
+    <main className="relative w-full h-lvh overflow-hidden">
+      <Canvas
+        className="!fixed !w-full !h-lvh"
+        camera={{ position: [0, 1, 3], fov: 80 }}
+      >
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
           <Physics gravity={[0, 0, 0]}>

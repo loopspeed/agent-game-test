@@ -21,5 +21,6 @@ export const useWorldStore = create<WorldState>(() => ({
   ringSpacing: 5,
   ringRadius: 3,
   laneX: [-2, 0, 2],
-  laneY: [-1, 0, 1],
+  // Define vertical lanes for a 3×3 grid (mirroring horizontal lanes)
+  laneY: [-2, 0, 2],
 }));

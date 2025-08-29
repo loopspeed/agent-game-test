@@ -11,25 +11,22 @@
     "@react-three/drei": "latest",
     "@react-three/fiber": "latest",
     "@react-three/rapier": "latest",
-    "autoprefixer": "latest",
     "leva": "latest",
     "next": "latest",
-    "postcss": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "tailwindcss": "latest",
-    "typescript": "latest",
     "zustand": "latest"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "latest",
     "@types/node": "24.3.0",
-    "typescript": "^5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
-    "@eslint/eslintrc": "^3"
+    "postcss": "latest",
+    "tailwindcss": "latest",
+    "typescript": "^5"
   }
 }

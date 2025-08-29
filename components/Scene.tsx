@@ -1,13 +1,12 @@
 'use client';
 import { useFrame } from '@react-three/fiber';
-import { useRef, useEffect } from 'react';
+import type { FC } from 'react';
 import Player from './Player';
 // Future imports: Ring, spawn logic, world store, etc.
 
-export default function Scene() {
-  // Use refs for world objects if needed
-  // useFrame can be used to update world motion and spawn/despawn rings
-  useFrame((state, delta) => {
+const Scene: FC = () => {
+  // Update world motion each frame if needed
+  useFrame(() => {
     // Placeholder for world update logic (move rings, check despawn)
   });
 
@@ -21,4 +20,6 @@ export default function Scene() {
       {/* Rings will be spawned here in the future */}
     </>
   );
-}
+};
+
+export default Scene;

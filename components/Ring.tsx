@@ -1,7 +1,6 @@
 "use client";
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
-import { Vector3 } from "three";
-import { useMemo } from "react";
+import type { FC } from "react";
 
 interface SlotData {
   id: string;
@@ -18,8 +17,8 @@ interface RingProps {
   ringId: string;
 }
 
-export default function Ring({ slots, z, ringId }: RingProps) {
-  // Precompute slot meshes/colliders
+// Obstacle
+const Ring: FC<RingProps> = ({ slots, z, ringId }) => {
   return (
     <>
       {slots.map((slot) => (
@@ -38,13 +37,11 @@ export default function Ring({ slots, z, ringId }: RingProps) {
             />
           </mesh>
           {/* Sensor collider same size as panel */}
-          <CuboidCollider
-            args={[0.5, 0.1, 0.05]}
-            sensor
-            onCollisionEnter={() => console.log("Collision detected")}
-          />
+          <CuboidCollider args={[0.5, 0.1, 0.05]} sensor />
         </RigidBody>
       ))}
     </>
   );
-}
+};
+
+export default Ring;
