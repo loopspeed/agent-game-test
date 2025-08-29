@@ -1,117 +1,225 @@
 'use client'
-import { type FC, useRef } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
-import { useWorldStore } from '../stores/worldStore'
-import { type RapierRigidBody, BallCollider, RigidBody } from '@react-three/rapier'
+import { type FC, useEffect, useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { useWorldStore } from '@/stores/worldStore'
+import { type RapierRigidBody, InstancedRigidBodies, type InstancedRigidBodyProps } from '@react-three/rapier'
 
-interface ObstacleData {
+/**
+ * SIMPLIFIED PHYSICS-BASED OBSTACLES SYSTEM
+ *
+ * This component uses dynamic rigid bodies with applied forces instead of kinematic positioning.
+ * Key features:
+ * - Simple isAlive boolean state management
+ * - Each obstacle gets a random velocity multiplier (0.5x to 1.5x base speed)
+ * - Uses applyImpulse() once at spawn to project obstacles along Z-axis
+ * - No continuous position updates in useFrame - pure physics simulation
+ * - Obstacles are recycled when they go out of bounds
+ * - Spawns one obstacle at a time when slots are available (after 1 second delay)
+ */
+
+type ObstacleData = {
   x: number
   y: number
   z: number
-  active: boolean
+  isAlive: boolean
+  velocity: number // Random velocity multiplier
+}
+
+const generateInitialObstacles = ({
+  count,
+  spawnZ,
+  lanesX,
+  lanesY,
+}: {
+  count: number
+  lanesX: number[]
+  lanesY: number[]
+  spawnZ: number
+}): ObstacleData[] => {
+  const obstacles: ObstacleData[] = []
+  for (let i = 0; i < count; i++) {
+    obstacles.push({
+      x: lanesX[i % lanesX.length],
+      y: lanesY[Math.floor(i / lanesX.length) % lanesY.length],
+      z: spawnZ,
+      isAlive: false,
+      velocity: 0.5 + Math.random() * 1.0, // Random velocity between 0.5x and 1.5x base speed
+    })
+  }
+  return obstacles
 }
 
 const Obstacles: FC = () => {
-  const lanesX = useWorldStore((state) => state.lanesX || [-1, 0, 1])
-  const lanesY = useWorldStore((state) => state.lanesY || [-1, 0, 1])
-  const maxObstacles = useWorldStore((state) => state.maxObstacles)
-  const speed = useWorldStore((state) => state.speed)
-  const spawnZ = useWorldStore((state) => state.spawnZ)
-  const spawnInterval = useWorldStore((state) => state.spawnInterval)
-  const killZ = useWorldStore((state) => state.killZ)
-  const isPlaying = useWorldStore((state) => state.isPlaying)
+  const lanesX = useWorldStore((s) => s.lanesX)
+  const lanesY = useWorldStore((s) => s.lanesY)
+  const maxObstacles = useWorldStore((s) => s.maxObstacles)
+  const speed = useWorldStore((s) => s.speed)
+  const spawnZ = useWorldStore((s) => s.spawnZ)
+  const killZ = useWorldStore((s) => s.killZ)
+  const isPlaying = useWorldStore((s) => s.isPlaying)
 
   // Pre-create obstacle slots. They start inactive.
-  const obstaclesRef = useRef<ObstacleData[]>(
-    Array.from({ length: maxObstacles }, () => ({
-      x: 0,
-      y: 0,
-      z: spawnZ,
-      active: false,
-    })),
+  const obstaclesData = useRef<ObstacleData[]>(
+    generateInitialObstacles({ count: maxObstacles, spawnZ, lanesX, lanesY }),
   )
 
-  // Mesh refs for each obstacle slot, timer to control spawning
-  // No need for meshRefs if we render meshes conditionally
-  const rigidRefs = useRef<(RapierRigidBody | null)[]>(Array.from({ length: maxObstacles }, () => null))
+  useEffect(() => {
+    const newObstacles = generateInitialObstacles({ count: maxObstacles, spawnZ, lanesX, lanesY })
+    obstaclesData.current = newObstacles
 
-  const timeSinceSpawn = useRef(0)
+    // Reset game time when obstacles are regenerated
+    gameTime.current = 0
+    console.log('🔄 Obstacles regenerated and game time reset')
+  }, [maxObstacles, spawnZ, lanesX, lanesY])
 
-  const { camera } = useThree()
-
-  useFrame((_, delta) => {
-    const obstacles = obstaclesRef.current
-    const cameraZ = camera.position.z
-
-    // Pause everything if the game is not playing
+  // Reset all obstacles when game starts/stops
+  useEffect(() => {
     if (!isPlaying) {
-      timeSinceSpawn.current = 0 // reset timer
+      gameTime.current = 0
+      console.log('🛑 Game stopped - resetting obstacle system')
+
+      // Reset all obstacle states
+      obstaclesData.current.forEach((obstacle, i) => {
+        obstacle.isAlive = false
+        obstacle.velocity = 0.5 + Math.random() * 1.0
+
+        // Reset physics bodies if available
+        if (rigidBodies.current?.[i]) {
+          const body = rigidBodies.current[i]
+          body.setTranslation({ x: 0, y: 0, z: spawnZ - 100 }, true)
+          body.setLinvel({ x: 0, y: 0, z: 0 }, true)
+        }
+      })
+    } else {
+      console.log('🎮 Game started - obstacle spawning enabled')
+    }
+  }, [isPlaying, spawnZ])
+
+  // DEBUG: Add a simple state logger
+  const frameCount = useRef(0)
+
+  // Ref for the instanced rigid bodies
+  const rigidBodies = useRef<RapierRigidBody[]>(null)
+  const gameTime = useRef(0) // Track total game time for staggered spawning
+
+  // Create instances array for InstancedRigidBodies
+  const instances = useMemo(() => {
+    const instancesArray: InstancedRigidBodyProps[] = []
+    for (let i = 0; i < maxObstacles; i++) {
+      instancesArray.push({
+        key: `obstacle_${i}`,
+        position: [0, 0, spawnZ - 100], // Start all far away initially
+        userData: { kind: 'obstacle' },
+      })
+    }
+    return instancesArray
+  }, [maxObstacles, spawnZ])
+
+  useFrame(({ camera }, delta) => {
+    frameCount.current++
+    if (!rigidBodies.current || !isPlaying) {
       return
     }
 
-    timeSinceSpawn.current += delta
+    // Update game time for staggered spawning
+    gameTime.current += delta
 
-    // Only spawn when all refs ready
-    if (timeSinceSpawn.current >= spawnInterval) {
-      // inactive grid position
-      const idx = obstacles.findIndex((o, i) => !o.active && rigidRefs.current[i])
+    const cameraZ = camera.position.z
+    const obstacles = obstaclesData.current
 
-      if (idx !== -1) {
+    // DEBUG: Log frame summary less frequently
+    if (frameCount.current % 120 === 0) {
+      console.log('🔄 Physics-based obstacles frame summary', {
+        frameNumber: frameCount.current,
+        gameTime: gameTime.current.toFixed(2),
+        aliveObstacles: obstacles.filter((o) => o.isAlive).length,
+      })
+    }
+
+    // Simple spawning: find first dead obstacle and spawn it
+    const deadObstacle = obstacles.find((o) => !o.isAlive)
+    if (deadObstacle && gameTime.current >= 1.0) {
+      // Start spawning after 1 second
+      const obstacleIndex = obstacles.indexOf(deadObstacle)
+      const body = rigidBodies.current[obstacleIndex]
+
+      if (body) {
+        console.log(`🚀 Physics spawn obstacle ${obstacleIndex} at time ${gameTime.current.toFixed(2)}s`)
+
+        // Randomize position
         const ix = Math.floor(Math.random() * lanesX.length)
         const iy = Math.floor(Math.random() * lanesY.length)
-        const ob = obstacles[idx]
-        ob.x = lanesX[ix]
-        ob.y = lanesY[iy]
-        ob.z = spawnZ
-        ob.active = true
+        deadObstacle.x = lanesX[ix]
+        deadObstacle.y = lanesY[iy]
+        deadObstacle.z = spawnZ
 
-        // place immediately so it starts moving next tick
-        const body = rigidRefs.current[idx]
-        body?.setNextKinematicTranslation({ x: ob.x, y: ob.y, z: ob.z })
+        // Position the body at spawn location
+        body.setTranslation({ x: deadObstacle.x, y: deadObstacle.y, z: deadObstacle.z }, true)
 
-        timeSinceSpawn.current = 0
+        // Set initial velocity in Z direction (toward camera/player)
+        // Using setLinvel for consistent, even-paced movement
+        const baseSpeed = speed * 2 // Adjust multiplier as needed
+        const randomizedSpeed = baseSpeed * deadObstacle.velocity
+
+        body.setLinvel({ x: 0, y: 0, z: randomizedSpeed }, true)
+
+        console.log(`✅ Set velocity for obstacle ${obstacleIndex}:`, {
+          baseSpeed,
+          randomizedSpeed,
+          velocityMultiplier: deadObstacle.velocity,
+          position: { x: deadObstacle.x, y: deadObstacle.y, z: deadObstacle.z },
+        })
+
+        deadObstacle.isAlive = true
       }
     }
 
-    // Update active obstacles
-    obstacles.forEach((ob, i) => {
-      if (!ob.active) return
-      ob.z += speed * delta
-      const body = rigidRefs.current[i]!
-      body.setNextKinematicTranslation({ x: ob.x, y: ob.y, z: ob.z })
+    // Check if alive obstacles are out of bounds for recycling
+    obstacles.forEach((obstacle, i) => {
+      if (obstacle.isAlive) {
+        const body = rigidBodies.current![i]
+        const currentPos = body.translation()
 
-      // Check if out of bounds for recycling
-      if (ob.z > cameraZ + killZ) {
-        ob.active = false
+        if (currentPos.z > cameraZ + killZ) {
+          console.log(`♻️ Killing obstacle ${i}`)
+
+          // Reset obstacle state
+          obstacle.isAlive = false
+          obstacle.velocity = 0.5 + Math.random() * 1.0 // New random velocity
+
+          // Move body out of view and stop it
+          body.setTranslation({ x: 0, y: 0, z: spawnZ - 100 }, true)
+          body.setLinvel({ x: 0, y: 0, z: 0 }, true)
+        }
       }
     })
   })
 
   return (
     <>
-      {obstaclesRef.current.map((obstacle, i) => (
-        <RigidBody
-          key={i}
-          type="dynamic"
-          gravityScale={0}
-          canSleep={false}
-          colliders={false}
-          position={[obstacle.x, obstacle.y, obstacle.z]}
-          userData={{ kind: 'obstacle' }}
-          ref={(body) => {
-            rigidRefs.current[i] = body
-          }}>
-          {obstacle.active && (
-            <mesh>
-              {/* half size relative to the player */}
-              <sphereGeometry args={[0.5, 16, 16]} />
-              <meshStandardMaterial color="#2e6f46" />
-            </mesh>
-          )}
-          {/* Sensor collider: triggers intersections but doesn’t push the player */}
-          <BallCollider args={[0.5]} name="obstacle" />
-        </RigidBody>
-      ))}
+      {/* DEBUG: Log render-time state */}
+      {console.log('🎨 Rendering Physics-based InstancedRigidBodies:', {
+        maxObstacles,
+        instances: instances.length,
+        obstaclesData: obstaclesData.current.length,
+      })}
+
+      <InstancedRigidBodies
+        ref={rigidBodies}
+        instances={instances}
+        type="dynamic" // Changed to dynamic for physics-based movement
+        gravityScale={0} // No gravity - obstacles move by applied forces
+        canSleep={false}
+        sensor={true} // Still sensors for collision detection
+        colliders="ball"
+        linearDamping={0.1} // Add some damping to slow down movement over time
+        angularDamping={0.1} // Prevent unwanted rotation
+      >
+        <instancedMesh args={[undefined, undefined, maxObstacles]} count={maxObstacles}>
+          <sphereGeometry args={[0.5, 16, 16]} />
+          <meshStandardMaterial color="#fff" />
+        </instancedMesh>
+      </InstancedRigidBodies>
     </>
   )
 }

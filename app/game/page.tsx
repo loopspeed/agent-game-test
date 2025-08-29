@@ -9,6 +9,7 @@ import { Canvas, extend, type ThreeToJSXElements } from '@react-three/fiber'
 import React from 'react'
 import { type WebGPURendererParameters } from 'three/src/renderers/webgpu/WebGPURenderer.js'
 import * as THREE from 'three/webgpu'
+import { useControls } from 'leva'
 
 declare module '@react-three/fiber' {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -21,14 +22,66 @@ extend(THREE as any)
 export default function GamePage() {
   const isPlaying = useWorldStore((s) => s.isPlaying)
 
-  useControls()
+  useInput()
+
+  useControls({
+    speed: {
+      label: 'Speed',
+      min: 1,
+      max: 20,
+      value: useWorldStore.getState().speed,
+      onChange: (value) => useWorldStore.setState({ speed: value }),
+    },
+    accel: {
+      label: 'Acceleration',
+      min: 0,
+      max: 10,
+      value: useWorldStore.getState().accel,
+      onChange: (value) => useWorldStore.setState({ accel: value }),
+    },
+    maxSpeed: {
+      label: 'Max Speed',
+      min: 1,
+      max: 100,
+      value: useWorldStore.getState().maxSpeed,
+      onChange: (value) => useWorldStore.setState({ maxSpeed: value }),
+    },
+    spawnZ: {
+      label: 'Spawn Z',
+      min: -100,
+      max: 100,
+      value: useWorldStore.getState().spawnZ,
+      onChange: (value) => useWorldStore.setState({ spawnZ: value }),
+    },
+    killZ: {
+      label: 'Kill Z',
+      min: -100,
+      max: 100,
+      value: useWorldStore.getState().killZ,
+      onChange: (value) => useWorldStore.setState({ killZ: value }),
+    },
+    maxObstacles: {
+      label: 'Max Obstacles',
+      min: 1,
+      max: 100,
+      value: useWorldStore.getState().maxObstacles,
+      onChange: (value) => useWorldStore.setState({ maxObstacles: value }),
+    },
+    spawnInterval: {
+      label: 'Spawn Interval',
+      min: 100,
+      max: 5000,
+      value: useWorldStore.getState().spawnInterval,
+      onChange: (value) => useWorldStore.setState({ spawnInterval: value }),
+    },
+  })
 
   return (
     <main className="relative h-lvh w-full overflow-hidden">
       <Canvas
         className="!fixed inset-0"
         performance={{ min: 0.5, debounce: 300 }}
-        camera={{ position: [0, 1, 4], fov: 80 }}
+        camera={{ position: [0, 1, 4], fov: 80, far: 50 }}
         gl={async (props) => {
           const renderer = new THREE.WebGPURenderer(props as WebGPURendererParameters)
           await renderer.init()
@@ -52,9 +105,9 @@ export default function GamePage() {
   )
 }
 
-function useControls() {
+function useInput() {
   const { setKey } = useInputStore()
-  const toggleIsPlaying = useWorldStore((state) => state.toggleIsPlaying)
+  const toggleIsPlaying = useWorldStore((s) => s.toggleIsPlaying)
 
   // Attach keyboard listeners for 4-way movement
   useEffect(() => {

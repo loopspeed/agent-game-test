@@ -33,8 +33,8 @@ export const useWorldStore = create<WorldState>((set) => ({
   killZ: 5,
   // ringSpacing: 5,
   // ringRadius: 3,
-  maxObstacles: 5,
-  spawnInterval: 3,
+  maxObstacles: 20,
+  spawnInterval: 2,
 
   // Define vertical lanes for a 3×3 grid (mirroring horizontal lanes)
   lanesX: LANES_X,
