@@ -6,30 +6,37 @@ import { CuboidCollider, RapierRigidBody, RigidBody } from '@react-three/rapier'
 import React, { type FC, useEffect, useRef } from 'react'
 
 import type { Answer } from '@/data/questions'
+import { type AnswerGateUserData } from '@/model/game'
 import { useQuestionStore } from '@/stores/questionStore'
 import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/useGameStore'
 
 type AnswerGateProps = {
   position: [number, number, number]
   gateIndex: number
-  answer?: Answer // Optional now - gates can exist without answers
+  answer: Answer | null
 }
 
 // Answer gate with physics collision
 const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ answer, position }, ref) => {
   const hasAnswer = !!answer
 
-  return (
-    <RigidBody ref={ref} type="dynamic" gravityScale={0} canSleep={false} colliders={false} position={position}>
-      <CuboidCollider
-        args={[1, 1, 0.05]}
-        sensor={true}
-        onIntersectionEnter={() => {
-          console.warn('Collided with answer gate', answer)
-        }}
-      />
+  const userData: AnswerGateUserData = {
+    type: 'answerGate',
+    isCorrect: answer?.isCorrect ?? false,
+  }
 
-      {/* Only render visual elements if there's an answer */}
+  return (
+    <RigidBody
+      ref={ref}
+      type="dynamic"
+      gravityScale={0}
+      canSleep={false}
+      colliders={false}
+      position={position}
+      userData={userData}>
+      <CuboidCollider args={[1, 1, 0.05]} sensor={true} />
+
+      {/* Only render visual elements if there's an answer to display (others are "nets" to catch misses) */}
       {hasAnswer && (
         <>
           {/* Flat box container */}
@@ -70,9 +77,11 @@ const generateGatePositions = (): [number, number, number][] => {
 
 const gatePositions = generateGatePositions()
 
+const BASE_SPEED = 3.0
+
 const AnswerGates: FC = () => {
-  const current = useQuestionStore((s) => s.current)
-  const nextQuestion = useQuestionStore((s) => s.next)
+  const currentQuestion = useQuestionStore((s) => s.currentQuestion)
+  const goToNextQuestion = useQuestionStore((s) => s.goToNextQuestion)
 
   const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
   const isRespawning = useRef(false)
@@ -83,67 +92,70 @@ const AnswerGates: FC = () => {
   useEffect(
     () =>
       // Subscribe to state changes
-      useGameStore.subscribe((s) => {
-        obstaclesSpeed.current = s.obstaclesSpeed
+      useGameStore.subscribe((state, prevState) => {
+        if (state.obstaclesSpeed === prevState.obstaclesSpeed) return
+        obstaclesSpeed.current = state.obstaclesSpeed
         // console.warn('subscribe updating speed to:', s.obstaclesSpeed)
-        // gatesRefs.current.forEach((gate) => {
-        //   if (!gate) return // Check for null ref
-        //   console.warn('Setting gate velocity:', gate)
-        //   gate.setLinvel({ x: 0, y: 0, z: s.obstaclesSpeed })
-        // })
+        gatesRefs.current.forEach((gate) => {
+          if (!isPlaying) return
+          if (!gate) return // Check for null ref
+          const newSpeed = state.obstaclesSpeed * BASE_SPEED
+          console.warn('Setting gate velocity:', newSpeed)
+          gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
+        })
       }),
-    [],
+    [isPlaying],
   )
 
   // Set velocity once when gates are created or speed changes
   useEffect(() => {
     const currentGates = gatesRefs.current // Capture refs at effect creation time
 
-    if (isPlaying) {
+    const resetGatePositions = () => {
       currentGates.forEach((gate, index) => {
         if (!gate) return // Check for null ref
         try {
-          const BASE_SPEED = 2.0
+          const position = gatePositions[index]
+          gate.setTranslation({ x: position[0], y: position[1], z: SPAWN_OBSTACLE_Z }, true)
           gate.setLinvel({ x: 0, y: 0, z: BASE_SPEED * obstaclesSpeed.current }, true)
         } catch (error) {
           console.warn(`Failed to set velocity for gate ${index}:`, error)
         }
       })
     }
-  }, [isPlaying])
+
+    if (isPlaying) {
+      resetGatePositions()
+    }
+  }, [isPlaying, currentQuestion])
 
   // Check lifecycle only
   useFrame(() => {
+    if (!isPlaying) return
     // Check if gates have passed the kill zone and move to next question
     const firstGate = gatesRefs.current[0]
     if (!firstGate) return
 
-    try {
-      // Check if the rigid body is still valid
-      if (firstGate.handle === undefined || firstGate.handle === null) return
+    const gatesNeedKilling = firstGate.translation().z > KILL_OBSTACLE_Z
 
-      const gatesNeedKilling = firstGate.translation().z > KILL_OBSTACLE_Z
-
-      if (gatesNeedKilling && !isRespawning.current) {
-        isRespawning.current = true
-        nextQuestion()
-        // Reset the flag after a short delay to allow for next cycle
-        setTimeout(() => {
-          isRespawning.current = false
-        }, 1000)
-        return
-      }
-    } catch (error) {
-      // Silently handle any errors accessing disposed rigid bodies
-      console.warn('Error checking gate lifecycle:', error instanceof Error ? error.message : String(error))
+    if (gatesNeedKilling && !isRespawning.current) {
+      console.log('Going to next question')
+      isRespawning.current = true
+      goToNextQuestion()
+      // Reset the flag after a short delay to allow for next cycle
+      setTimeout(() => {
+        isRespawning.current = false
+      }, 500)
+      return
     }
   })
 
+  // TODO: this should be pre-computed when the questions are loaded and then just read when the current index changes.
   // Map answers to specific gate positions based on answer count and layout strategy
-  const getAnswerMapping = (): (Answer | undefined)[] => {
-    const answers = current.answers
+  const getAnswerMapping = (): (Answer | null)[] => {
+    const answers = currentQuestion.answers
     const numAnswers = answers.length
-    const mapping = new Array(9).fill(undefined)
+    const mapping = new Array(9).fill(null)
 
     if (numAnswers === 2) {
       // Two answers: left and right middle lanes (indices 3 and 5)
@@ -163,6 +175,8 @@ const AnswerGates: FC = () => {
         }
       })
     }
+
+    console.log({ mapping })
 
     return mapping
   }

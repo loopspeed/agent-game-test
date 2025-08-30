@@ -3,11 +3,12 @@
 import { useGSAP } from '@gsap/react'
 import { useDidUpdate, usePrevious } from '@mantine/hooks'
 import { useFrame } from '@react-three/fiber'
-import { CuboidCollider, type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
+import { type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
 import { gsap } from 'gsap'
-import { type FC, useCallback, useEffect, useMemo, useRef } from 'react'
+import { type FC, useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
+import { type RigidBodyUserData } from '@/model/game'
 import { useInputStore } from '@/stores/inputStore'
 import { LANES_X, LANES_Y, MAX_HEALTH, useGameStore } from '@/stores/useGameStore'
 
@@ -41,11 +42,17 @@ const Player: FC = () => {
 
   // Intersection handler for sensor collisions
   const onIntersectionEnter: IntersectionEnterHandler = useCallback(
-    ({ other }) => {
+    (e) => {
+      const { other } = e
+
+      console.warn('Player intersected', { e })
       const otherRB = other.rigidBodyObject
       const otherCollider = other.colliderObject
-      const isObstacle = otherRB?.userData?.kind === 'obstacle' || otherCollider?.name === 'obstacle'
-      const isAnswerGate = otherRB?.userData?.kind === 'answerGate'
+      if (!otherRB?.userData) throw new Error('No userData on other rigid body')
+
+      const userData = otherRB.userData as RigidBodyUserData
+      const isObstacle = userData.type === 'obstacle' || otherCollider?.name === 'obstacle'
+      const isAnswerGate = userData.type === 'answerGate'
 
       if (isObstacle) {
         onObstacleHit()
@@ -53,7 +60,7 @@ const Player: FC = () => {
       }
 
       if (isAnswerGate) {
-        const isCorrect = otherRB?.userData?.isCorrect
+        const isCorrect = userData.isCorrect
         onAnswerHit(isCorrect)
       }
     },
@@ -122,6 +129,7 @@ const Player: FC = () => {
       ref={bodyRef}
       type="kinematicPosition"
       colliders="cuboid"
+      gravityScale={0}
       sensor={true}
       onIntersectionEnter={onIntersectionEnter}>
       <mesh>
