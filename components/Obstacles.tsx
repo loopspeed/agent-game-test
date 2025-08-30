@@ -4,7 +4,15 @@ import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBod
 import { type FC, useEffect, useMemo, useRef } from 'react'
 
 import { ObstacleUserData } from '@/model/game'
-import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/useGameStore'
+import {
+  GameStage,
+  KILL_OBSTACLE_Z,
+  LANES_X,
+  LANES_Y,
+  SPAWN_OBSTACLE_Z,
+  useGameStore,
+  useGameStoreAPI,
+} from '@/stores/useGameStore'
 
 /**
  * UNIFIED PHYSICS-BASED OBSTACLES SYSTEM
@@ -31,6 +39,7 @@ type ObstacleData = {
 const BASE_SPEED = 5.0
 
 const Obstacles: FC = () => {
+  const gameStoreAPI = useGameStoreAPI()
   const maxObstacles = useGameStore((s) => s.maxObstacles)
   const spawnInterval = useGameStore((s) => s.spawnInterval)
   const stage = useGameStore((s) => s.stage)
@@ -117,11 +126,11 @@ const Obstacles: FC = () => {
     }
   }, [isPlaying])
 
-  const obstaclesSpeed = useRef(useGameStore.getState().obstaclesSpeed) // Fetch initial state
+  const obstaclesSpeed = useRef(gameStoreAPI.getState().obstaclesSpeed) // Fetch initial state
   useEffect(
     () =>
       // Subscribe to state changes
-      useGameStore.subscribe((state, prevState) => {
+      gameStoreAPI.subscribe((state, prevState) => {
         if (!isPlaying) return
         if (!rigidBodies.current) return
         if (state.obstaclesSpeed === prevState.obstaclesSpeed) return
@@ -137,7 +146,7 @@ const Obstacles: FC = () => {
           }
         })
       }),
-    [isPlaying],
+    [gameStoreAPI, isPlaying],
   )
 
   // DEBUG: Add a simple state logger

@@ -8,10 +8,16 @@ import React from 'react'
 import HUD from '@/components/HUD'
 import Scene from '@/components/Scene'
 import { useInputStore } from '@/stores/inputStore'
-import { useGameStore } from '@/stores/useGameStore'
+import GameProvider, { useGameStore, useGameStoreApi } from '@/stores/useGameStore'
 
-export default function GamePage() {
+function GameContent() {
   const reset = useGameStore((s) => s.reset)
+  const gameStoreApi = useGameStoreApi()
+
+  // Extract values outside of useControls to avoid breaking rules of hooks
+  const obstaclesSpeed = useGameStore((s) => s.obstaclesSpeed)
+  const maxObstacles = useGameStore((s) => s.maxObstacles)
+  const spawnInterval = useGameStore((s) => s.spawnInterval)
 
   useEffect(() => {
     return () => {
@@ -27,24 +33,24 @@ export default function GamePage() {
       min: 0.1,
       step: 0.1,
       max: 5,
-      value: useGameStore.getState().obstaclesSpeed,
-      onChange: (value) => useGameStore.setState({ obstaclesSpeed: value }),
+      value: obstaclesSpeed,
+      onChange: (value) => gameStoreApi.getState().setObstaclesSpeed(value),
     },
     maxObstacles: {
       label: 'Max Obstacles',
       min: 4,
       step: 1,
       max: 40,
-      value: useGameStore.getState().maxObstacles,
-      onChange: (value) => useGameStore.setState({ maxObstacles: value }),
+      value: maxObstacles,
+      onChange: (value) => gameStoreApi.getState().setMaxObstacles(value),
     },
     spawnInterval: {
       label: 'Spawn Interval (seconds)',
       min: 0.1,
       max: 5.0,
       step: 0.1,
-      value: useGameStore.getState().spawnInterval,
-      onChange: (value) => useGameStore.setState({ spawnInterval: value }),
+      value: spawnInterval,
+      onChange: (value) => gameStoreApi.getState().setSpawnInterval(value),
     },
   })
 
@@ -65,6 +71,14 @@ export default function GamePage() {
       {/* HUD overlay with health display */}
       <HUD />
     </main>
+  )
+}
+
+export default function GamePage() {
+  return (
+    <GameProvider>
+      <GameContent />
+    </GameProvider>
   )
 }
 

@@ -16,6 +16,7 @@ import {
   LANES_Y,
   SPAWN_OBSTACLE_Z,
   useGameStore,
+  useGameStoreAPI,
 } from '@/stores/useGameStore'
 
 type AnswerGateProps = {
@@ -96,11 +97,13 @@ const AnswerGates: FC = () => {
 
   const stage = useGameStore((s) => s.stage)
   const isPlaying = stage === GameStage.PLAYING
-  const obstaclesSpeed = useRef(useGameStore.getState().obstaclesSpeed) // Fetch initial state
+
+  const gameStoreAPI = useGameStoreAPI()
+  const obstaclesSpeed = useRef(gameStoreAPI.getState().obstaclesSpeed) // Fetch initial state
   useEffect(
     () =>
       // Subscribe to state changes
-      useGameStore.subscribe((state, prevState) => {
+      gameStoreAPI.subscribe((state, prevState) => {
         if (!isPlaying) return
         if (state.obstaclesSpeed === prevState.obstaclesSpeed) return
         obstaclesSpeed.current = state.obstaclesSpeed
@@ -111,7 +114,7 @@ const AnswerGates: FC = () => {
           gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
         })
       }),
-    [isPlaying],
+    [gameStoreAPI, isPlaying],
   )
 
   // Set velocity once when gates are created or speed changes
@@ -134,7 +137,7 @@ const AnswerGates: FC = () => {
     if (isPlaying) {
       resetGatePositions()
     }
-  }, [isPlaying, currentQuestion])
+  }, [isPlaying, currentQuestion, obstaclesSpeed])
 
   // Check lifecycle only
   useFrame(() => {
