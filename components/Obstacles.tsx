@@ -102,7 +102,8 @@ const Obstacles: FC = () => {
       // Reset all obstacle states
       obstaclesData.current.forEach((obstacle, i) => {
         obstacle.isAlive = false
-        obstacle.velocity = 0.5 + Math.random() * 1.0
+        const BASE_SPEED = 3.0
+        obstacle.velocity = BASE_SPEED + Math.random() * 2.0
 
         // Reset physics bodies if available
         if (rigidBodies.current?.[i]) {
@@ -111,25 +112,6 @@ const Obstacles: FC = () => {
           body.setLinvel({ x: 0, y: 0, z: 0 }, true)
         }
       })
-    } else {
-      console.log('🎮 Game started - obstacle spawning enabled')
-
-      // TEMPORARY: Force spawn one obstacle immediately for testing
-      if (obstaclesData.current.length > 0 && rigidBodies.current) {
-        const testObstacle = obstaclesData.current[0]
-        const testBody = rigidBodies.current[0]
-        if (testBody && !testObstacle.isAlive) {
-          console.log('🧪 SPAWNING TEST OBSTACLE for visibility check')
-          testObstacle.isAlive = true
-          testObstacle.x = 0 // Center position
-          testObstacle.y = 0
-          testObstacle.z = SPAWN_OBSTACLE_Z
-          testBody.setTranslation({ x: 0, y: 0, z: SPAWN_OBSTACLE_Z }, true)
-          // Positive Z velocity to move toward camera
-          testBody.setLinvel({ x: 0, y: 0, z: obstaclesSpeed }, true)
-          console.log('🧪 TEST OBSTACLE spawned with velocity:', obstaclesSpeed)
-        }
-      }
     }
   }, [isPlaying, obstaclesSpeed])
 
@@ -153,30 +135,6 @@ const Obstacles: FC = () => {
     const cameraZ = camera.position.z
     const obstacles = obstaclesData.current
 
-    // DEBUG: Log frame summary less frequently
-    if (frameCount.current % 120 === 0) {
-      const aliveObstacles = obstacles.filter((o) => o.isAlive)
-      const obstaclePositions = aliveObstacles.map((o) => {
-        const actualIndex = obstacles.indexOf(o)
-        const body = rigidBodies.current?.[actualIndex]
-        const pos = body ? body.translation() : { x: 0, y: 0, z: 0 }
-        const vel = body ? body.linvel() : { x: 0, y: 0, z: 0 }
-        return {
-          index: actualIndex,
-          pos: { x: pos.x.toFixed(2), y: pos.y.toFixed(2), z: pos.z.toFixed(2) },
-          vel: { x: vel.x.toFixed(2), y: vel.y.toFixed(2), z: vel.z.toFixed(2) },
-        }
-      })
-
-      console.log('🔄 Physics-based obstacles frame summary', {
-        frameNumber: frameCount.current,
-        gameTime: gameTime.current.toFixed(2),
-        aliveObstacles: aliveObstacles.length,
-        cameraZ: cameraZ.toFixed(2),
-        obstaclePositions: obstaclePositions.slice(0, 3), // Show first 3 for brevity
-      })
-    }
-
     // Controlled spawning: find first dead obstacle and spawn it based on spawnInterval
     const deadObstacle = obstacles.find((o) => !o.isAlive)
     const timeSinceLastSpawn = gameTime.current - lastSpawnTime.current
@@ -197,14 +155,12 @@ const Obstacles: FC = () => {
         deadObstacle.y = LANES_Y[iy]
         deadObstacle.z = SPAWN_OBSTACLE_Z
 
-        // Position the body at spawn location (this should make it visible)
-        body.setTranslation({ x: deadObstacle.x, y: deadObstacle.y, z: deadObstacle.z }, true)
-
-        // Set initial velocity in Z direction (toward camera/player)
-        // Using setLinvel for consistent, even-paced movement
         // IMPORTANT: Positive Z velocity moves TOWARD camera (since camera is at positive Z)
         const randomizedSpeed = obstaclesSpeed * deadObstacle.velocity
 
+        // Position the body at spawn location (this should make it visible)
+        body.setTranslation({ x: deadObstacle.x, y: deadObstacle.y, z: deadObstacle.z }, true)
+        // Using setLinvel for consistent, even-paced movement
         body.setLinvel({ x: 0, y: 0, z: randomizedSpeed }, true)
 
         console.log(`✅ SPAWNED ${obstacleIndex}:`, {
@@ -241,36 +197,19 @@ const Obstacles: FC = () => {
   })
 
   return (
-    <>
-      {/* DEBUG: Log render-time state */}
-      {console.log('🎨 Rendering Physics-based InstancedRigidBodies:', {
-        maxObstacles,
-        instances: obstacleInstances.length,
-        obstaclesData: obstaclesData.current,
-        sampleInstance: obstacleInstances[0],
-        aliveCount: obstaclesData.current.filter((o) => o.isAlive).length,
-      })}
-
-      {/* TEST: Simple mesh to verify rendering works */}
-      <mesh position={[0, 2, -10]}>
-        <sphereGeometry args={[1, 16, 16]} />
-        <meshBasicMaterial color="#00ff00" />
-      </mesh>
-
-      <InstancedRigidBodies
-        ref={rigidBodies}
-        instances={obstacleInstances}
-        type="dynamic" // Dynamic bodies for physics movement
-        gravityScale={0} // No gravity - obstacles move by applied forces
-        canSleep={false} // Keep bodies awake to ensure they keep moving
-        sensor={false} // NOT sensors - they should be solid and visible
-        colliders="ball">
-        <instancedMesh args={[undefined, undefined, maxObstacles]} count={maxObstacles}>
-          <sphereGeometry args={[0.5, 16, 16]} />
-          <meshBasicMaterial color="#fff" />
-        </instancedMesh>
-      </InstancedRigidBodies>
-    </>
+    <InstancedRigidBodies
+      ref={rigidBodies}
+      instances={obstacleInstances}
+      type="dynamic" // Dynamic bodies for physics movement
+      gravityScale={0} // No gravity - obstacles move by applied forces
+      canSleep={false} // Keep bodies awake to ensure they keep moving
+      sensor={false} // NOT sensors - they should be solid and visible
+      colliders="ball">
+      <instancedMesh args={[undefined, undefined, maxObstacles]} count={maxObstacles}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshBasicMaterial color="#fff" />
+      </instancedMesh>
+    </InstancedRigidBodies>
   )
 }
 

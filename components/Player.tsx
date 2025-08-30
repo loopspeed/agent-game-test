@@ -65,9 +65,10 @@ const Player: FC = () => {
     const hasIncreased = health > (prevHealth ?? MAX_HEALTH)
     if (hasIncreased) {
       // Handle health increase (e.g., play sound, show effect)
-      gsap.to(materialRef.current!, { opacity: 0.9, duration: 0.4, yoyo: true, repeat: 1 })
+      gsap.fromTo(materialRef.current!, { color: '#fff' }, { color: 'green', duration: 0.3, yoyo: true, repeat: 1 })
     } else {
       // Handle health decrease (e.g., play sound, show effect)
+      gsap.fromTo(materialRef.current!, { color: '#fff' }, { color: '#f87171', duration: 0.3, yoyo: true, repeat: 1 })
       gsap.to(materialRef.current!, { opacity: 0.5, duration: 0.4, yoyo: true, repeat: 1 })
     }
   }, [health])

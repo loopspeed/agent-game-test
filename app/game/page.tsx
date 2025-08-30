@@ -1,14 +1,14 @@
 'use client'
-import { Suspense, useEffect } from 'react'
+import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
-import Scene from '@/components/Scene'
+import { useControls } from 'leva'
+import { Suspense, useEffect } from 'react'
+import React from 'react'
+
 import HUD from '@/components/HUD'
+import Scene from '@/components/Scene'
 import { useInputStore } from '@/stores/inputStore'
 import { useGameStore } from '@/stores/useGameStore'
-
-import { Canvas } from '@react-three/fiber'
-import React from 'react'
-import { useControls } from 'leva'
 
 export default function GamePage() {
   const reset = useGameStore((s) => s.reset)

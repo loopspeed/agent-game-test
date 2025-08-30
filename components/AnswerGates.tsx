@@ -2,30 +2,30 @@
 
 import { Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { CuboidCollider, type RapierRigidBody, RigidBody } from '@react-three/rapier'
-import React, { type FC, useCallback, useEffect, useMemo, useRef } from 'react'
+import { CuboidCollider, RapierRigidBody, RigidBody } from '@react-three/rapier'
+import React, { type FC, useEffect, useRef } from 'react'
 
 import type { Answer } from '@/data/questions'
 import { useQuestionStore } from '@/stores/questionStore'
-import { KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/useGameStore'
+import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/useGameStore'
 
 type AnswerGateProps = {
-  answer?: Answer // Optional now - gates can exist without answers
   position: [number, number, number]
   gateIndex: number
-  onRefChange: (ref: RapierRigidBody | null) => void
+  answer?: Answer // Optional now - gates can exist without answers
 }
 
 // Answer gate with physics collision
-const AnswerGate: FC<AnswerGateProps> = ({ answer, position, onRefChange }) => {
+const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ answer, position }, ref) => {
   const hasAnswer = !!answer
 
   return (
-    <RigidBody ref={onRefChange} colliders={false} position={position}>
+    <RigidBody ref={ref} type="dynamic" gravityScale={0} canSleep={false} colliders={false} position={position}>
       <CuboidCollider
         args={[1, 1, 0.05]}
-        onCollisionEnter={() => {
-          console.log('Collided with answer gate', answer)
+        sensor={true}
+        onIntersectionEnter={() => {
+          console.warn('Collided with answer gate', answer)
         }}
       />
 
@@ -52,59 +52,92 @@ const AnswerGate: FC<AnswerGateProps> = ({ answer, position, onRefChange }) => {
       )}
     </RigidBody>
   )
+})
+
+AnswerGate.displayName = 'AnswerGate'
+
+const gates = new Array(9).fill(null)
+// Create all 9 gate positions (3x3 grid)
+const generateGatePositions = (): [number, number, number][] => {
+  const positions: [number, number, number][] = []
+  for (let y = 0; y < LANES_Y.length; y++) {
+    for (let x = 0; x < LANES_X.length; x++) {
+      positions.push([LANES_X[x], LANES_Y[y], SPAWN_OBSTACLE_Z])
+    }
+  }
+  return positions
 }
 
+const gatePositions = generateGatePositions()
+
 const AnswerGates: FC = () => {
-  const obstaclesSpeed = useGameStore((s) => s.obstaclesSpeed)
   const current = useQuestionStore((s) => s.current)
   const nextQuestion = useQuestionStore((s) => s.next)
 
-  const gatesRef = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
-  const hasPassedKillZone = useRef(false)
+  const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
+  const isRespawning = useRef(false)
 
-  const handleRefChange = useCallback(
-    (index: number) => (ref: RapierRigidBody | null) => {
-      gatesRef.current[index] = ref
-    },
+  const stage = useGameStore((s) => s.stage)
+  const isPlaying = stage === GameStage.PLAYING
+  const obstaclesSpeed = useRef(useGameStore.getState().obstaclesSpeed) // Fetch initial state
+  useEffect(
+    () =>
+      // Subscribe to state changes
+      useGameStore.subscribe((s) => {
+        obstaclesSpeed.current = s.obstaclesSpeed
+        // console.warn('subscribe updating speed to:', s.obstaclesSpeed)
+        // gatesRefs.current.forEach((gate) => {
+        //   if (!gate) return // Check for null ref
+        //   console.warn('Setting gate velocity:', gate)
+        //   gate.setLinvel({ x: 0, y: 0, z: s.obstaclesSpeed })
+        // })
+      }),
     [],
   )
 
   // Set velocity once when gates are created or speed changes
   useEffect(() => {
-    gatesRef.current.forEach((gate) => {
-      if (gate) {
-        gate.setLinvel({ x: 0, y: 0, z: obstaclesSpeed }, true)
-      }
-    })
-  }, [obstaclesSpeed, current.id]) // Re-run when speed changes or new question
+    const currentGates = gatesRefs.current // Capture refs at effect creation time
+
+    if (isPlaying) {
+      currentGates.forEach((gate, index) => {
+        if (!gate) return // Check for null ref
+        try {
+          const BASE_SPEED = 2.0
+          gate.setLinvel({ x: 0, y: 0, z: BASE_SPEED * obstaclesSpeed.current }, true)
+        } catch (error) {
+          console.warn(`Failed to set velocity for gate ${index}:`, error)
+        }
+      })
+    }
+  }, [isPlaying])
 
   // Check lifecycle only
   useFrame(() => {
     // Check if gates have passed the kill zone and move to next question
-    if (!gatesRef.current[0]) return
-    const gatesNeedKilling = gatesRef.current[0].translation().z > KILL_OBSTACLE_Z
+    const firstGate = gatesRefs.current[0]
+    if (!firstGate) return
 
-    if (gatesNeedKilling && !hasPassedKillZone.current) {
-      hasPassedKillZone.current = true
-      nextQuestion()
+    try {
+      // Check if the rigid body is still valid
+      if (firstGate.handle === undefined || firstGate.handle === null) return
 
-      // Reset the flag after a short delay to allow for next cycle
-      setTimeout(() => {
-        hasPassedKillZone.current = false
-      }, 1000)
+      const gatesNeedKilling = firstGate.translation().z > KILL_OBSTACLE_Z
+
+      if (gatesNeedKilling && !isRespawning.current) {
+        isRespawning.current = true
+        nextQuestion()
+        // Reset the flag after a short delay to allow for next cycle
+        setTimeout(() => {
+          isRespawning.current = false
+        }, 1000)
+        return
+      }
+    } catch (error) {
+      // Silently handle any errors accessing disposed rigid bodies
+      console.warn('Error checking gate lifecycle:', error instanceof Error ? error.message : String(error))
     }
   })
-
-  // Create all 9 gate positions (3x3 grid)
-  const allGatePositions: [number, number, number][] = useMemo(() => {
-    const positions: [number, number, number][] = []
-    for (let y = 0; y < 3; y++) {
-      for (let x = 0; x < 3; x++) {
-        positions.push([LANES_X[x], LANES_Y[y], SPAWN_OBSTACLE_Z])
-      }
-    }
-    return positions
-  }, [])
 
   // Map answers to specific gate positions based on answer count and layout strategy
   const getAnswerMapping = (): (Answer | undefined)[] => {
@@ -138,13 +171,18 @@ const AnswerGates: FC = () => {
 
   return (
     <>
-      {allGatePositions.map((position, gateIndex) => (
+      {gates.map((_, gateIndex) => (
         <AnswerGate
-          key={`gate-${gateIndex}-${current.id}`}
+          ref={(ref) => {
+            gatesRefs.current[gateIndex] = ref
+            if (ref) {
+              console.warn(`Gate ${gateIndex} ref set successfully`)
+            }
+          }}
+          key={gateIndex}
           answer={answerMapping[gateIndex]}
-          position={position}
+          position={gatePositions[gateIndex]}
           gateIndex={gateIndex}
-          onRefChange={handleRefChange(gateIndex)}
         />
       ))}
     </>
