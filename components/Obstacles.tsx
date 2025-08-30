@@ -1,8 +1,9 @@
 'use client'
-import { type FC, useEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { KILL_OBSTACLE_Z, SPAWN_OBSTACLE_Z, useWorldStore } from '@/stores/worldStore'
-import { type RapierRigidBody, InstancedRigidBodies, type InstancedRigidBodyProps } from '@react-three/rapier'
+import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBody } from '@react-three/rapier'
+import { type FC, useEffect, useMemo, useRef } from 'react'
+
+import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/useGameStore'
 
 /**
  * UNIFIED PHYSICS-BASED OBSTACLES SYSTEM
@@ -27,12 +28,11 @@ type ObstacleData = {
 }
 
 const Obstacles: FC = () => {
-  const lanesX = useWorldStore((s) => s.lanesX)
-  const lanesY = useWorldStore((s) => s.lanesY)
-  const maxObstacles = useWorldStore((s) => s.maxObstacles)
-  const speed = useWorldStore((s) => s.speed)
-  const spawnInterval = useWorldStore((s) => s.spawnInterval)
-  const isPlaying = useWorldStore((s) => s.isPlaying)
+  const maxObstacles = useGameStore((s) => s.maxObstacles)
+  const obstaclesSpeed = useGameStore((s) => s.obstaclesSpeed)
+  const spawnInterval = useGameStore((s) => s.spawnInterval)
+  const stage = useGameStore((s) => s.stage)
+  const isPlaying = stage === GameStage.PLAYING
 
   // Create obstacle instances (immutable) - these set the initial physics body positions
   const obstacleInstances = useMemo(() => {
@@ -41,8 +41,8 @@ const Obstacles: FC = () => {
 
     for (let i = 0; i < maxObstacles; i++) {
       // Initial position for each physics body - start hidden far away
-      const x = lanesX[i % lanesX.length]
-      const y = lanesY[Math.floor(i / lanesX.length) % lanesY.length]
+      const x = LANES_X[i % LANES_X.length]
+      const y = LANES_Y[Math.floor(i / LANES_X.length) % LANES_Y.length]
 
       instances.push({
         key: `obstacle_${i}`,
@@ -52,7 +52,7 @@ const Obstacles: FC = () => {
     }
 
     return instances
-  }, [maxObstacles, lanesX, lanesY]) // Include lanes in dependencies
+  }, [maxObstacles])
 
   // Store mutable obstacle data in ref (separate from React's memo system)
   const obstaclesData = useRef<ObstacleData[]>([])
@@ -64,8 +64,8 @@ const Obstacles: FC = () => {
 
     for (let i = 0; i < maxObstacles; i++) {
       newData.push({
-        x: lanesX[i % lanesX.length],
-        y: lanesY[Math.floor(i / lanesX.length) % lanesY.length],
+        x: LANES_X[i % LANES_X.length],
+        y: LANES_Y[Math.floor(i / LANES_X.length) % LANES_Y.length],
         z: SPAWN_OBSTACLE_Z,
         isAlive: false,
         velocity: 0.5 + Math.random() * 1.0,
@@ -90,7 +90,7 @@ const Obstacles: FC = () => {
     }
 
     console.log('🔄 Obstacles data initialized and game time reset')
-  }, [maxObstacles, lanesX, lanesY])
+  }, [maxObstacles])
 
   // Reset all obstacles when game starts/stops
   useEffect(() => {
@@ -126,12 +126,12 @@ const Obstacles: FC = () => {
           testObstacle.z = SPAWN_OBSTACLE_Z
           testBody.setTranslation({ x: 0, y: 0, z: SPAWN_OBSTACLE_Z }, true)
           // Positive Z velocity to move toward camera
-          testBody.setLinvel({ x: 0, y: 0, z: speed * 0.3 }, true)
-          console.log('🧪 TEST OBSTACLE spawned with velocity:', speed * 0.3)
+          testBody.setLinvel({ x: 0, y: 0, z: obstaclesSpeed }, true)
+          console.log('🧪 TEST OBSTACLE spawned with velocity:', obstaclesSpeed)
         }
       }
     }
-  }, [isPlaying, speed])
+  }, [isPlaying, obstaclesSpeed])
 
   // DEBUG: Add a simple state logger
   const frameCount = useRef(0)
@@ -191,10 +191,10 @@ const Obstacles: FC = () => {
         console.log(`🚀 SPAWN ${obstacleIndex} at time ${gameTime.current.toFixed(2)}s`)
 
         // Randomize position
-        const ix = Math.floor(Math.random() * lanesX.length)
-        const iy = Math.floor(Math.random() * lanesY.length)
-        deadObstacle.x = lanesX[ix]
-        deadObstacle.y = lanesY[iy]
+        const ix = Math.floor(Math.random() * LANES_X.length)
+        const iy = Math.floor(Math.random() * LANES_Y.length)
+        deadObstacle.x = LANES_X[ix]
+        deadObstacle.y = LANES_Y[iy]
         deadObstacle.z = SPAWN_OBSTACLE_Z
 
         // Position the body at spawn location (this should make it visible)
@@ -203,13 +203,11 @@ const Obstacles: FC = () => {
         // Set initial velocity in Z direction (toward camera/player)
         // Using setLinvel for consistent, even-paced movement
         // IMPORTANT: Positive Z velocity moves TOWARD camera (since camera is at positive Z)
-        const baseSpeed = speed
-        const randomizedSpeed = baseSpeed * deadObstacle.velocity
+        const randomizedSpeed = obstaclesSpeed * deadObstacle.velocity
 
         body.setLinvel({ x: 0, y: 0, z: randomizedSpeed }, true)
 
         console.log(`✅ SPAWNED ${obstacleIndex}:`, {
-          baseSpeed,
           randomizedSpeed,
           velocityMultiplier: deadObstacle.velocity,
           position: { x: deadObstacle.x, y: deadObstacle.y, z: deadObstacle.z },

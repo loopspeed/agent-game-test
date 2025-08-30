@@ -2,49 +2,56 @@
 import { Suspense, useEffect } from 'react'
 import { Physics } from '@react-three/rapier'
 import Scene from '@/components/Scene'
+import HUD from '@/components/HUD'
 import { useInputStore } from '@/stores/inputStore'
-import { useWorldStore } from '@/stores/worldStore'
+import { useGameStore } from '@/stores/useGameStore'
 
 import { Canvas } from '@react-three/fiber'
 import React from 'react'
 import { useControls } from 'leva'
 
 export default function GamePage() {
-  const isPlaying = useWorldStore((s) => s.isPlaying)
+  const reset = useGameStore((s) => s.reset)
+
+  useEffect(() => {
+    return () => {
+      reset()
+    }
+  }, [reset])
 
   useInput()
 
   useControls({
-    speed: {
-      label: 'Speed',
+    time: {
+      label: 'Obstacle Speed',
       min: 0.1,
       step: 0.1,
       max: 10,
-      value: useWorldStore.getState().speed,
-      onChange: (value) => useWorldStore.setState({ speed: value }),
+      value: useGameStore.getState().obstaclesSpeed,
+      onChange: (value) => useGameStore.setState({ obstaclesSpeed: value }),
     },
     maxObstacles: {
       label: 'Max Obstacles',
       min: 4,
       step: 1,
       max: 40,
-      value: useWorldStore.getState().maxObstacles,
-      onChange: (value) => useWorldStore.setState({ maxObstacles: value }),
+      value: useGameStore.getState().maxObstacles,
+      onChange: (value) => useGameStore.setState({ maxObstacles: value }),
     },
     spawnInterval: {
       label: 'Spawn Interval (seconds)',
       min: 0.1,
       max: 5.0,
       step: 0.1,
-      value: useWorldStore.getState().spawnInterval,
-      onChange: (value) => useWorldStore.setState({ spawnInterval: value }),
+      value: useGameStore.getState().spawnInterval,
+      onChange: (value) => useGameStore.setState({ spawnInterval: value }),
     },
   })
 
   return (
-    <main className="relative h-lvh w-full overflow-hidden">
+    <main className="h-lvh w-full overflow-hidden">
       <Canvas
-        className="!fixed inset-0"
+        className="!fixed inset-0 !h-lvh"
         performance={{ min: 0.5, debounce: 300 }}
         camera={{ position: [0, 1, 4], fov: 80, far: 50 }}>
         <Suspense fallback={null}>
@@ -54,29 +61,20 @@ export default function GamePage() {
           </Physics>
         </Suspense>
       </Canvas>
-      {/* Heads-up display overlay */}
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between p-4">
-        {/* Future HUD components (score, health, streak, timer) will be inserted here */}
-        <button className="pointer-events-auto cursor-pointer rounded-full border px-4 py-1 hover:bg-green-700">
-          PRESS ENTER TO {isPlaying ? 'STOP' : 'BEGIN'}
-        </button>
-      </div>
+
+      {/* HUD overlay with health display */}
+      <HUD />
     </main>
   )
 }
 
 function useInput() {
   const { setKey } = useInputStore()
-  const toggleIsPlaying = useWorldStore((s) => s.toggleIsPlaying)
 
   // Attach keyboard listeners for 4-way movement
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       switch (e.key) {
-        case 'Enter': {
-          toggleIsPlaying()
-          break
-        }
         case 'ArrowUp':
         case 'w':
         case 'W': {
@@ -137,5 +135,5 @@ function useInput() {
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
     }
-  }, [setKey, toggleIsPlaying])
+  }, [setKey])
 }

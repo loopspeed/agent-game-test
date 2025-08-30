@@ -1,13 +1,10 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { useGameStore } from '@/stores/gameStore'
 
 export default function HomePage() {
   const router = useRouter()
-  const reset = useGameStore((s) => s.reset)
 
   const onStartClick = () => {
-    reset()
     router.push('/game')
   }
 

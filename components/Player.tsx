@@ -1,27 +1,35 @@
 'use client'
 
-import { type FC, useCallback, useEffect, useRef, useState } from 'react'
-import { RigidBody, type RapierRigidBody, CuboidCollider, type IntersectionEnterHandler } from '@react-three/rapier'
+import { useGSAP } from '@gsap/react'
+import { useDidUpdate, usePrevious } from '@mantine/hooks'
 import { useFrame } from '@react-three/fiber'
-import { useInputStore } from '../stores/inputStore'
-import { useWorldStore } from '../stores/worldStore'
+import { CuboidCollider, type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
+import { gsap } from 'gsap'
+import { type FC, useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
-const Player: FC = () => {
-  const bodyRef = useRef<RapierRigidBody>(null)
-  const input = useInputStore()
-  const setPlayerPosition = useWorldStore((s) => s.setPlayerPosition)
+import { useInputStore } from '@/stores/inputStore'
+import { LANES_X, LANES_Y, MAX_HEALTH, useGameStore } from '@/stores/useGameStore'
 
-  // lane definitions; use larger numbers here to enlarge the grid
-  const lanesX = useWorldStore((s) => s.lanesX)
-  const lanesY = useWorldStore((s) => s.lanesY)
+gsap.registerPlugin(useGSAP)
+
+const Player: FC = () => {
+  const input = useInputStore()
+
+  const health = useGameStore((s) => s.health)
+  const prevHealth = usePrevious(health)
+  const setPlayerPosition = useGameStore((s) => s.setPlayerPosition)
+  const onObstacleHit = useGameStore((s) => s.onObstacleHit)
+  const onAnswerHit = useGameStore((s) => s.onAnswerHit)
 
   const laneXIndex = useRef(1)
   const laneYIndex = useRef(1)
-
   // current interpolated position
-  const currentX = useRef(lanesX[laneXIndex.current])
-  const currentY = useRef(lanesY[laneYIndex.current])
+  const currentX = useRef(LANES_X[laneXIndex.current])
+  const currentY = useRef(LANES_Y[laneYIndex.current])
+
+  const bodyRef = useRef<RapierRigidBody>(null)
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null)
 
   // remember previous input to detect key presses
   const prevInput = useRef({
@@ -31,23 +39,38 @@ const Player: FC = () => {
     right: false,
   })
 
-  // Hit state to flash the player red
-  const [hit, setHit] = useState(false)
-  const hitTimeout = useRef<NodeJS.Timeout | null>(null)
-
   // Intersection handler for sensor collisions
-  const onIntersectionEnter: IntersectionEnterHandler = useCallback(({ other }) => {
-    const otherRB = other.rigidBodyObject
-    const otherCollider = other.colliderObject
+  const onIntersectionEnter: IntersectionEnterHandler = useCallback(
+    ({ other }) => {
+      const otherRB = other.rigidBodyObject
+      const otherCollider = other.colliderObject
+      const isObstacle = otherRB?.userData?.kind === 'obstacle' || otherCollider?.name === 'obstacle'
+      const isAnswerGate = otherRB?.userData?.kind === 'answerGate'
 
-    const isObstacle = otherRB?.userData?.kind === 'obstacle' || otherCollider?.name === 'obstacle'
+      if (isObstacle) {
+        onObstacleHit()
+        return
+      }
 
-    if (isObstacle) {
-      setHit(true)
-      if (hitTimeout.current) clearTimeout(hitTimeout.current)
-      hitTimeout.current = setTimeout(() => setHit(false), 500)
+      if (isAnswerGate) {
+        const isCorrect = otherRB?.userData?.isCorrect
+        onAnswerHit(isCorrect)
+      }
+    },
+    [onObstacleHit, onAnswerHit],
+  )
+
+  // Handle health changes
+  useDidUpdate(() => {
+    const hasIncreased = health > (prevHealth ?? MAX_HEALTH)
+    if (hasIncreased) {
+      // Handle health increase (e.g., play sound, show effect)
+      gsap.to(materialRef.current!, { opacity: 0.9, duration: 0.4, yoyo: true, repeat: 1 })
+    } else {
+      // Handle health decrease (e.g., play sound, show effect)
+      gsap.to(materialRef.current!, { opacity: 0.5, duration: 0.4, yoyo: true, repeat: 1 })
     }
-  }, [])
+  }, [health])
 
   // set the initial position once when the body is created
   useEffect(() => {
@@ -63,10 +86,10 @@ const Player: FC = () => {
     if (input.left && !prevInput.current.left && laneXIndex.current > 0) {
       laneXIndex.current--
     }
-    if (input.right && !prevInput.current.right && laneXIndex.current < lanesX.length - 1) {
+    if (input.right && !prevInput.current.right && laneXIndex.current < LANES_X.length - 1) {
       laneXIndex.current++
     }
-    if (input.up && !prevInput.current.up && laneYIndex.current < lanesY.length - 1) {
+    if (input.up && !prevInput.current.up && laneYIndex.current < LANES_Y.length - 1) {
       laneYIndex.current++
     }
     if (input.down && !prevInput.current.down && laneYIndex.current > 0) {
@@ -75,8 +98,8 @@ const Player: FC = () => {
     prevInput.current = { ...input }
 
     // target lane centre
-    const targetX = lanesX[laneXIndex.current]
-    const targetY = lanesY[laneYIndex.current]
+    const targetX = LANES_X[laneXIndex.current]
+    const targetY = LANES_Y[laneYIndex.current]
 
     // use damp to smooth toward the target; 5 is the damping factor
     currentX.current = THREE.MathUtils.damp(currentX.current, targetX, 5, delta)
@@ -97,7 +120,7 @@ const Player: FC = () => {
     <RigidBody ref={bodyRef} type="kinematicPosition" colliders={false}>
       <mesh castShadow receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color={hit ? '#ff0000' : '#E97449'} />
+        <meshBasicMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={1} />
       </mesh>
 
       <CuboidCollider

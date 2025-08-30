@@ -8,9 +8,12 @@
     "start": "next start"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
+    "@mantine/hooks": "^8.2.7",
     "@react-three/drei": "latest",
     "@react-three/fiber": "latest",
     "@react-three/rapier": "latest",
+    "gsap": "^3.13.0",
     "leva": "latest",
     "next": "latest",
     "react": "latest",
@@ -25,6 +28,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
     "postcss": "latest",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "latest",
