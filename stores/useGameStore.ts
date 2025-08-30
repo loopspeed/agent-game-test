@@ -44,8 +44,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   obstaclesSpeed: 1,
   setObstaclesSpeed: (obstaclesSpeed) => set({ obstaclesSpeed }),
 
-  maxObstacles: 10,
-  spawnInterval: 1,
+  maxObstacles: 20,
+  spawnInterval: 0.2,
 
   playerPosition: [0, 0, 0],
   setPlayerPosition: (pos) => set({ playerPosition: pos }),

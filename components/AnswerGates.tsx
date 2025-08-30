@@ -93,14 +93,13 @@ const AnswerGates: FC = () => {
     () =>
       // Subscribe to state changes
       useGameStore.subscribe((state, prevState) => {
+        if (!isPlaying) return
         if (state.obstaclesSpeed === prevState.obstaclesSpeed) return
         obstaclesSpeed.current = state.obstaclesSpeed
-        // console.warn('subscribe updating speed to:', s.obstaclesSpeed)
-        gatesRefs.current.forEach((gate) => {
-          if (!isPlaying) return
+        gatesRefs.current.forEach((gate, index) => {
           if (!gate) return // Check for null ref
           const newSpeed = state.obstaclesSpeed * BASE_SPEED
-          console.warn('Setting gate velocity:', newSpeed)
+          console.warn('Setting gate velocity:', { index, newSpeed })
           gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
         })
       }),

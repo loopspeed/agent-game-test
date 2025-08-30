@@ -28,7 +28,7 @@ type ObstacleData = {
   velocity: number // Random velocity multiplier
 }
 
-const BASE_SPEED = 3.0
+const BASE_SPEED = 5.0
 
 const Obstacles: FC = () => {
   const maxObstacles = useGameStore((s) => s.maxObstacles)

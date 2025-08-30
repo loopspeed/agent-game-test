@@ -26,7 +26,7 @@ export default function GamePage() {
       label: 'Obstacle Speed',
       min: 0.1,
       step: 0.1,
-      max: 10,
+      max: 5,
       value: useGameStore.getState().obstaclesSpeed,
       onChange: (value) => useGameStore.setState({ obstaclesSpeed: value }),
     },
