@@ -13,11 +13,9 @@ import { useInputStore } from '@/stores/inputStore'
 function GameContent() {
   const reset = useGameStore((s) => s.reset)
   const gameStoreApi = useGameStoreAPI()
-
-  // Extract values outside of useControls to avoid breaking rules of hooks
-  const obstaclesSpeed = useGameStore((s) => s.obstaclesSpeed)
-  const maxObstacles = useGameStore((s) => s.maxObstacles)
-  const spawnInterval = useGameStore((s) => s.spawnInterval)
+  const setObstaclesSpeed = useGameStore((s) => s.setObstaclesSpeed)
+  const setMaxObstacles = useGameStore((s) => s.setMaxObstacles)
+  const setSpawnInterval = useGameStore((s) => s.setSpawnInterval)
 
   useEffect(() => {
     return () => {
@@ -33,24 +31,24 @@ function GameContent() {
       min: 0.1,
       step: 0.1,
       max: 5,
-      value: obstaclesSpeed,
-      onChange: (value) => gameStoreApi.getState().setObstaclesSpeed(value),
+      value: gameStoreApi.getState().obstaclesSpeed,
+      onChange: (value) => setObstaclesSpeed(value),
     },
     maxObstacles: {
       label: 'Max Obstacles',
       min: 4,
       step: 1,
       max: 40,
-      value: maxObstacles,
-      onChange: (value) => gameStoreApi.getState().setMaxObstacles(value),
+      value: gameStoreApi.getState().maxObstacles,
+      onChange: (value) => setMaxObstacles(value),
     },
     spawnInterval: {
       label: 'Spawn Interval (seconds)',
       min: 0.1,
       max: 5.0,
       step: 0.1,
-      value: spawnInterval,
-      onChange: (value) => gameStoreApi.getState().setSpawnInterval(value),
+      value: gameStoreApi.getState().spawnInterval,
+      onChange: (value) => setSpawnInterval(value),
     },
   })
 
