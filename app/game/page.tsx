@@ -7,12 +7,12 @@ import React from 'react'
 
 import HUD from '@/components/HUD'
 import Scene from '@/components/Scene'
+import GameProvider, { useGameStore, useGameStoreAPI } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/inputStore'
-import GameProvider, { useGameStore, useGameStoreApi } from '@/stores/useGameStore'
 
 function GameContent() {
   const reset = useGameStore((s) => s.reset)
-  const gameStoreApi = useGameStoreApi()
+  const gameStoreApi = useGameStoreAPI()
 
   // Extract values outside of useControls to avoid breaking rules of hooks
   const obstaclesSpeed = useGameStore((s) => s.obstaclesSpeed)

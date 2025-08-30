@@ -112,7 +112,7 @@ export function useGameStore<T>(selector: (state: GameState) => T): T {
   return useStore(gameStore, selector)
 }
 
-export function useGameStoreApi(): GameStateStore {
+export function useGameStoreAPI(): GameStateStore {
   const gameStore = useContext(GameContext)
   if (!gameStore) throw new Error('Missing GameContext.Provider in the tree')
   return gameStore

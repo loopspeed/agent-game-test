@@ -12,7 +12,7 @@ import {
   SPAWN_OBSTACLE_Z,
   useGameStore,
   useGameStoreAPI,
-} from '@/stores/useGameStore'
+} from '@/stores/GameProvider'
 
 /**
  * UNIFIED PHYSICS-BASED OBSTACLES SYSTEM

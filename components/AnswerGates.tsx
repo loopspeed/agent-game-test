@@ -7,7 +7,6 @@ import React, { type FC, useEffect, useRef } from 'react'
 
 import type { Answer } from '@/data/questions'
 import { type AnswerGateUserData } from '@/model/game'
-import { useQuestionStore } from '@/stores/questionStore'
 import {
   GameStage,
   GRID_SQUARE_SIZE_M,
@@ -17,7 +16,8 @@ import {
   SPAWN_OBSTACLE_Z,
   useGameStore,
   useGameStoreAPI,
-} from '@/stores/useGameStore'
+} from '@/stores/GameProvider'
+import { useQuestionStore } from '@/stores/questionStore'
 
 type AnswerGateProps = {
   position: [number, number, number]

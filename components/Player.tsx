@@ -9,8 +9,8 @@ import { type FC, useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
 import { type RigidBodyUserData } from '@/model/game'
+import { LANES_X, LANES_Y, MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/inputStore'
-import { LANES_X, LANES_Y, MAX_HEALTH, useGameStore } from '@/stores/useGameStore'
 
 gsap.registerPlugin(useGSAP)
 

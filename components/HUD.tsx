@@ -2,7 +2,7 @@
 
 import { type FC } from 'react'
 
-import { GameStage, MAX_HEALTH, useGameStore } from '@/stores/useGameStore'
+import { GameStage, MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
 
 const HUD: FC = () => {
   return (

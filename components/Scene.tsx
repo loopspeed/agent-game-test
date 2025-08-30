@@ -3,7 +3,7 @@ import { type FC } from 'react'
 import Player from './Player'
 import AnswerGates from './AnswerGates'
 import * as THREE from 'three'
-import { GRID_SQUARE_SIZE_M } from '@/stores/useGameStore'
+import { GRID_SQUARE_SIZE_M } from '@/stores/GameProvider'
 import Obstacles from '@/components/Obstacles'
 
 const Scene: FC = () => {
