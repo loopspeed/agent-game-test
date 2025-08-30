@@ -1,5 +1,4 @@
 'use client'
-import { useFrame } from '@react-three/fiber'
 import { useEffect, useRef, type FC } from 'react'
 import Player from './Player'
 import * as THREE from 'three'
@@ -7,22 +6,13 @@ import { GRID_SCALE, useWorldStore } from '@/stores/worldStore'
 import Obstacles from '@/components/Obstacles'
 
 const Scene: FC = () => {
-  const playerPosition = useRef(useWorldStore.getState().playerPosition) // Fetch initial state
-  useEffect(() => useWorldStore.subscribe((state) => (playerPosition.current = state.playerPosition)), []) // Subscribe to state changes
-
-  // useFrame(({ camera }) => {
-  //   const [px, py, pz] = playerPosition.current
-  //   const offset = new THREE.Vector3(0, 1, 4)
-  //   const target = new THREE.Vector3(px, py, pz)
-  //   const desiredPos = target.clone().add(offset)
-  //   // interpolation factor; higher = snappier
-  //   camera.position.lerp(desiredPos, 0.75)
-  //   camera.lookAt(target)
-  // })
+  // Example of reading player position
+  // const playerPosition = useRef(useWorldStore.getState().playerPosition) // Fetch initial state
+  // useEffect(() => useWorldStore.subscribe((state) => (playerPosition.current = state.playerPosition)), []) // Subscribe to state changes
 
   return (
     <>
-      <ambientLight intensity={0.5} />
+      <ambientLight intensity={2} />
       <directionalLight position={[5, 10, 7.5]} intensity={1} />
 
       <Player />
@@ -40,3 +30,13 @@ const Scene: FC = () => {
 }
 
 export default Scene
+
+// useFrame(({ camera }) => {
+//   const [px, py, pz] = playerPosition.current
+//   const offset = new THREE.Vector3(0, 1, 4)
+//   const target = new THREE.Vector3(px, py, pz)
+//   const desiredPos = target.clone().add(offset)
+//   // interpolation factor; higher = snappier
+//   camera.position.lerp(desiredPos, 0.75)
+//   camera.lookAt(target)
+// })

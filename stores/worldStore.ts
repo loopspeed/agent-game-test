@@ -23,9 +23,9 @@ export const SPAWN_OBSTACLE_Z = -20
 export const KILL_OBSTACLE_Z = 2
 
 export const useWorldStore = create<WorldState>((set) => ({
-  speed: 8,
-  maxObstacles: 20,
-  spawnInterval: 2,
+  speed: 10,
+  maxObstacles: 30,
+  spawnInterval: 1,
 
   // Define vertical lanes for a 3×3 grid (mirroring horizontal lanes)
   lanesX: LANES_X,
