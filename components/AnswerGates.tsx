@@ -8,7 +8,15 @@ import React, { type FC, useEffect, useRef } from 'react'
 import type { Answer } from '@/data/questions'
 import { type AnswerGateUserData } from '@/model/game'
 import { useQuestionStore } from '@/stores/questionStore'
-import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/useGameStore'
+import {
+  GameStage,
+  GRID_SQUARE_SIZE_M,
+  KILL_OBSTACLE_Z,
+  LANES_X,
+  LANES_Y,
+  SPAWN_OBSTACLE_Z,
+  useGameStore,
+} from '@/stores/useGameStore'
 
 type AnswerGateProps = {
   position: [number, number, number]
@@ -41,17 +49,17 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ answer,
         <>
           {/* Flat box container */}
           <mesh>
-            <boxGeometry args={[1.5, 0.8, 0.1]} />
-            <meshStandardMaterial color={answer.isCorrect ? '#4ade80' : '#f87171'} transparent opacity={0.3} />
+            <boxGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M, 0.1]} />
+            <meshStandardMaterial color={answer.isCorrect ? '#4ade80' : '#f87171'} transparent opacity={0.4} />
           </mesh>
           {/* Answer text */}
           <Text
-            position={[0, 0, 0.06]}
-            fontSize={0.3}
+            position={[0, 0, 0.1]}
+            fontSize={0.2}
             color="white"
             anchorX="center"
             anchorY="middle"
-            maxWidth={1.4}
+            maxWidth={1.8}
             textAlign="center">
             {answer.label}
           </Text>
@@ -138,7 +146,7 @@ const AnswerGates: FC = () => {
     const gatesNeedKilling = firstGate.translation().z > KILL_OBSTACLE_Z
 
     if (gatesNeedKilling && !isRespawning.current) {
-      console.log('Going to next question')
+      console.warn('Going to next question')
       isRespawning.current = true
       goToNextQuestion()
       // Reset the flag after a short delay to allow for next cycle
@@ -175,7 +183,7 @@ const AnswerGates: FC = () => {
       })
     }
 
-    console.log({ mapping })
+    console.warn({ mapping })
 
     return mapping
   }

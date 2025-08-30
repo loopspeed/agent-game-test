@@ -53,7 +53,7 @@ export default function GamePage() {
       <Canvas
         className="!fixed inset-0 !h-lvh"
         performance={{ min: 0.5, debounce: 300 }}
-        camera={{ position: [0, 1, 4], fov: 80, far: 50 }}>
+        camera={{ position: [0, 0.5, 4], fov: 75, far: 50 }}>
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
           <Physics gravity={[0, 0, 0]} debug>

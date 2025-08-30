@@ -134,7 +134,7 @@ const Player: FC = () => {
       sensor={true}
       onIntersectionEnter={onIntersectionEnter}>
       <mesh>
-        <boxGeometry args={[1, 1, 1]} />
+        <boxGeometry args={[0.5, 0.5, 0.5]} />
         <meshBasicMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={1} />
       </mesh>
     </RigidBody>

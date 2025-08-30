@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useRef, type FC } from 'react'
+import { type FC } from 'react'
 import Player from './Player'
 import AnswerGates from './AnswerGates'
 import * as THREE from 'three'
-import { GRID_SQUARE_SIZE_M, useGameStore } from '@/stores/useGameStore'
+import { GRID_SQUARE_SIZE_M } from '@/stores/useGameStore'
 import Obstacles from '@/components/Obstacles'
 
 const Scene: FC = () => {
@@ -24,7 +24,7 @@ const Scene: FC = () => {
 
       <gridHelper
         args={[GRID_SQUARE_SIZE_M * 3, 3]}
-        rotation={[Math.PI / 2.25, 0, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
         position={[0, 0, 0]}
         material={new THREE.LineBasicMaterial({ color: 0x555555 })}
       />
