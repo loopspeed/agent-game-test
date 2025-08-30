@@ -56,7 +56,7 @@ export default function GamePage() {
         camera={{ position: [0, 1, 4], fov: 80, far: 50 }}>
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
-          <Physics gravity={[0, 0, 0]}>
+          <Physics gravity={[0, 0, 0]} debug>
             <Scene />
           </Physics>
         </Suspense>

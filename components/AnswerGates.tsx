@@ -3,7 +3,7 @@
 import { Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { CuboidCollider, type RapierRigidBody, RigidBody } from '@react-three/rapier'
-import React, { type FC, useCallback, useMemo, useRef } from 'react'
+import React, { type FC, useCallback, useEffect, useMemo, useRef } from 'react'
 
 import type { Answer } from '@/data/questions'
 import { useQuestionStore } from '@/stores/questionStore'
@@ -21,37 +21,41 @@ const AnswerGate: FC<AnswerGateProps> = ({ answer, position, onRefChange }) => {
   const hasAnswer = !!answer
 
   return (
-    <group position={position}>
-      <RigidBody ref={onRefChange} type="kinematicPosition" sensor>
-        <CuboidCollider args={[0.75, 0.4, 0.05]} />
+    <RigidBody ref={onRefChange} colliders={false} position={position}>
+      <CuboidCollider
+        args={[1, 1, 0.05]}
+        onCollisionEnter={() => {
+          console.log('Collided with answer gate', answer)
+        }}
+      />
 
-        {/* Only render visual elements if there's an answer */}
-        {hasAnswer && (
-          <>
-            {/* Flat box container */}
-            <mesh>
-              <boxGeometry args={[1.5, 0.8, 0.1]} />
-              <meshStandardMaterial color={answer.isCorrect ? '#4ade80' : '#f87171'} transparent opacity={0.3} />
-            </mesh>
-            {/* Answer text */}
-            <Text
-              position={[0, 0, 0.06]}
-              fontSize={0.3}
-              color="white"
-              anchorX="center"
-              anchorY="middle"
-              maxWidth={1.4}
-              textAlign="center">
-              {answer.label}
-            </Text>
-          </>
-        )}
-      </RigidBody>
-    </group>
+      {/* Only render visual elements if there's an answer */}
+      {hasAnswer && (
+        <>
+          {/* Flat box container */}
+          <mesh>
+            <boxGeometry args={[1.5, 0.8, 0.1]} />
+            <meshStandardMaterial color={answer.isCorrect ? '#4ade80' : '#f87171'} transparent opacity={0.3} />
+          </mesh>
+          {/* Answer text */}
+          <Text
+            position={[0, 0, 0.06]}
+            fontSize={0.3}
+            color="white"
+            anchorX="center"
+            anchorY="middle"
+            maxWidth={1.4}
+            textAlign="center">
+            {answer.label}
+          </Text>
+        </>
+      )}
+    </RigidBody>
   )
 }
 
 const AnswerGates: FC = () => {
+  const obstaclesSpeed = useGameStore((s) => s.obstaclesSpeed)
   const current = useQuestionStore((s) => s.current)
   const nextQuestion = useQuestionStore((s) => s.next)
 
@@ -65,9 +69,18 @@ const AnswerGates: FC = () => {
     [],
   )
 
-  // Check if gates have passed the kill zone and move to next question
+  // Set velocity once when gates are created or speed changes
+  useEffect(() => {
+    gatesRef.current.forEach((gate) => {
+      if (gate) {
+        gate.setLinvel({ x: 0, y: 0, z: obstaclesSpeed }, true)
+      }
+    })
+  }, [obstaclesSpeed, current.id]) // Re-run when speed changes or new question
+
+  // Check lifecycle only
   useFrame(() => {
-    // Check if a gate has passed
+    // Check if gates have passed the kill zone and move to next question
     if (!gatesRef.current[0]) return
     const gatesNeedKilling = gatesRef.current[0].translation().z > KILL_OBSTACLE_Z
 
