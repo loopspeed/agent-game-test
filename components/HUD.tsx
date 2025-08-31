@@ -6,10 +6,11 @@ import { GameStage, MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
 
 const HUD: FC = () => {
   return (
-    <div className="pointer-events-none fixed top-0 z-50 !h-svh w-full">
+    <div className="pointer-events-none fixed top-0 z-50 flex !h-svh w-full items-center justify-center">
       <Health />
 
       <ReadyButton />
+      <SlowMoBar />
       {/* Future HUD elements can be added here */}
       {/* Top right - Score, level, etc. */}
       {/* Bottom center - Instructions or current question */}
@@ -31,6 +32,14 @@ const ReadyButton: FC = () => {
       <button className="pointer-events-auto bg-white p-8 text-black" onClick={() => setStage(GameStage.PLAYING)}>
         READY
       </button>
+    </div>
+  )
+}
+
+const SlowMoBar: FC = () => {
+  return (
+    <div className="absolute top-4 h-4 w-40 overflow-hidden rounded-full border">
+      <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500" />
     </div>
   )
 }

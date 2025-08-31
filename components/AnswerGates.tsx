@@ -86,7 +86,7 @@ const generateGatePositions = (): [number, number, number][] => {
 
 const gatePositions = generateGatePositions()
 
-const BASE_SPEED = 3.0
+const BASE_SPEED = 5.0
 
 const AnswerGates: FC = () => {
   const currentQuestion = useQuestionStore((s) => s.currentQuestion)
@@ -97,6 +97,8 @@ const AnswerGates: FC = () => {
 
   const stage = useGameStore((s) => s.stage)
   const isPlaying = stage === GameStage.PLAYING
+  const isSlowMo = useGameStore((s) => s.isSlowMo)
+  const goSlowMo = useGameStore((s) => s.goSlowMo)
 
   const gameStoreAPI = useGameStoreAPI()
   const obstaclesSpeed = useRef(gameStoreAPI.getState().obstaclesSpeed) // Fetch initial state
@@ -146,10 +148,12 @@ const AnswerGates: FC = () => {
     const firstGate = gatesRefs.current[0]
     if (!firstGate) return
 
-    const gatesNeedKilling = firstGate.translation().z > KILL_OBSTACLE_Z
+    const firstGateTranslationZ = firstGate.translation().z
+
+    const gatesNeedKilling = firstGateTranslationZ > KILL_OBSTACLE_Z
 
     if (gatesNeedKilling && !isRespawning.current) {
-      console.warn('Going to next question')
+      console.warn('Going to next question', { firstGateTranslationZ })
       isRespawning.current = true
       goToNextQuestion()
       // Reset the flag after a short delay to allow for next cycle
@@ -157,6 +161,13 @@ const AnswerGates: FC = () => {
         isRespawning.current = false
       }, 500)
       return
+    }
+
+    const shouldSlowDown = Math.round(firstGateTranslationZ) === -4 && !isSlowMo
+
+    if (shouldSlowDown) {
+      console.log('Slowing down obstacles for answer selection', { firstGateTranslationZ })
+      goSlowMo()
     }
   })
 

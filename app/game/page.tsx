@@ -9,6 +9,7 @@ import HUD from '@/components/HUD'
 import Scene from '@/components/Scene'
 import GameProvider, { useGameStore, useGameStoreAPI } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/inputStore'
+import { Stats } from '@react-three/drei'
 
 function GameContent() {
   const reset = useGameStore((s) => s.reset)
@@ -61,6 +62,7 @@ function GameContent() {
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
           <Physics gravity={[0, 0, 0]} debug>
+            <Stats />
             <Scene />
           </Physics>
         </Suspense>

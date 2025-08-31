@@ -33,10 +33,27 @@ type ObstacleData = {
   y: number
   z: number
   isAlive: boolean
-  velocity: number // Random velocity multiplier
+  speedAdjustment: number // Random speed adjustment so they don't all move at the same speed
 }
 
-const BASE_SPEED = 5.0
+const BASE_SPEED = 8.0
+
+const getNewObstacleData = (isAlive: boolean): ObstacleData => {
+  // Random lane
+  const ix = Math.floor(Math.random() * LANES_X.length)
+  const iy = Math.floor(Math.random() * LANES_Y.length)
+  return {
+    x: LANES_X[ix],
+    y: LANES_Y[iy],
+    z: SPAWN_OBSTACLE_Z,
+    isAlive,
+    speedAdjustment: Math.random() * 4.0 - 2.0, // Random speed adjustment (-2.0 to 2.0)
+  }
+}
+
+const getObstacleSpeed = (data: ObstacleData, obstaclesSpeed: number): number => {
+  return obstaclesSpeed * BASE_SPEED + data.speedAdjustment
+}
 
 const Obstacles: FC = () => {
   const gameStoreAPI = useGameStoreAPI()
@@ -72,17 +89,9 @@ const Obstacles: FC = () => {
   useEffect(() => {
     console.log('🔄 Initializing obstacle data:', { maxObstacles })
     const newData: ObstacleData[] = []
-
     for (let i = 0; i < maxObstacles; i++) {
-      newData.push({
-        x: LANES_X[i % LANES_X.length],
-        y: LANES_Y[Math.floor(i / LANES_X.length) % LANES_Y.length],
-        z: SPAWN_OBSTACLE_Z,
-        isAlive: false,
-        velocity: 0.5 + Math.random() * 1.0,
-      })
+      newData.push(getNewObstacleData(false))
     }
-
     obstaclesData.current = newData
 
     // Reset game time when obstacles are regenerated
@@ -114,8 +123,6 @@ const Obstacles: FC = () => {
       obstaclesData.current.forEach((obstacle, i) => {
         obstacle.isAlive = false
 
-        obstacle.velocity = BASE_SPEED + Math.random() * 2.0
-
         // Reset physics bodies if available
         if (rigidBodies.current?.[i]) {
           const body = rigidBodies.current[i]
@@ -139,11 +146,11 @@ const Obstacles: FC = () => {
         // Update the speed of any active obstacles
         rigidBodies.current.forEach((body, i) => {
           if (!body) return
-          if (obstaclesData.current[i].isAlive) {
-            const newSpeed = state.obstaclesSpeed * BASE_SPEED
-            console.warn('Setting obstacle velocity:', newSpeed)
-            body.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
-          }
+          const obstacleData = obstaclesData.current[i]
+          if (!obstacleData.isAlive) return
+          const newSpeed = getObstacleSpeed(obstacleData, obstaclesSpeed.current)
+          console.warn('Setting obstacle velocity:', newSpeed)
+          body.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
         })
       }),
     [gameStoreAPI, isPlaying],
@@ -168,46 +175,28 @@ const Obstacles: FC = () => {
     const obstacles = obstaclesData.current
 
     // Controlled spawning: find first dead obstacle and spawn it based on spawnInterval
-    const deadObstacle = obstacles.find((o) => !o.isAlive)
+    const deadObstacleIndex = obstacles.findIndex((o) => !o.isAlive)
     const timeSinceLastSpawn = gameTime.current - lastSpawnTime.current
 
-    if (deadObstacle && timeSinceLastSpawn >= spawnInterval) {
+    if (deadObstacleIndex !== -1 && timeSinceLastSpawn >= spawnInterval) {
       // Start spawning after 1 second and respect spawn interval
-      const obstacleIndex = obstacles.indexOf(deadObstacle)
-      const body = rigidBodies.current[obstacleIndex]
-
-      if (body) {
+      const body = rigidBodies.current[deadObstacleIndex]
+      if (!!body) {
         lastSpawnTime.current = gameTime.current // Update last spawn time
-        console.log(`SPAWN OBSTACLE ${obstacleIndex}`)
+        console.log(`SPAWN OBSTACLE ${deadObstacleIndex}`)
 
-        // Randomize position
-        const ix = Math.floor(Math.random() * LANES_X.length)
-        const iy = Math.floor(Math.random() * LANES_Y.length)
-        deadObstacle.x = LANES_X[ix]
-        deadObstacle.y = LANES_Y[iy]
-        deadObstacle.z = SPAWN_OBSTACLE_Z
-
-        // IMPORTANT: Positive Z velocity moves TOWARD camera (since camera is at positive Z)
-        const randomizedSpeed = obstaclesSpeed.current * deadObstacle.velocity
-
+        const newData = getNewObstacleData(true)
+        const newSpeed = getObstacleSpeed(newData, obstaclesSpeed.current)
         // Position the body at spawn location (this should make it visible)
-        body.setTranslation({ x: deadObstacle.x, y: deadObstacle.y, z: deadObstacle.z }, true)
+        body.setTranslation({ x: newData.x, y: newData.y, z: newData.z }, true)
         // Using setLinvel for consistent, even-paced movement
-        body.setLinvel({ x: 0, y: 0, z: randomizedSpeed }, true)
+        body.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
 
-        // console.log(`✅ SPAWNED ${obstacleIndex}:`, {
-        //   randomizedSpeed,
-        //   velocityMultiplier: deadObstacle.velocity,
-        //   position: { x: deadObstacle.x, y: deadObstacle.y, z: deadObstacle.z },
-        //   actualBodyPos: body.translation(),
-        //   actualBodyVel: body.linvel(),
-        // })
-
-        deadObstacle.isAlive = true
+        obstacles[deadObstacleIndex] = newData
       }
     }
 
-    // Check if alive obstacles are out of bounds for recycling
+    // Check if any alive obstacles are out of bounds for recycling
     obstacles.forEach((obstacle, i) => {
       if (obstacle.isAlive) {
         const body = rigidBodies.current![i]
@@ -216,9 +205,8 @@ const Obstacles: FC = () => {
         if (currentPos.z > KILL_OBSTACLE_Z) {
           // Reset obstacle state
           obstacle.isAlive = false
-          obstacle.velocity = 0.5 + Math.random() * 1.0 // New random velocity
           // Move body out of view and stop it
-          body.setTranslation({ x: 0, y: 0, z: SPAWN_OBSTACLE_Z - 100 }, true)
+          body.setTranslation({ x: 0, y: 0, z: SPAWN_OBSTACLE_Z - 1000 }, true)
           body.setLinvel({ x: 0, y: 0, z: 0 }, true)
           console.warn(`♻️ KILLED OBSTACLE ${i}`)
         }

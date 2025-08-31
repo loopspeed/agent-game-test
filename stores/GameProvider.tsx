@@ -1,3 +1,4 @@
+import gsap from 'gsap'
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
@@ -13,6 +14,9 @@ export type GameState = {
 
   obstaclesSpeed: number
   setObstaclesSpeed: (value: number) => void
+  slowMoTimeRemaining: number
+  isSlowMo: boolean
+  goSlowMo: () => void
 
   maxObstacles: number
   setMaxObstacles: (value: number) => void
@@ -44,8 +48,15 @@ export const MAX_HEALTH = 10 as const
 
 export const GameContext = createContext<GameStateStore>(undefined!)
 
+const SLOW_MO_DURATION = 4.0
+
 const createGameStore = () => {
   // TODO: add speed manipulation methods here..
+
+  let speedTimeline: GSAPTimeline
+  // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
+  const speedTweenTarget = { value: 1 }
+  const slowMoTimeRemainingTarget = { value: SLOW_MO_DURATION }
 
   return createStore<GameState>()((set, get) => ({
     stage: GameStage.INTRO,
@@ -53,10 +64,63 @@ const createGameStore = () => {
 
     obstaclesSpeed: 1,
     setObstaclesSpeed: (obstaclesSpeed: number) => set({ obstaclesSpeed }),
+    slowMoTimeRemaining: SLOW_MO_DURATION,
+    isSlowMo: false,
+    goSlowMo: () => {
+      if (get().isSlowMo) return
 
-    maxObstacles: 20,
+      set({ isSlowMo: true })
+      gsap.set('#slow-mo-bar', { scaleX: 1, opacity: 1 })
+
+      console.log('going slow mo')
+
+      speedTimeline?.kill()
+      speedTimeline = gsap
+        .timeline({
+          onComplete: () => {
+            gsap.set('#slow-mo-bar', { scaleX: 1, opacity: 0 })
+            set({ isSlowMo: false, slowMoTimeRemaining: SLOW_MO_DURATION })
+          },
+        })
+        // Slow down..
+        .to(speedTweenTarget, {
+          duration: 0.4,
+          ease: 'power1.out',
+          value: 0.08,
+          onUpdate: () => {
+            set({ obstaclesSpeed: speedTweenTarget.value })
+          },
+        })
+        // Speed back up again.
+        .to(
+          speedTweenTarget,
+          {
+            duration: 0.4,
+            ease: 'power1.in',
+            value: 1.0,
+            onUpdate: () => {
+              set({ obstaclesSpeed: speedTweenTarget.value })
+            },
+          },
+          SLOW_MO_DURATION,
+        )
+        .to(
+          '#slow-mo-bar',
+          {
+            scaleX: 0,
+            duration: SLOW_MO_DURATION,
+            ease: 'none',
+            onUpdate: () => {
+              set({ slowMoTimeRemaining: slowMoTimeRemainingTarget.value })
+            },
+          },
+          0,
+        )
+    },
+
+    maxObstacles: 10,
     setMaxObstacles: (maxObstacles: number) => set({ maxObstacles }),
-    spawnInterval: 0.2,
+    spawnInterval: 0.8,
     setSpawnInterval: (spawnInterval: number) => set({ spawnInterval }),
 
     playerPosition: [0, 0, 0],
