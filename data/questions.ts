@@ -32,7 +32,6 @@ export const SAMPLE_QUESTIONS: Question[] = [
     answers: [
       { id: 'a-101-1', label: 'Alan Turing', isCorrect: true },
       { id: 'a-101-2', label: 'John McCarthy', isCorrect: false },
-      { id: 'a-101-3', label: 'Claude Shannon', isCorrect: false },
       { id: 'a-101-4', label: 'Frank Rosenblatt', isCorrect: false },
     ],
   },
@@ -86,8 +85,6 @@ export const SAMPLE_QUESTIONS: Question[] = [
     answers: [
       { id: 'a-104-1', label: 'XCON', isCorrect: true },
       { id: 'a-104-2', label: 'Watson', isCorrect: false },
-      { id: 'a-104-3', label: 'AlphaGo', isCorrect: false },
-      { id: 'a-104-4', label: 'AlexNet', isCorrect: false },
     ],
   },
   {
@@ -123,7 +120,6 @@ export const SAMPLE_QUESTIONS: Question[] = [
       { id: 'a-106-1', label: 'Jeopardy!', isCorrect: true },
       { id: 'a-106-2', label: 'Wheel of Fortune', isCorrect: false },
       { id: 'a-106-3', label: 'Countdown', isCorrect: false },
-      { id: 'a-106-4', label: 'The Chase', isCorrect: false },
     ],
   },
   {
@@ -159,7 +155,6 @@ export const SAMPLE_QUESTIONS: Question[] = [
       { id: 'a-108-1', label: 'Lee Sedol', isCorrect: true },
       { id: 'a-108-2', label: 'Fan Hui', isCorrect: false },
       { id: 'a-108-3', label: 'Cho Chikun', isCorrect: false },
-      { id: 'a-108-4', label: 'Yuta Iyama', isCorrect: false },
     ],
   },
 ]

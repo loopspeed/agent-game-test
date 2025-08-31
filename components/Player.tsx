@@ -10,7 +10,7 @@ import * as THREE from 'three'
 
 import { type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
-import { useInputStore } from '@/stores/inputStore'
+import { useInputStore } from '@/stores/useInputStore'
 
 gsap.registerPlugin(useGSAP)
 

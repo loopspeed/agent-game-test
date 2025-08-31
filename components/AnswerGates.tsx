@@ -6,7 +6,6 @@ import { CuboidCollider, IntersectionEnterPayload, RapierRigidBody, RigidBody } 
 import gsap from 'gsap'
 import React, { type FC, useEffect, useRef } from 'react'
 
-import type { Answer } from '@/data/questions'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { type AnswerGateUserData, RigidBodyUserData } from '@/model/game'
 import {
@@ -18,17 +17,15 @@ import {
   SPAWN_OBSTACLE_Z,
   useGameStore,
 } from '@/stores/GameProvider'
-import { useQuestionStore } from '@/stores/questionStore'
 
 type AnswerGateProps = {
   position: [number, number, number]
-  gateIndex: number
-  answer: Answer | null
+  index: number
 }
 
 // Answer gate with physics collision
-const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ answer, position }, ref) => {
-  const hasAnswer = !!answer
+const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, position }, ref) => {
+  const answer = useGameStore((s) => s.answerGatesMapping[s.currentQuestionIndex][index])
 
   const userData: AnswerGateUserData = {
     type: 'answerGate',
@@ -69,7 +66,7 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ answer,
       <CuboidCollider args={[1, 1, 0.05]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
 
       {/* Only render visual elements if there's an answer to display (others are "nets" to catch misses) */}
-      {hasAnswer && (
+      {!!answer && (
         <>
           {/* Flat box container */}
           <mesh>
@@ -118,14 +115,12 @@ const gatePositions = generateGatePositions()
 const BASE_SPEED = 5.0
 
 const AnswerGates: FC = () => {
-  const currentQuestion = useQuestionStore((s) => s.currentQuestion)
-  const goToNextQuestion = useQuestionStore((s) => s.goToNextQuestion)
-
   const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
   const isRespawning = useRef(false)
 
-  const stage = useGameStore((s) => s.stage)
-  const isPlaying = stage === GameStage.PLAYING
+  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
+  const currentQuestion = useGameStore((s) => s.currentQuestion)
+  const goToNextQuestion = useGameStore((s) => s.goToNextQuestion)
   const isSlowMo = useGameStore((s) => s.isSlowMo)
   const goSlowMo = useGameStore((s) => s.goSlowMo)
 
@@ -189,50 +184,16 @@ const AnswerGates: FC = () => {
     }
   })
 
-  // TODO: this should be pre-computed when the questions are loaded and then just read when the current index changes.
-  // Map answers to specific gate positions based on answer count and layout strategy
-  const getAnswerMapping = (): (Answer | null)[] => {
-    const answers = currentQuestion.answers
-    const numAnswers = answers.length
-    const mapping = new Array(9).fill(null)
-
-    if (numAnswers === 2) {
-      // Two answers: left and right middle lanes (indices 3 and 5)
-      mapping[3] = answers[0] // Left lane, middle row
-      mapping[5] = answers[1] // Right lane, middle row
-    } else if (numAnswers === 4) {
-      // Four answers: diamond pattern (indices 1, 3, 5, 7)
-      mapping[1] = answers[0] // Top middle
-      mapping[3] = answers[1] // Left middle
-      mapping[5] = answers[2] // Right middle
-      mapping[7] = answers[3] // Bottom middle
-    } else {
-      // For other numbers, distribute sequentially (starting from top-left)
-      answers.forEach((answer, index) => {
-        if (index < 9) {
-          mapping[index] = answer
-        }
-      })
-    }
-
-    console.warn({ mapping })
-
-    return mapping
-  }
-
-  const answerMapping = getAnswerMapping()
-
   return (
     <>
-      {gates.map((_, gateIndex) => (
+      {gates.map((_, index) => (
         <AnswerGate
           ref={(ref) => {
-            gatesRefs.current[gateIndex] = ref
+            gatesRefs.current[index] = ref
           }}
-          key={gateIndex}
-          answer={answerMapping[gateIndex]}
-          position={gatePositions[gateIndex]}
-          gateIndex={gateIndex}
+          key={index}
+          position={gatePositions[index]}
+          index={index}
         />
       ))}
     </>

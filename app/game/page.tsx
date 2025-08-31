@@ -10,7 +10,7 @@ import HUD from '@/components/HUD'
 import Scene from '@/components/Scene'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import GameProvider, { useGameStore, useGameStoreAPI } from '@/stores/GameProvider'
-import { useInputStore } from '@/stores/inputStore'
+import { useInputStore } from '@/stores/useInputStore'
 
 function GameContent() {
   const reset = useGameStore((s) => s.reset)

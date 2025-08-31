@@ -10,11 +10,8 @@ const HUD: FC = () => {
       <Health />
 
       <ReadyButton />
-      <SlowMoCountdown />
-      {/* Future HUD elements can be added here */}
-      {/* Top right - Score, level, etc. */}
-      {/* Bottom center - Instructions or current question */}
-      {/* Bottom right - Additional info */}
+
+      <Question />
     </div>
   )
 }
@@ -50,14 +47,6 @@ const ReadyButton: FC = () => {
   )
 }
 
-const SlowMoCountdown: FC = () => {
-  return (
-    <div className="absolute top-4 h-3 w-64 overflow-hidden rounded-full bg-white/20">
-      <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
-    </div>
-  )
-}
-
 const Health: FC = () => {
   const stage = useGameStore((s) => s.stage)
   const health = useGameStore((s) => s.health)
@@ -72,6 +61,21 @@ const Health: FC = () => {
         {Array.from({ length: MAX_HEALTH }, (_, i) => (
           <div key={i} className={`size-3 rounded-full ${i < health ? 'bg-red-500' : 'bg-white/40'}`} />
         ))}
+      </div>
+    </div>
+  )
+}
+
+const Question: FC = () => {
+  const currentQuestion = useGameStore((s) => s.currentQuestion)
+  const questionId = currentQuestion.id
+
+  return (
+    <div className="absolute top-0 flex max-w-lg flex-col gap-3 bg-black/70 p-5 text-center text-3xl leading-relaxed font-bold">
+      <span>{currentQuestion.question}</span>
+
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/20">
+        <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
       </div>
     </div>
   )

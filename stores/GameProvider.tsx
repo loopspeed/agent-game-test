@@ -3,6 +3,8 @@ import gsap from 'gsap'
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
+import { Answer, Question, SAMPLE_QUESTIONS } from '@/data/questions'
+
 export enum GameStage {
   INTRO = 'INTRO',
   PLAYING = 'PLAYING',
@@ -33,6 +35,12 @@ export type GameState = {
   onObstacleHit: () => void
   onAnswerHit: (isCorrect: boolean) => void
 
+  // Questions
+  currentQuestion: Question
+  currentQuestionIndex: number
+  goToNextQuestion: () => void
+  answerGatesMapping: Array<(Answer | null)[]>
+
   reset: () => void
 }
 
@@ -61,6 +69,7 @@ const INITIAL_STATE: Pick<
   | 'streak'
   | 'playerPosition'
   | 'health'
+  | 'currentQuestionIndex'
 > = {
   stage: GameStage.INTRO,
   timeMultiplier: 1,
@@ -71,9 +80,10 @@ const INITIAL_STATE: Pick<
   streak: 0,
   playerPosition: [0, 0, 0] as Vector3Tuple,
   health: MAX_HEALTH,
+  currentQuestionIndex: 0,
 }
 
-const createGameStore = () => {
+const createGameStore = ({ questions }: { questions: Question[] }) => {
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
@@ -81,6 +91,9 @@ const createGameStore = () => {
 
   return createStore<GameState>()((set, get) => ({
     ...INITIAL_STATE,
+    currentQuestion: questions[0],
+    answerGatesMapping: mapAnswersToGatePositions(questions),
+
     setStage: (stage: GameStage) => set({ stage }),
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
     goSlowMo: () => {
@@ -155,14 +168,20 @@ const createGameStore = () => {
         set({ streak: 0, health: newHealth })
       }
     },
+    goToNextQuestion: () => {
+      set((state) => {
+        const nextIndex = (state.currentQuestionIndex + 1) % questions.length
+        return { currentQuestionIndex: nextIndex, currentQuestion: questions[nextIndex] }
+      })
+    },
 
     reset: () => set(INITIAL_STATE),
   }))
 }
 
 const GameProvider: FC<PropsWithChildren> = ({ children }) => {
-  // TODO: pass in the questions into the game store when it's created...
-  const gameStore = useRef<GameStateStore>(createGameStore())
+  const gameStore = useRef<GameStateStore>(createGameStore({ questions: SAMPLE_QUESTIONS }))
+
   return <GameContext.Provider value={gameStore.current}>{children}</GameContext.Provider>
 }
 
@@ -178,4 +197,37 @@ export function useGameStoreAPI(): GameStateStore {
   const gameStore = useContext(GameContext)
   if (!gameStore) throw new Error('Missing GameContext.Provider in the tree')
   return gameStore
+}
+
+const mapAnswersToGatePositions = (questions: Question[]): Array<(Answer | null)[]> => {
+  const mapping: Array<(Answer | null)[]> = []
+
+  questions.forEach(({ answers }) => {
+    const answerMapping = new Array(9).fill(null)
+
+    if (answers.length === 2) {
+      // Two answers: left and right middle lanes (indices 3 and 5)
+      answerMapping[3] = answers[0] // Left lane, middle row
+      answerMapping[5] = answers[1] // Right lane, middle row
+    }
+
+    if (answers.length === 3) {
+      // Three answers: vertical stack (indices 1, 3, 5)
+      answerMapping[1] = answers[0] // Top middle
+      answerMapping[3] = answers[1] // Middle middle
+      answerMapping[5] = answers[2] // Bottom middle
+    }
+
+    if (answers.length === 4) {
+      // Four answers: diamond pattern (indices 1, 3, 5, 7)
+      answerMapping[1] = answers[0] // Top middle
+      answerMapping[3] = answers[1] // Left middle
+      answerMapping[5] = answers[2] // Right middle
+      answerMapping[7] = answers[3] // Bottom middle
+    }
+
+    mapping.push(answerMapping)
+  })
+
+  return mapping
 }

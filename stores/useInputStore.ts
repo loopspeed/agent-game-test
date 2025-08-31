@@ -1,11 +1,11 @@
-import { create } from 'zustand';
+import { create } from 'zustand'
 
 interface InputState {
-  up: boolean;
-  down: boolean;
-  left: boolean;
-  right: boolean;
-  setKey: (key: 'up' | 'down' | 'left' | 'right', value: boolean) => void;
+  up: boolean
+  down: boolean
+  left: boolean
+  right: boolean
+  setKey: (key: 'up' | 'down' | 'left' | 'right', value: boolean) => void
 }
 
 export const useInputStore = create<InputState>((set) => ({
@@ -14,4 +14,4 @@ export const useInputStore = create<InputState>((set) => ({
   left: false,
   right: false,
   setKey: (key, value) => set(() => ({ [key]: value })),
-}));
+}))
