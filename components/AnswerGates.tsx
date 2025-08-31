@@ -43,7 +43,8 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ answer,
       colliders={false}
       position={position}
       userData={userData}>
-      <CuboidCollider args={[1, 1, 0.05]} sensor={true} />
+      {/* Full size of the grid square */}
+      <CuboidCollider args={[1, 1, 0.1]} sensor={true} />
 
       {/* Only render visual elements if there's an answer to display (others are "nets" to catch misses) */}
       {hasAnswer && (
@@ -199,9 +200,6 @@ const AnswerGates: FC = () => {
         <AnswerGate
           ref={(ref) => {
             gatesRefs.current[gateIndex] = ref
-            if (ref) {
-              console.warn(`Gate ${gateIndex} ref set successfully`)
-            }
           }}
           key={gateIndex}
           answer={answerMapping[gateIndex]}
