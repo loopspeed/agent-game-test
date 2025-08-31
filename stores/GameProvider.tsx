@@ -1,3 +1,4 @@
+import { Vector3Tuple } from '@react-three/rapier'
 import gsap from 'gsap'
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
@@ -23,8 +24,8 @@ export type GameState = {
   spawnInterval: number
   setSpawnInterval: (value: number) => void
 
-  playerPosition: [number, number, number]
-  setPlayerPosition: (pos: [number, number, number]) => void
+  playerPosition: Vector3Tuple
+  setPlayerPosition: (pos: Vector3Tuple) => void
 
   health: number
   streak: number
@@ -49,6 +50,29 @@ export const MAX_HEALTH = 10 as const
 
 const SLOW_MO_DURATION = 4.0
 
+const INITIAL_STATE: Pick<
+  GameState,
+  | 'stage'
+  | 'timeMultiplier'
+  | 'slowMoTimeRemaining'
+  | 'spawnInterval'
+  | 'isSlowMo'
+  | 'maxObstacles'
+  | 'streak'
+  | 'playerPosition'
+  | 'health'
+> = {
+  stage: GameStage.INTRO,
+  timeMultiplier: 1,
+  slowMoTimeRemaining: SLOW_MO_DURATION,
+  isSlowMo: false,
+  maxObstacles: 10,
+  spawnInterval: 0.8,
+  streak: 0,
+  playerPosition: [0, 0, 0] as Vector3Tuple,
+  health: MAX_HEALTH,
+}
+
 const createGameStore = () => {
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
@@ -56,13 +80,9 @@ const createGameStore = () => {
   const slowMoTimeRemainingTarget = { value: SLOW_MO_DURATION }
 
   return createStore<GameState>()((set, get) => ({
-    stage: GameStage.INTRO,
+    ...INITIAL_STATE,
     setStage: (stage: GameStage) => set({ stage }),
-
-    timeMultiplier: 1,
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
-    slowMoTimeRemaining: SLOW_MO_DURATION,
-    isSlowMo: false,
     goSlowMo: () => {
       if (get().isSlowMo) return
 
@@ -110,17 +130,9 @@ const createGameStore = () => {
           SLOW_MO_DURATION + 0.6,
         )
     },
-
-    maxObstacles: 10,
     setMaxObstacles: (maxObstacles: number) => set({ maxObstacles }),
-    spawnInterval: 0.8,
     setSpawnInterval: (spawnInterval: number) => set({ spawnInterval }),
-
-    playerPosition: [0, 0, 0],
     setPlayerPosition: (pos: [number, number, number]) => set({ playerPosition: pos }),
-
-    health: MAX_HEALTH,
-    streak: 0,
     resetHealth: () => set({ health: MAX_HEALTH }),
     onObstacleHit: () => {
       const currentHealth = get().health
@@ -144,14 +156,7 @@ const createGameStore = () => {
       }
     },
 
-    reset: () =>
-      set({
-        timeMultiplier: 1,
-        maxObstacles: 10,
-        spawnInterval: 1,
-        playerPosition: [0, 0, 0],
-        health: 10,
-      }),
+    reset: () => set(INITIAL_STATE),
   }))
 }
 

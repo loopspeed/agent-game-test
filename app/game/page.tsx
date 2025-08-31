@@ -65,13 +65,13 @@ const DebugControls: FC = () => {
         label: 'Time',
         min: 0.1,
         step: 0.1,
-        max: 4,
+        max: 2,
         value: gameStoreApi.getState().timeMultiplier,
         onChange: (value) => setTimeMultiplier(value),
       },
       maxObstacles: {
         label: 'Max Obstacles',
-        min: 4,
+        min: 5,
         step: 1,
         max: 40,
         value: gameStoreApi.getState().maxObstacles,
@@ -89,7 +89,7 @@ const DebugControls: FC = () => {
   })
 
   // Sync controls with the store state
-  const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
+  useTimeSubscription((timeMultiplier) => {
     setControls({
       time: timeMultiplier,
     })
