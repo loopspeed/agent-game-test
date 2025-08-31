@@ -1,22 +1,19 @@
 'use client'
+import { Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { useControls } from 'leva'
-import { Suspense, useEffect } from 'react'
+import { FC, Suspense, useEffect } from 'react'
 import React from 'react'
 
 import HUD from '@/components/HUD'
 import Scene from '@/components/Scene'
+import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import GameProvider, { useGameStore, useGameStoreAPI } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/inputStore'
-import { Stats } from '@react-three/drei'
 
 function GameContent() {
   const reset = useGameStore((s) => s.reset)
-  const gameStoreApi = useGameStoreAPI()
-  const setObstaclesSpeed = useGameStore((s) => s.setObstaclesSpeed)
-  const setMaxObstacles = useGameStore((s) => s.setMaxObstacles)
-  const setSpawnInterval = useGameStore((s) => s.setSpawnInterval)
 
   useEffect(() => {
     return () => {
@@ -25,33 +22,6 @@ function GameContent() {
   }, [reset])
 
   useInput()
-
-  useControls({
-    time: {
-      label: 'Obstacle Speed',
-      min: 0.1,
-      step: 0.1,
-      max: 5,
-      value: gameStoreApi.getState().obstaclesSpeed,
-      onChange: (value) => setObstaclesSpeed(value),
-    },
-    maxObstacles: {
-      label: 'Max Obstacles',
-      min: 4,
-      step: 1,
-      max: 40,
-      value: gameStoreApi.getState().maxObstacles,
-      onChange: (value) => setMaxObstacles(value),
-    },
-    spawnInterval: {
-      label: 'Spawn Interval (seconds)',
-      min: 0.1,
-      max: 5.0,
-      step: 0.1,
-      value: gameStoreApi.getState().spawnInterval,
-      onChange: (value) => setSpawnInterval(value),
-    },
-  })
 
   return (
     <main className="h-lvh w-full overflow-hidden">
@@ -62,6 +32,7 @@ function GameContent() {
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
           <Physics gravity={[0, 0, 0]} debug>
+            <DebugControls />
             <Stats />
             <Scene />
           </Physics>
@@ -80,6 +51,51 @@ export default function GamePage() {
       <GameContent />
     </GameProvider>
   )
+}
+
+const DebugControls: FC = () => {
+  const gameStoreApi = useGameStoreAPI()
+  const setTimeMultiplier = useGameStore((s) => s.setTimeMultiplier)
+  const setMaxObstacles = useGameStore((s) => s.setMaxObstacles)
+  const setSpawnInterval = useGameStore((s) => s.setSpawnInterval)
+
+  const [, setControls] = useControls('Game', () => {
+    return {
+      time: {
+        label: 'Time',
+        min: 0.1,
+        step: 0.1,
+        max: 4,
+        value: gameStoreApi.getState().timeMultiplier,
+        onChange: (value) => setTimeMultiplier(value),
+      },
+      maxObstacles: {
+        label: 'Max Obstacles',
+        min: 4,
+        step: 1,
+        max: 40,
+        value: gameStoreApi.getState().maxObstacles,
+        onChange: (value) => setMaxObstacles(value),
+      },
+      spawnInterval: {
+        label: 'Spawn Interval (seconds)',
+        min: 0.1,
+        max: 5.0,
+        step: 0.1,
+        value: gameStoreApi.getState().spawnInterval,
+        onChange: (value) => setSpawnInterval(value),
+      },
+    }
+  })
+
+  // Sync controls with the store state
+  const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
+    setControls({
+      time: timeMultiplier,
+    })
+  })
+
+  return null
 }
 
 function useInput() {

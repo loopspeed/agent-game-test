@@ -13,6 +13,7 @@ import {
   useGameStore,
   useGameStoreAPI,
 } from '@/stores/GameProvider'
+import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 
 /**
  * UNIFIED PHYSICS-BASED OBSTACLES SYSTEM
@@ -51,16 +52,18 @@ const getNewObstacleData = (isAlive: boolean): ObstacleData => {
   }
 }
 
-const getObstacleSpeed = (data: ObstacleData, obstaclesSpeed: number): number => {
-  return obstaclesSpeed * BASE_SPEED + data.speedAdjustment
+const getObstacleSpeed = (data: ObstacleData, timeMultiplier: number): number => {
+  return timeMultiplier * BASE_SPEED + data.speedAdjustment
 }
 
 const Obstacles: FC = () => {
-  const gameStoreAPI = useGameStoreAPI()
   const maxObstacles = useGameStore((s) => s.maxObstacles)
   const spawnInterval = useGameStore((s) => s.spawnInterval)
   const stage = useGameStore((s) => s.stage)
   const isPlaying = stage === GameStage.PLAYING
+
+  // Store mutable obstacle data in ref (separate from React's memo system)
+  const obstaclesData = useRef<ObstacleData[]>([])
 
   // Create obstacle instances (immutable) - these set the initial physics body positions
   const obstacleInstances = useMemo(() => {
@@ -81,9 +84,6 @@ const Obstacles: FC = () => {
 
     return instances
   }, [maxObstacles])
-
-  // Store mutable obstacle data in ref (separate from React's memo system)
-  const obstaclesData = useRef<ObstacleData[]>([])
 
   // Initialize obstacle data when maxObstacles or lanes change
   useEffect(() => {
@@ -133,28 +133,18 @@ const Obstacles: FC = () => {
     }
   }, [isPlaying])
 
-  const obstaclesSpeed = useRef(gameStoreAPI.getState().obstaclesSpeed) // Fetch initial state
-  useEffect(
-    () =>
-      // Subscribe to state changes
-      gameStoreAPI.subscribe((state, prevState) => {
-        if (!isPlaying) return
-        if (!rigidBodies.current) return
-        if (state.obstaclesSpeed === prevState.obstaclesSpeed) return
-        obstaclesSpeed.current = state.obstaclesSpeed
-
-        // Update the speed of any active obstacles
-        rigidBodies.current.forEach((body, i) => {
-          if (!body) return
-          const obstacleData = obstaclesData.current[i]
-          if (!obstacleData.isAlive) return
-          const newSpeed = getObstacleSpeed(obstacleData, obstaclesSpeed.current)
-          console.warn('Setting obstacle velocity:', newSpeed)
-          body.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
-        })
-      }),
-    [gameStoreAPI, isPlaying],
-  )
+  const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
+    if (!rigidBodies.current) return
+    // Update the speed of any active obstacles when the time changes
+    rigidBodies.current.forEach((body, i) => {
+      if (!body) return
+      const obstacleData = obstaclesData.current[i]
+      if (!obstacleData.isAlive) return
+      const newSpeed = getObstacleSpeed(obstacleData, timeMultiplier)
+      console.warn('Setting obstacle velocity:', newSpeed)
+      body.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
+    })
+  })
 
   // DEBUG: Add a simple state logger
   const frameCount = useRef(0)
@@ -164,14 +154,14 @@ const Obstacles: FC = () => {
   const gameTime = useRef(0) // Track total game time for staggered spawning
   const lastSpawnTime = useRef(0) // Track when we last spawned an obstacle
 
-  useFrame(({ camera }, delta) => {
+  useFrame(({}, delta) => {
     frameCount.current++
     if (!rigidBodies.current || !isPlaying) {
       return
     }
 
     // Update game time for staggered spawning
-    gameTime.current += delta
+    gameTime.current += delta * timeMultiplier.current
     const obstacles = obstaclesData.current
 
     // Controlled spawning: find first dead obstacle and spawn it based on spawnInterval
@@ -186,7 +176,7 @@ const Obstacles: FC = () => {
         console.log(`SPAWN OBSTACLE ${deadObstacleIndex}`)
 
         const newData = getNewObstacleData(true)
-        const newSpeed = getObstacleSpeed(newData, obstaclesSpeed.current)
+        const newSpeed = getObstacleSpeed(newData, timeMultiplier.current)
         // Position the body at spawn location (this should make it visible)
         body.setTranslation({ x: newData.x, y: newData.y, z: newData.z }, true)
         // Using setLinvel for consistent, even-paced movement

@@ -18,6 +18,7 @@ import {
   useGameStoreAPI,
 } from '@/stores/GameProvider'
 import { useQuestionStore } from '@/stores/questionStore'
+import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 
 type AnswerGateProps = {
   position: [number, number, number]
@@ -100,24 +101,14 @@ const AnswerGates: FC = () => {
   const isSlowMo = useGameStore((s) => s.isSlowMo)
   const goSlowMo = useGameStore((s) => s.goSlowMo)
 
-  const gameStoreAPI = useGameStoreAPI()
-  const obstaclesSpeed = useRef(gameStoreAPI.getState().obstaclesSpeed) // Fetch initial state
-  useEffect(
-    () =>
-      // Subscribe to state changes
-      gameStoreAPI.subscribe((state, prevState) => {
-        if (!isPlaying) return
-        if (state.obstaclesSpeed === prevState.obstaclesSpeed) return
-        obstaclesSpeed.current = state.obstaclesSpeed
-        gatesRefs.current.forEach((gate, index) => {
-          if (!gate) return // Check for null ref
-          const newSpeed = state.obstaclesSpeed * BASE_SPEED
-          console.warn('Setting gate velocity:', { index, newSpeed })
-          gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
-        })
-      }),
-    [gameStoreAPI, isPlaying],
-  )
+  const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
+    gatesRefs.current.forEach((gate, index) => {
+      if (!gate) return // Check for null ref
+      const newSpeed = timeMultiplier * BASE_SPEED
+      console.warn('Updating answer speed:', { index, newSpeed })
+      gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
+    })
+  })
 
   // Set velocity once when gates are created or speed changes
   useEffect(() => {
@@ -129,7 +120,7 @@ const AnswerGates: FC = () => {
         try {
           const position = gatePositions[index]
           gate.setTranslation({ x: position[0], y: position[1], z: SPAWN_OBSTACLE_Z }, true)
-          gate.setLinvel({ x: 0, y: 0, z: BASE_SPEED * obstaclesSpeed.current }, true)
+          gate.setLinvel({ x: 0, y: 0, z: BASE_SPEED * timeMultiplier.current }, true)
         } catch (error) {
           console.warn(`Failed to set velocity for gate ${index}:`, error)
         }
@@ -139,7 +130,7 @@ const AnswerGates: FC = () => {
     if (isPlaying) {
       resetGatePositions()
     }
-  }, [isPlaying, currentQuestion, obstaclesSpeed])
+  }, [isPlaying, currentQuestion, timeMultiplier])
 
   // Check lifecycle only
   useFrame(() => {

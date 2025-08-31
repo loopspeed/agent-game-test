@@ -12,8 +12,8 @@ export type GameState = {
   stage: GameStage
   setStage: (stage: GameStage) => void
 
-  obstaclesSpeed: number
-  setObstaclesSpeed: (value: number) => void
+  timeMultiplier: number
+  setTimeMultiplier: (value: number) => void
   slowMoTimeRemaining: number
   isSlowMo: boolean
   goSlowMo: () => void
@@ -55,15 +55,15 @@ const createGameStore = () => {
 
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
-  const speedTweenTarget = { value: 1 }
+  const timeTweenTarget = { value: 1 }
   const slowMoTimeRemainingTarget = { value: SLOW_MO_DURATION }
 
   return createStore<GameState>()((set, get) => ({
     stage: GameStage.INTRO,
     setStage: (stage: GameStage) => set({ stage }),
 
-    obstaclesSpeed: 1,
-    setObstaclesSpeed: (obstaclesSpeed: number) => set({ obstaclesSpeed }),
+    timeMultiplier: 1,
+    setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
     slowMoTimeRemaining: SLOW_MO_DURATION,
     isSlowMo: false,
     goSlowMo: () => {
@@ -83,23 +83,23 @@ const createGameStore = () => {
           },
         })
         // Slow down..
-        .to(speedTweenTarget, {
+        .to(timeTweenTarget, {
           duration: 0.4,
           ease: 'power1.out',
           value: 0.08,
           onUpdate: () => {
-            set({ obstaclesSpeed: speedTweenTarget.value })
+            set({ timeMultiplier: timeTweenTarget.value })
           },
         })
         // Speed back up again.
         .to(
-          speedTweenTarget,
+          timeTweenTarget,
           {
             duration: 0.4,
             ease: 'power1.in',
             value: 1.0,
             onUpdate: () => {
-              set({ obstaclesSpeed: speedTweenTarget.value })
+              set({ timeMultiplier: timeTweenTarget.value })
             },
           },
           SLOW_MO_DURATION,
@@ -153,7 +153,7 @@ const createGameStore = () => {
 
     reset: () =>
       set({
-        obstaclesSpeed: 1,
+        timeMultiplier: 1,
         maxObstacles: 10,
         spawnInterval: 1,
         playerPosition: [0, 0, 0],

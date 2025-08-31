@@ -38,7 +38,7 @@ const ReadyButton: FC = () => {
 
 const SlowMoBar: FC = () => {
   return (
-    <div className="absolute top-4 h-4 w-40 overflow-hidden rounded-full border">
+    <div className="absolute top-4 h-4 w-40 overflow-hidden rounded-full bg-white/20">
       <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500" />
     </div>
   )
