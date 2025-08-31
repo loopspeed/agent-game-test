@@ -56,14 +56,18 @@ const Health: FC = () => {
   const showHealth = stage === GameStage.PLAYING
   if (!showHealth) return null
 
+  // Determine health bar color based on current health level
+  const getHealthColor = (): string => {
+    if (health >= 4) return 'bg-green-500' // High health (4-5)
+    if (health === 3) return 'bg-amber-500' // Medium health (3)
+    return 'bg-red-700' // Low health (1-2)
+  }
+
   return (
-    <div className="absolute bottom-4 flex items-center gap-2">
-      <span className="text-sm font-medium">Health</span>
-      <div className="flex gap-1">
-        {Array.from({ length: MAX_HEALTH }, (_, i) => (
-          <div key={i} className={`size-3 rounded-full ${i < health ? 'bg-red-500' : 'bg-white/40'}`} />
-        ))}
-      </div>
+    <div className="absolute bottom-6 flex gap-0.5 overflow-hidden rounded-full">
+      {Array.from({ length: MAX_HEALTH }, (_, i) => (
+        <div key={i} className={`h-4 w-6 ${i < health ? getHealthColor() : 'bg-white/30'}`} />
+      ))}
     </div>
   )
 }
