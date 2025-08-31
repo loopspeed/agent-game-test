@@ -72,12 +72,12 @@ const Question: FC = () => {
 
   return (
     // TODO: SwitchTransition on the question text
-    <div className="absolute top-0 flex max-w-2xl flex-col gap-3 bg-black/70 p-5 text-center text-3xl leading-relaxed font-bold">
-      <span>
+    <div className="absolute top-0 flex max-w-2xl flex-col bg-black/70 text-center text-3xl leading-relaxed font-bold">
+      <p className="px-6 py-5 text-balance">
         {questionIndex + 1}. {currentQuestion.question}
-      </span>
+      </p>
 
-      <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/20">
+      <div className="relative h-2 w-full overflow-hidden bg-white/20">
         <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
       </div>
     </div>

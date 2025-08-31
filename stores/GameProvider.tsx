@@ -47,9 +47,10 @@ export type GameState = {
 type GameStateStore = StoreApi<GameState>
 const GameContext = createContext<GameStateStore>(undefined!)
 
-export const GRID_SQUARE_SIZE_M = 1.8 // Meters
+export const GRID_SQUARE_SIZE_M = 1.6 // Meters
+export const LANES_Y_OFFSET = -0.6 // Move them down to avoid question
 export const LANES_X = [-1, 0, 1].map((x) => x * GRID_SQUARE_SIZE_M)
-export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M)
+export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M + LANES_Y_OFFSET)
 
 export const SPAWN_OBSTACLE_Z = -20 as const
 export const KILL_OBSTACLE_Z = 2 as const

@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import AnswerGates from '@/components/AnswerGates'
 import Obstacles from '@/components/Obstacles'
 import Player from '@/components/Player'
-import { GRID_SQUARE_SIZE_M } from '@/stores/GameProvider'
+import { GRID_SQUARE_SIZE_M, LANES_Y_OFFSET } from '@/stores/GameProvider'
 
 const Scene: FC = () => {
   // Example of reading player position
@@ -15,7 +15,6 @@ const Scene: FC = () => {
   return (
     <>
       <ambientLight intensity={2} />
-      <directionalLight position={[5, 10, 7.5]} intensity={1} />
 
       <Obstacles />
 
@@ -26,7 +25,7 @@ const Scene: FC = () => {
       <gridHelper
         args={[GRID_SQUARE_SIZE_M * 3, 3]}
         rotation={[Math.PI / 2, 0, 0]}
-        position={[0, 0, 0]}
+        position={[0, LANES_Y_OFFSET, 0]}
         material={new THREE.LineBasicMaterial({ color: 0x555555 })}
       />
     </>

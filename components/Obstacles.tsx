@@ -21,9 +21,10 @@ const getNewObstacleData = ({ isAlive }: { isAlive: boolean }): ObstacleData => 
   // Random lane
   const ix = Math.floor(Math.random() * LANES_X.length)
   const iy = Math.floor(Math.random() * LANES_Y.length)
+  const offCenterAmount = Math.random() * 0.2 - 0.1 // Random offset between -0.1 and 0.1
   return {
-    x: LANES_X[ix],
-    y: LANES_Y[iy],
+    x: LANES_X[ix] + offCenterAmount,
+    y: LANES_Y[iy] + offCenterAmount,
     z: SPAWN_OBSTACLE_Z,
     isAlive,
     speedAdjustment: Math.random() * 2.0 - 1.0, // -1.0 to +1.0
