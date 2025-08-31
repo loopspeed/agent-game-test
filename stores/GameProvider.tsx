@@ -1,4 +1,4 @@
-import { Vector3Tuple } from '@react-three/rapier'
+import { type Vector3Tuple } from '@react-three/rapier'
 import gsap from 'gsap'
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
