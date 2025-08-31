@@ -38,75 +38,74 @@ const Player: FC = () => {
     right: false,
   })
 
+  const { contextSafe } = useGSAP({})
+
   // Intersection handler for sensor collisions
-  const onIntersectionEnter: IntersectionEnterHandler = useCallback(
-    (e) => {
-      const { other } = e
+  const onIntersectionEnter: IntersectionEnterHandler = contextSafe((e) => {
+    const { other } = e
 
-      console.warn('Player intersected', { e })
-      const otherRB = other.rigidBody
-      if (!otherRB?.userData) throw new Error('No userData on other rigid body')
+    console.warn('Player intersected', { e })
+    const otherRB = other.rigidBody
+    if (!otherRB?.userData) throw new Error('No userData on other rigid body')
 
-      const userData = otherRB.userData as RigidBodyUserData
-      const isObstacle = userData.type === 'obstacle'
-      const isAnswerGate = userData.type === 'answerGate'
+    const userData = otherRB.userData as RigidBodyUserData
+    const isObstacle = userData.type === 'obstacle'
+    const isAnswerGate = userData.type === 'answerGate'
 
-      const defaultColor = new THREE.Color('#fff')
+    const defaultColor = new THREE.Color('#fff')
 
-      const handleBadHit = () => {
-        const badColor = new THREE.Color('#f00')
-        gsap.to(materialRef.current!.color, {
-          r: badColor.r,
-          g: badColor.g,
-          b: badColor.b,
-          duration: 0.2,
-          onComplete: () => {
-            gsap.to(materialRef.current!.color, {
-              r: defaultColor.r,
-              g: defaultColor.g,
-              b: defaultColor.b,
-              duration: 0.2,
-              delay: 0.3,
-            })
-          },
-        })
-      }
+    const handleBadHit = () => {
+      const badColor = new THREE.Color('#f00')
+      gsap.to(materialRef.current!.color, {
+        r: badColor.r,
+        g: badColor.g,
+        b: badColor.b,
+        duration: 0.2,
+        onComplete: () => {
+          gsap.to(materialRef.current!.color, {
+            r: defaultColor.r,
+            g: defaultColor.g,
+            b: defaultColor.b,
+            duration: 0.2,
+            delay: 0.3,
+          })
+        },
+      })
+    }
 
-      const handleGoodHit = () => {
-        const goodColor = new THREE.Color('#4ade80')
-        gsap.to(materialRef.current!.color, {
-          r: goodColor.r,
-          g: goodColor.g,
-          b: goodColor.b,
-          duration: 0.2,
-          onComplete: () => {
-            gsap.to(materialRef.current!.color, {
-              r: defaultColor.r,
-              g: defaultColor.g,
-              b: defaultColor.b,
-              duration: 0.2,
-              delay: 0.3,
-            })
-          },
-        })
-      }
+    const handleGoodHit = () => {
+      const goodColor = new THREE.Color('#4ade80')
+      gsap.to(materialRef.current!.color, {
+        r: goodColor.r,
+        g: goodColor.g,
+        b: goodColor.b,
+        duration: 0.2,
+        onComplete: () => {
+          gsap.to(materialRef.current!.color, {
+            r: defaultColor.r,
+            g: defaultColor.g,
+            b: defaultColor.b,
+            duration: 0.2,
+            delay: 0.3,
+          })
+        },
+      })
+    }
 
-      if (isObstacle) {
-        console.warn('Player hit obstacle', userData)
-        onObstacleHit()
-        handleBadHit()
-      }
+    if (isObstacle) {
+      console.warn('Player hit obstacle', userData)
+      onObstacleHit()
+      handleBadHit()
+    }
 
-      if (isAnswerGate) {
-        console.warn('Player hit answer gate', userData)
-        const isCorrect = userData.isCorrect
-        onAnswerHit(isCorrect)
-        if (isCorrect) handleGoodHit()
-        else handleBadHit()
-      }
-    },
-    [onObstacleHit, onAnswerHit],
-  )
+    if (isAnswerGate) {
+      console.warn('Player hit answer gate', userData)
+      const isCorrect = userData.isCorrect
+      onAnswerHit(isCorrect)
+      if (isCorrect) handleGoodHit()
+      else handleBadHit()
+    }
+  })
 
   // set the initial position once when the body is created
   useEffect(() => {
