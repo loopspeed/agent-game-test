@@ -63,7 +63,11 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
       position={position}
       userData={userData}>
       {/* Full size of the grid square */}
-      <CuboidCollider args={[1, 1, 0.05]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
+      <CuboidCollider
+        args={[GRID_SQUARE_SIZE_M / 2, GRID_SQUARE_SIZE_M / 2, 0.05]}
+        sensor={true}
+        onIntersectionEnter={onIntersectionEnter}
+      />
 
       {/* Only render visual elements if there's an answer to display (others are "nets" to catch misses) */}
       {!!answer && (

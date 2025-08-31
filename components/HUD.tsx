@@ -67,12 +67,15 @@ const Health: FC = () => {
 }
 
 const Question: FC = () => {
+  const questionIndex = useGameStore((s) => s.currentQuestionIndex)
   const currentQuestion = useGameStore((s) => s.currentQuestion)
-  const questionId = currentQuestion.id
 
   return (
-    <div className="absolute top-0 flex max-w-lg flex-col gap-3 bg-black/70 p-5 text-center text-3xl leading-relaxed font-bold">
-      <span>{currentQuestion.question}</span>
+    // TODO: SwitchTransition on the question text
+    <div className="absolute top-0 flex max-w-2xl flex-col gap-3 bg-black/70 p-5 text-center text-3xl leading-relaxed font-bold">
+      <span>
+        {questionIndex + 1}. {currentQuestion.question}
+      </span>
 
       <div className="relative h-2 w-full overflow-hidden rounded-full bg-white/20">
         <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />

@@ -47,7 +47,7 @@ export type GameState = {
 type GameStateStore = StoreApi<GameState>
 const GameContext = createContext<GameStateStore>(undefined!)
 
-export const GRID_SQUARE_SIZE_M = 2 // Meters
+export const GRID_SQUARE_SIZE_M = 1.8 // Meters
 export const LANES_X = [-1, 0, 1].map((x) => x * GRID_SQUARE_SIZE_M)
 export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M)
 
