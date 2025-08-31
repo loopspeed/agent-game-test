@@ -128,8 +128,8 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
         })
         // Slow down..
         .to(timeTweenTarget, {
-          duration: 0.6,
-          ease: 'power3.out',
+          duration: 0.5,
+          ease: 'power2.out',
           value: 0.1,
           onUpdate: () => {
             set({ timeMultiplier: timeTweenTarget.value })
@@ -172,7 +172,7 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
     onAnswerHit: (isCorrect: boolean, answerId: string) => {
       const currentHealth = get().health
       const currentQuestion = get().currentQuestion
-      
+
       // Record the answer hit
       const answerHit: AnswerHit = {
         questionId: currentQuestion.id,
@@ -180,23 +180,23 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
         isCorrect,
         timestamp: Date.now(),
       }
-      
+
       if (isCorrect) {
         const newHealth = Math.min(currentHealth + 1, MAX_HEALTH)
-        set((s) => ({ 
-          streak: s.streak + 1, 
+        set((s) => ({
+          streak: s.streak + 1,
           health: newHealth,
-          answersHit: [...s.answersHit, answerHit]
+          answersHit: [...s.answersHit, answerHit],
         }))
       } else {
         const newHealth = Math.max(currentHealth - 1, 0)
         if (newHealth === 0) {
           // Handle game over logic here
         }
-        set((s) => ({ 
-          streak: 0, 
+        set((s) => ({
+          streak: 0,
           health: newHealth,
-          answersHit: [...s.answersHit, answerHit]
+          answersHit: [...s.answersHit, answerHit],
         }))
       }
     },
@@ -210,11 +210,12 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
       })
     },
 
-    reset: () => set({
-      ...INITIAL_STATE,
-      currentQuestion: questions[0],
-      answerGatesMapping: mapAnswersToGatePositions(questions),
-    }),
+    reset: () =>
+      set({
+        ...INITIAL_STATE,
+        currentQuestion: questions[0],
+        answerGatesMapping: mapAnswersToGatePositions(questions),
+      }),
   }))
 }
 
