@@ -101,9 +101,16 @@ const Player: FC = () => {
       console.warn('Player hit answer gate', userData)
       const isCorrect = userData.isCorrect
       const answerId = userData.answerId
-      onAnswerHit(isCorrect, answerId)
-      if (isCorrect) handleGoodHit()
-      else handleBadHit()
+
+      // Handle miss case (empty answer gate)
+      if (!answerId) {
+        onAnswerHit(false, null)
+        handleBadHit()
+      } else {
+        onAnswerHit(isCorrect, answerId)
+        if (isCorrect) handleGoodHit()
+        else handleBadHit()
+      }
     }
   })
 

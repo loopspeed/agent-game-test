@@ -2,6 +2,7 @@
 
 import { type FC, useEffect } from 'react'
 
+import { type Question, SAMPLE_QUESTIONS } from '@/data/questions'
 import { GameStage, MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
 
 const HUD: FC = () => {
@@ -93,10 +94,82 @@ const Question: FC = () => {
   )
 }
 
+// MF: this is all AI trollop not reviewed or tested....
 const GameOverUI: FC = () => {
+  const answersHit = useGameStore((s) => s.answersHit)
+  const questions = SAMPLE_QUESTIONS
+
   return (
-    <div className="flex max-w-2xl flex-col bg-black text-center text-3xl leading-relaxed font-bold">
-      <p className="px-2 py-5">Game Over</p>
+    <div className="flex max-w-4xl flex-col bg-black/90 text-center leading-relaxed">
+      <div className="px-6 py-8">
+        <h1 className="mb-8 text-4xl font-bold text-white">Game Over</h1>
+
+        <div className="space-y-6">
+          <h2 className="text-2xl font-semibold text-white">Question Summary</h2>
+
+          <div className="max-h-96 space-y-4 overflow-y-auto">
+            {questions.map((question: Question, index: number) => {
+              const answerForQuestion = answersHit.find((hit) => hit.questionId === question.id)
+              const selectedAnswer = answerForQuestion?.answerId
+                ? question.answers.find((a) => a.id === answerForQuestion.answerId)
+                : null
+
+              return (
+                <div key={question.id} className="rounded-lg bg-white/10 p-4 text-left">
+                  <div className="flex items-start gap-4">
+                    {/* Status indicator */}
+                    <div className="mt-1 flex-shrink-0">
+                      {!answerForQuestion ? (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-500">
+                          <span className="text-xs font-bold text-white">?</span>
+                        </div>
+                      ) : answerForQuestion.answerId === null ? (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500">
+                          <span className="text-xs font-bold text-white">M</span>
+                        </div>
+                      ) : answerForQuestion.isCorrect ? (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500">
+                          <span className="text-xs font-bold text-white">✓</span>
+                        </div>
+                      ) : (
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500">
+                          <span className="text-xs font-bold text-white">✗</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Question content */}
+                    <div className="flex-1">
+                      <p className="mb-2 font-medium text-white">
+                        {index + 1}. {question.question}
+                      </p>
+
+                      <div className="text-sm">
+                        {!answerForQuestion ? (
+                          <span className="text-gray-400">Not answered</span>
+                        ) : answerForQuestion.answerId === null ? (
+                          <span className="text-yellow-400">Miss - hit empty gate</span>
+                        ) : (
+                          <span className={answerForQuestion.isCorrect ? 'text-green-400' : 'text-red-400'}>
+                            Your answer: {selectedAnswer?.label}
+                            {answerForQuestion.isCorrect ? ' (Correct!)' : ' (Incorrect)'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="border-t border-white/20 pt-4">
+            <p className="text-lg text-white">
+              Score: {answersHit.filter((hit) => hit.isCorrect).length} / {questions.length}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

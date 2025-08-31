@@ -13,7 +13,7 @@ export enum GameStage {
 
 export type AnswerHit = {
   questionId: string
-  answerId: string
+  answerId: string | null // null for misses
   isCorrect: boolean
   timestamp: number
 }
@@ -40,7 +40,7 @@ export type GameState = {
   streak: number
   resetHealth: () => void
   onObstacleHit: () => void
-  onAnswerHit: (isCorrect: boolean, answerId: string) => void
+  onAnswerHit: (isCorrect: boolean, answerId: string | null) => void
 
   // Answer tracking
   answersHit: AnswerHit[]
@@ -170,7 +170,7 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
       }
       set({ health: newHealth })
     },
-    onAnswerHit: (isCorrect: boolean, answerId: string) => {
+    onAnswerHit: (isCorrect: boolean, answerId: string | null) => {
       const currentHealth = get().health
       const currentQuestion = get().currentQuestion
 
@@ -207,7 +207,12 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
     },
     goToNextQuestion: () => {
       set((state) => {
-        const nextIndex = (state.currentQuestionIndex + 1) % questions.length
+        // If it's the end, complete the game
+        const nextIndex = state.currentQuestionIndex + 1
+        if (nextIndex >= questions.length) {
+          // Handle game completion logic here
+          return { stage: GameStage.GAME_OVER }
+        }
         return { currentQuestionIndex: nextIndex, currentQuestion: questions[nextIndex] }
       })
     },
