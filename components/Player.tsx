@@ -9,7 +9,7 @@ import { type FC, useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
 import { type RigidBodyUserData } from '@/model/game'
-import { LANES_X, LANES_Y, MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
+import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/inputStore'
 
 gsap.registerPlugin(useGSAP)
@@ -17,8 +17,6 @@ gsap.registerPlugin(useGSAP)
 const Player: FC = () => {
   const input = useInputStore()
 
-  const health = useGameStore((s) => s.health)
-  const prevHealth = usePrevious(health)
   const setPlayerPosition = useGameStore((s) => s.setPlayerPosition)
   const onObstacleHit = useGameStore((s) => s.onObstacleHit)
   const onAnswerHit = useGameStore((s) => s.onAnswerHit)
@@ -53,34 +51,62 @@ const Player: FC = () => {
       const isObstacle = userData.type === 'obstacle'
       const isAnswerGate = userData.type === 'answerGate'
 
+      const defaultColor = new THREE.Color('#fff')
+
+      const handleBadHit = () => {
+        const badColor = new THREE.Color('#f00')
+        gsap.to(materialRef.current!.color, {
+          r: badColor.r,
+          g: badColor.g,
+          b: badColor.b,
+          duration: 0.2,
+          onComplete: () => {
+            gsap.to(materialRef.current!.color, {
+              r: defaultColor.r,
+              g: defaultColor.g,
+              b: defaultColor.b,
+              duration: 0.2,
+              delay: 0.3,
+            })
+          },
+        })
+      }
+
+      const handleGoodHit = () => {
+        const goodColor = new THREE.Color('#4ade80')
+        gsap.to(materialRef.current!.color, {
+          r: goodColor.r,
+          g: goodColor.g,
+          b: goodColor.b,
+          duration: 0.2,
+          onComplete: () => {
+            gsap.to(materialRef.current!.color, {
+              r: defaultColor.r,
+              g: defaultColor.g,
+              b: defaultColor.b,
+              duration: 0.2,
+              delay: 0.3,
+            })
+          },
+        })
+      }
+
       if (isObstacle) {
         console.warn('Player hit obstacle', userData)
         onObstacleHit()
-        return
+        handleBadHit()
       }
 
       if (isAnswerGate) {
         console.warn('Player hit answer gate', userData)
         const isCorrect = userData.isCorrect
         onAnswerHit(isCorrect)
+        if (isCorrect) handleGoodHit()
+        else handleBadHit()
       }
     },
     [onObstacleHit, onAnswerHit],
   )
-
-  // Handle health changes
-  useDidUpdate(() => {
-    // TODO: fix issues with this.
-    const hasIncreased = health > (prevHealth ?? MAX_HEALTH)
-    if (hasIncreased) {
-      // Handle health increase (e.g., play sound, show effect)
-      gsap.to(materialRef.current!, { color: 'green', duration: 0.3, yoyo: true, repeat: 1 })
-    } else {
-      // Handle health decrease (e.g., play sound, show effect)
-      gsap.to(materialRef.current!, { color: '#f87171', duration: 0.3, yoyo: true, repeat: 1 })
-      gsap.to(materialRef.current!, { opacity: 0.5, duration: 0.4, yoyo: true, repeat: 1 })
-    }
-  }, [health])
 
   // set the initial position once when the body is created
   useEffect(() => {
@@ -134,7 +160,10 @@ const Player: FC = () => {
       gravityScale={0}
       sensor={true}
       canSleep={false}
-      onIntersectionEnter={onIntersectionEnter}>
+      onIntersectionEnter={onIntersectionEnter}
+      userData={{
+        type: 'player',
+      }}>
       <mesh>
         <boxGeometry args={[0.6, 0.3, 0.6]} />
         <meshBasicMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={1} />

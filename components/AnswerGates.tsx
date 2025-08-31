@@ -2,12 +2,13 @@
 
 import { Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { CuboidCollider, RapierRigidBody, RigidBody } from '@react-three/rapier'
+import { CuboidCollider, IntersectionEnterPayload, RapierRigidBody, RigidBody } from '@react-three/rapier'
+import gsap from 'gsap'
 import React, { type FC, useEffect, useRef } from 'react'
 
 import type { Answer } from '@/data/questions'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { type AnswerGateUserData } from '@/model/game'
+import { type AnswerGateUserData, RigidBodyUserData } from '@/model/game'
 import {
   GameStage,
   GRID_SQUARE_SIZE_M,
@@ -34,6 +35,27 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ answer,
     isCorrect: answer?.isCorrect ?? false,
   }
 
+  const material = useRef(null)
+
+  const onIntersectionEnter = (e: IntersectionEnterPayload) => {
+    if (!e.other?.rigidBody?.userData) throw new Error('Invalid userData')
+    const { type } = e.other.rigidBody.userData as RigidBodyUserData
+
+    // Basic flash for now
+    if (type === 'player') {
+      gsap.to(material.current, {
+        opacity: 1.0,
+        duration: 0.2,
+        onComplete: () => {
+          gsap.to(material.current, {
+            opacity: 0.4,
+            duration: 0.2,
+          })
+        },
+      })
+    }
+  }
+
   return (
     <RigidBody
       ref={ref}
@@ -44,7 +66,7 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ answer,
       position={position}
       userData={userData}>
       {/* Full size of the grid square */}
-      <CuboidCollider args={[1, 1, 0.1]} sensor={true} />
+      <CuboidCollider args={[1, 1, 0.05]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
 
       {/* Only render visual elements if there's an answer to display (others are "nets" to catch misses) */}
       {hasAnswer && (
@@ -52,7 +74,12 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ answer,
           {/* Flat box container */}
           <mesh>
             <boxGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M, 0.1]} />
-            <meshStandardMaterial color={answer.isCorrect ? '#4ade80' : '#f87171'} transparent opacity={0.4} />
+            <meshStandardMaterial
+              ref={material}
+              color={answer.isCorrect ? '#4ade80' : '#f87171'}
+              transparent
+              opacity={0.4}
+            />
           </mesh>
           {/* Answer text */}
           <Text

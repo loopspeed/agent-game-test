@@ -9,4 +9,8 @@ export type AnswerGateUserData = {
   isCorrect: boolean
 }
 
-export type RigidBodyUserData = ObstacleUserData | AnswerGateUserData
+export type PlayerUserData = {
+  type: 'player'
+}
+
+export type RigidBodyUserData = ObstacleUserData | AnswerGateUserData | PlayerUserData

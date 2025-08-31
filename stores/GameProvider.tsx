@@ -48,7 +48,7 @@ export const KILL_OBSTACLE_Z = 2 as const
 
 export const MAX_HEALTH = 10 as const
 
-const SLOW_MO_DURATION = 4.0
+const SLOW_MO_DURATION = 2.0
 
 const INITIAL_STATE: Pick<
   GameState,
