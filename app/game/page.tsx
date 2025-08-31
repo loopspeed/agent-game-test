@@ -1,11 +1,12 @@
 'use client'
 import { CameraShakeProps, Stats } from '@react-three/drei'
+import { CameraShake } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { useControls } from 'leva'
 import { FC, Suspense, useEffect } from 'react'
 import React from 'react'
-import { CameraShake } from '@react-three/drei'
+
 import HUD from '@/components/HUD'
 import Scene from '@/components/Scene'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
@@ -32,7 +33,7 @@ function GameContent() {
         <CameraMovement />
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
-          <Physics gravity={[0, 0, 0]} debug>
+          <Physics gravity={[0, 0, 0]} debug={false}>
             <DebugControls />
             <Stats />
             <Scene />

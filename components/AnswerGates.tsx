@@ -2,12 +2,12 @@
 
 import { Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { CuboidCollider, IntersectionEnterPayload, RapierRigidBody, RigidBody } from '@react-three/rapier'
+import { CuboidCollider, type IntersectionEnterPayload, RapierRigidBody, RigidBody } from '@react-three/rapier'
 import gsap from 'gsap'
 import React, { type FC, useEffect, useRef } from 'react'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { type AnswerGateUserData, RigidBodyUserData } from '@/model/game'
+import { type AnswerGateUserData, type RigidBodyUserData } from '@/model/game'
 import {
   GameStage,
   GRID_SQUARE_SIZE_M,
@@ -43,11 +43,11 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
     if (type === 'player') {
       gsap.to(material.current, {
         opacity: 1.0,
-        duration: 0.2,
+        duration: 0.16,
         onComplete: () => {
           gsap.to(material.current, {
             opacity: 0.4,
-            duration: 0.2,
+            duration: 0.12,
           })
         },
       })
@@ -117,7 +117,7 @@ const generateGatePositions = (): [number, number, number][] => {
 
 const gatePositions = generateGatePositions()
 
-const BASE_SPEED = 5.0
+const GATES_SPEED = 5.5
 
 const AnswerGates: FC = () => {
   const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
@@ -132,25 +132,21 @@ const AnswerGates: FC = () => {
   const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
     gatesRefs.current.forEach((gate) => {
       if (!gate) return // Check for null ref
-      const newSpeed = timeMultiplier * BASE_SPEED
+      const newSpeed = timeMultiplier * GATES_SPEED
       gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
     })
   })
 
   // Set velocity once when gates are created or speed changes
   useEffect(() => {
-    const currentGates = gatesRefs.current // Capture refs at effect creation time
+    const gates = gatesRefs.current // Capture refs at effect creation time
 
     const resetGatePositions = () => {
-      currentGates.forEach((gate, index) => {
+      gates.forEach((gate, index) => {
         if (!gate) return // Check for null ref
-        try {
-          const position = gatePositions[index]
-          gate.setTranslation({ x: position[0], y: position[1], z: SPAWN_OBSTACLE_Z }, true)
-          gate.setLinvel({ x: 0, y: 0, z: BASE_SPEED * timeMultiplier.current }, true)
-        } catch (error) {
-          console.warn(`Failed to set velocity for gate ${index}:`, error)
-        }
+        const position = gatePositions[index]
+        gate.setLinvel({ x: 0, y: 0, z: GATES_SPEED * timeMultiplier.current }, false)
+        gate.setTranslation({ x: position[0], y: position[1], z: SPAWN_OBSTACLE_Z - 2 }, false)
       })
     }
 
@@ -162,6 +158,7 @@ const AnswerGates: FC = () => {
   // Check lifecycle only
   useFrame(() => {
     if (!isPlaying) return
+    if (isRespawning.current) return
     // Check if gates have passed the kill zone and move to next question
     const firstGate = gatesRefs.current[0]
     if (!firstGate) return
@@ -169,14 +166,22 @@ const AnswerGates: FC = () => {
     const firstGateTranslationZ = firstGate.translation().z
     const gatesNeedKilling = firstGateTranslationZ > KILL_OBSTACLE_Z
 
-    if (gatesNeedKilling && !isRespawning.current) {
+    if (gatesNeedKilling) {
       console.warn('Going to next question', { firstGateTranslationZ })
       isRespawning.current = true
+
+      gatesRefs.current!.forEach((gate) => {
+        // Reset positions and stop movement
+        if (!gate) return
+        gate.setLinvel({ x: 0, y: 0, z: 0 }, false)
+        gate.setTranslation({ x: 0, y: 0, z: -1000 }, false)
+      })
+
       goToNextQuestion()
       // Reset the flag after a short delay to allow for next cycle
       setTimeout(() => {
         isRespawning.current = false
-      }, 500)
+      }, 1000)
       return
     }
 

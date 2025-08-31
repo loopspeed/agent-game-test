@@ -1,9 +1,8 @@
 'use client'
 import { useFrame } from '@react-three/fiber'
 import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBody } from '@react-three/rapier'
-import { type FC, useLayoutEffect, useRef, useState } from 'react'
+import { type FC, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
-import { Answer } from '@/data/questions'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { ObstacleUserData } from '@/model/game'
 import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/GameProvider'
@@ -16,44 +15,43 @@ type ObstacleData = {
   speedAdjustment: number // Random speed adjustment so they don't all move at the same speed
 }
 
-const BASE_SPEED = 10.0
+const OBSTACLE_SPEED = 12.0
+const totalLanes = LANES_X.length * LANES_Y.length
 
-const getNewObstacleData = ({
-  isAlive,
-  answerMapping,
-}: {
-  isAlive: boolean
-  answerMapping: (Answer | null)[]
-}): ObstacleData => {
-  let ix: number, iy: number, gridIndex: number
-  let attempts = 0
-  const maxAttempts = 12 // Prevent infinite loop
-  // Prevent the obstacle spawning in a lane with an existing answer
-  do {
-    // Random lane
-    ix = Math.floor(Math.random() * LANES_X.length)
-    iy = Math.floor(Math.random() * LANES_Y.length)
-    // Calculate grid index: y * width + x (3x3 grid)
-    gridIndex = iy * LANES_X.length + ix
-    attempts++
-  } while (
-    answerMapping &&
-    answerMapping[gridIndex] !== null && // Lane has an answer
-    attempts < maxAttempts
-  )
+const getNewObstacleData = ({ isAlive, lanesToAvoid }: { isAlive: boolean; lanesToAvoid: number[] }): ObstacleData => {
+  let gridIndex: number
+  const availableLanes: number[] = []
 
-  const offCenterAmount = Math.random() * 0.2 - 0.1 // Random offset between -0.1 and 0.1
+  for (let i = 0; i < totalLanes; i++) {
+    if (!lanesToAvoid.includes(i)) {
+      availableLanes.push(i)
+    }
+  }
+
+  if (availableLanes.length === 0) {
+    throw new Error('No available lanes to spawn obstacle')
+  } else {
+    // Pick a random available lane
+    const randomAvailableIndex = Math.floor(Math.random() * availableLanes.length)
+    gridIndex = availableLanes[randomAvailableIndex]
+  }
+
+  // Convert grid index back to x,y coordinates
+  const iy = Math.floor(gridIndex / LANES_X.length)
+  const ix = gridIndex % LANES_X.length
+
+  const offCenterAmount = Math.random() * 0.2 - 0.1 // Random offset between -0.1 and 0.1 to add variation
   return {
     x: LANES_X[ix] + offCenterAmount,
     y: LANES_Y[iy] + offCenterAmount,
     z: SPAWN_OBSTACLE_Z,
     isAlive,
-    speedAdjustment: Math.random() * 2.0 - 1.0, // -1.0 to +1.0
+    speedAdjustment: Math.random() * 4.0 - 2.0, // -2.0 to +2.0
   }
 }
 
 const getObstacleSpeed = (data: ObstacleData, timeMultiplier: number): number => {
-  return timeMultiplier * BASE_SPEED + data.speedAdjustment
+  return OBSTACLE_SPEED * timeMultiplier + data.speedAdjustment
 }
 
 const Obstacles: FC = () => {
@@ -69,6 +67,15 @@ const Obstacles: FC = () => {
   const rigidBodies = useRef<RapierRigidBody[]>(null)
   const gameTime = useRef(0) // Track total game time for staggered spawning
   const lastSpawnTime = useRef(0) // Track when we last spawned an obstacle
+
+  const lanesToAvoid = useMemo(() => {
+    if (!answerMapping) return []
+    const occupiedLanes: number[] = []
+    answerMapping.forEach((answer, gridIndex) => {
+      if (!!answer) occupiedLanes.push(gridIndex)
+    })
+    return occupiedLanes
+  }, [answerMapping])
 
   useLayoutEffect(() => {
     const setupInstances = () => {
@@ -109,7 +116,6 @@ const Obstacles: FC = () => {
     if (isPlaying) {
       setupInstances()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, maxObstacles])
 
   const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
@@ -140,11 +146,11 @@ const Obstacles: FC = () => {
       if (!!body) {
         lastSpawnTime.current = gameTime.current // Update last spawn time
 
-        const newData = getNewObstacleData({ isAlive: true, answerMapping })
+        const newData = getNewObstacleData({ isAlive: true, lanesToAvoid })
         const newSpeed = getObstacleSpeed(newData, timeMultiplier.current)
 
         console.warn(`SPAWNING OBSTACLE ${deadObstacleIndex}`, { newData, newSpeed })
-        // Position the body at spawn location (this should make it visible)
+        // Position the body at spawn location
         body.setTranslation({ x: newData.x, y: newData.y, z: newData.z }, true)
         // Using setLinvel for consistent, even-paced movement
         body.setLinvel({ x: 0, y: 0, z: newSpeed }, true)

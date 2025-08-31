@@ -40,7 +40,9 @@ const ReadyButton: FC = () => {
 
   return (
     <div className="absolute inset-0 flex items-center justify-center">
-      <button className="pointer-events-auto bg-white p-8 text-black" onClick={() => setStage(GameStage.PLAYING)}>
+      <button
+        className="pointer-events-auto bg-black p-8 text-xl font-black text-white"
+        onClick={() => setStage(GameStage.PLAYING)}>
         READY (ENTER)
       </button>
     </div>
