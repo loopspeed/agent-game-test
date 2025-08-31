@@ -199,32 +199,37 @@ export function useGameStoreAPI(): GameStateStore {
   return gameStore
 }
 
+/**
+ * Maps answers to random positions in a 3x3 grid for each question.
+ * Uses Fisher-Yates shuffle with Math.random() for true randomness each runtime.
+ *
+ * Grid positions are indexed as:
+ * 0 1 2
+ * 3 4 5
+ * 6 7 8
+ */
 const mapAnswersToGatePositions = (questions: Question[]): Array<(Answer | null)[]> => {
   const mapping: Array<(Answer | null)[]> = []
 
   questions.forEach(({ answers }) => {
     const answerMapping = new Array(9).fill(null)
 
-    if (answers.length === 2) {
-      // Two answers: left and right middle lanes (indices 3 and 5)
-      answerMapping[3] = answers[0] // Left lane, middle row
-      answerMapping[5] = answers[1] // Right lane, middle row
+    // Generate all possible positions (0-8) for the 3x3 grid
+    const availablePositions = Array.from({ length: 9 }, (_, i) => i)
+
+    // Shuffle the positions using Fisher-Yates algorithm with Math.random()
+    for (let i = availablePositions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[availablePositions[i], availablePositions[j]] = [availablePositions[j], availablePositions[i]]
     }
 
-    if (answers.length === 3) {
-      // Three answers: vertical stack (indices 1, 3, 5)
-      answerMapping[1] = answers[0] // Top middle
-      answerMapping[3] = answers[1] // Middle middle
-      answerMapping[5] = answers[2] // Bottom middle
-    }
+    // Take only the number of positions we need for this question's answers
+    const selectedPositions = availablePositions.slice(0, answers.length)
 
-    if (answers.length === 4) {
-      // Four answers: diamond pattern (indices 1, 3, 5, 7)
-      answerMapping[1] = answers[0] // Top middle
-      answerMapping[3] = answers[1] // Left middle
-      answerMapping[5] = answers[2] // Right middle
-      answerMapping[7] = answers[3] // Bottom middle
-    }
+    // Assign each answer to a random position
+    answers.forEach((answer, index) => {
+      answerMapping[selectedPositions[index]] = answer
+    })
 
     mapping.push(answerMapping)
   })
