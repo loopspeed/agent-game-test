@@ -6,6 +6,7 @@ import { CuboidCollider, RapierRigidBody, RigidBody } from '@react-three/rapier'
 import React, { type FC, useEffect, useRef } from 'react'
 
 import type { Answer } from '@/data/questions'
+import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { type AnswerGateUserData } from '@/model/game'
 import {
   GameStage,
@@ -15,10 +16,8 @@ import {
   LANES_Y,
   SPAWN_OBSTACLE_Z,
   useGameStore,
-  useGameStoreAPI,
 } from '@/stores/GameProvider'
 import { useQuestionStore } from '@/stores/questionStore'
-import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 
 type AnswerGateProps = {
   position: [number, number, number]

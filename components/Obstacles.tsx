@@ -3,17 +3,9 @@ import { useFrame } from '@react-three/fiber'
 import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBody } from '@react-three/rapier'
 import { type FC, useEffect, useMemo, useRef } from 'react'
 
-import { ObstacleUserData } from '@/model/game'
-import {
-  GameStage,
-  KILL_OBSTACLE_Z,
-  LANES_X,
-  LANES_Y,
-  SPAWN_OBSTACLE_Z,
-  useGameStore,
-  useGameStoreAPI,
-} from '@/stores/GameProvider'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
+import { ObstacleUserData } from '@/model/game'
+import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/GameProvider'
 
 /**
  * UNIFIED PHYSICS-BASED OBSTACLES SYSTEM
@@ -37,7 +29,7 @@ type ObstacleData = {
   speedAdjustment: number // Random speed adjustment so they don't all move at the same speed
 }
 
-const BASE_SPEED = 8.0
+const BASE_SPEED = 10.0
 
 const getNewObstacleData = (isAlive: boolean): ObstacleData => {
   // Random lane
@@ -48,7 +40,7 @@ const getNewObstacleData = (isAlive: boolean): ObstacleData => {
     y: LANES_Y[iy],
     z: SPAWN_OBSTACLE_Z,
     isAlive,
-    speedAdjustment: Math.random() * 4.0 - 2.0, // Random speed adjustment (-2.0 to 2.0)
+    speedAdjustment: Math.random() * 2.0 - 1.0, // -1.0 to +1.0
   }
 }
 
@@ -77,7 +69,7 @@ const Obstacles: FC = () => {
 
       instances.push({
         key: `obstacle_${i}`,
-        position: [x, y, SPAWN_OBSTACLE_Z - 100], // Start hidden far away behind spawn
+        position: [x, y, SPAWN_OBSTACLE_Z - 1000], // Start hidden far away behind spawn
         userData: { kind: 'obstacle', index: i },
       })
     }
@@ -146,19 +138,13 @@ const Obstacles: FC = () => {
     })
   })
 
-  // DEBUG: Add a simple state logger
-  const frameCount = useRef(0)
-
   // Ref for the instanced rigid bodies
   const rigidBodies = useRef<RapierRigidBody[]>(null)
   const gameTime = useRef(0) // Track total game time for staggered spawning
   const lastSpawnTime = useRef(0) // Track when we last spawned an obstacle
 
   useFrame(({}, delta) => {
-    frameCount.current++
-    if (!rigidBodies.current || !isPlaying) {
-      return
-    }
+    if (!rigidBodies.current || !isPlaying) return
 
     // Update game time for staggered spawning
     gameTime.current += delta * timeMultiplier.current

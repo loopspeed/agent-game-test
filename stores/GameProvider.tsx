@@ -36,6 +36,7 @@ export type GameState = {
 }
 
 type GameStateStore = StoreApi<GameState>
+const GameContext = createContext<GameStateStore>(undefined!)
 
 export const GRID_SQUARE_SIZE_M = 2 // Meters
 export const LANES_X = [-1, 0, 1].map((x) => x * GRID_SQUARE_SIZE_M)
@@ -45,8 +46,6 @@ export const SPAWN_OBSTACLE_Z = -20 as const
 export const KILL_OBSTACLE_Z = 2 as const
 
 export const MAX_HEALTH = 10 as const
-
-export const GameContext = createContext<GameStateStore>(undefined!)
 
 const SLOW_MO_DURATION = 4.0
 
@@ -84,11 +83,19 @@ const createGameStore = () => {
         })
         // Slow down..
         .to(timeTweenTarget, {
-          duration: 0.4,
-          ease: 'power1.out',
-          value: 0.08,
+          duration: 0.6,
+          ease: 'power3.out',
+          value: 0.1,
           onUpdate: () => {
             set({ timeMultiplier: timeTweenTarget.value })
+          },
+        })
+        .to('#slow-mo-bar', {
+          scaleX: 0,
+          duration: SLOW_MO_DURATION,
+          ease: 'none',
+          onUpdate: () => {
+            set({ slowMoTimeRemaining: slowMoTimeRemainingTarget.value })
           },
         })
         // Speed back up again.
@@ -102,19 +109,7 @@ const createGameStore = () => {
               set({ timeMultiplier: timeTweenTarget.value })
             },
           },
-          SLOW_MO_DURATION,
-        )
-        .to(
-          '#slow-mo-bar',
-          {
-            scaleX: 0,
-            duration: SLOW_MO_DURATION,
-            ease: 'none',
-            onUpdate: () => {
-              set({ slowMoTimeRemaining: slowMoTimeRemainingTarget.value })
-            },
-          },
-          0,
+          SLOW_MO_DURATION + 0.6,
         )
     },
 
