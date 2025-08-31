@@ -11,6 +11,13 @@ export enum GameStage {
   GAME_OVER = 'GAME_OVER',
 }
 
+export type AnswerHit = {
+  questionId: string
+  answerId: string
+  isCorrect: boolean
+  timestamp: number
+}
+
 export type GameState = {
   stage: GameStage
   setStage: (stage: GameStage) => void
@@ -33,7 +40,11 @@ export type GameState = {
   streak: number
   resetHealth: () => void
   onObstacleHit: () => void
-  onAnswerHit: (isCorrect: boolean) => void
+  onAnswerHit: (isCorrect: boolean, answerId: string) => void
+
+  // Answer tracking
+  answersHit: AnswerHit[]
+  getAnswerSummary: () => AnswerHit[]
 
   // Questions
   currentQuestion: Question
@@ -71,6 +82,7 @@ const INITIAL_STATE: Pick<
   | 'playerPosition'
   | 'health'
   | 'currentQuestionIndex'
+  | 'answersHit'
 > = {
   stage: GameStage.INTRO,
   timeMultiplier: 1,
@@ -82,6 +94,7 @@ const INITIAL_STATE: Pick<
   playerPosition: [0, 0, 0] as Vector3Tuple,
   health: MAX_HEALTH,
   currentQuestionIndex: 0,
+  answersHit: [],
 }
 
 const createGameStore = ({ questions }: { questions: Question[] }) => {
@@ -103,7 +116,7 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
       set({ isSlowMo: true })
       gsap.set('#slow-mo-bar', { scaleX: 1, opacity: 1 })
 
-      console.log('going slow mo')
+      console.warn('going slow mo')
 
       speedTimeline?.kill()
       speedTimeline = gsap
@@ -156,18 +169,39 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
       }
       set({ health: newHealth })
     },
-    onAnswerHit: (isCorrect: boolean) => {
+    onAnswerHit: (isCorrect: boolean, answerId: string) => {
       const currentHealth = get().health
+      const currentQuestion = get().currentQuestion
+      
+      // Record the answer hit
+      const answerHit: AnswerHit = {
+        questionId: currentQuestion.id,
+        answerId,
+        isCorrect,
+        timestamp: Date.now(),
+      }
+      
       if (isCorrect) {
         const newHealth = Math.min(currentHealth + 1, MAX_HEALTH)
-        set((s) => ({ streak: s.streak + 1, health: newHealth }))
+        set((s) => ({ 
+          streak: s.streak + 1, 
+          health: newHealth,
+          answersHit: [...s.answersHit, answerHit]
+        }))
       } else {
         const newHealth = Math.max(currentHealth - 1, 0)
         if (newHealth === 0) {
           // Handle game over logic here
         }
-        set({ streak: 0, health: newHealth })
+        set((s) => ({ 
+          streak: 0, 
+          health: newHealth,
+          answersHit: [...s.answersHit, answerHit]
+        }))
       }
+    },
+    getAnswerSummary: () => {
+      return get().answersHit
     },
     goToNextQuestion: () => {
       set((state) => {
@@ -176,7 +210,11 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
       })
     },
 
-    reset: () => set(INITIAL_STATE),
+    reset: () => set({
+      ...INITIAL_STATE,
+      currentQuestion: questions[0],
+      answerGatesMapping: mapAnswersToGatePositions(questions),
+    }),
   }))
 }
 

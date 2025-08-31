@@ -1,11 +1,11 @@
 'use client'
-import { Stats } from '@react-three/drei'
+import { CameraShakeProps, Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { useControls } from 'leva'
 import { FC, Suspense, useEffect } from 'react'
 import React from 'react'
-
+import { CameraShake } from '@react-three/drei'
 import HUD from '@/components/HUD'
 import Scene from '@/components/Scene'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
@@ -29,6 +29,7 @@ function GameContent() {
         className="!fixed inset-0 !h-lvh"
         performance={{ min: 0.5, debounce: 300 }}
         camera={{ position: [0, 0.2, 4], fov: 75, far: 50 }}>
+        <CameraMovement />
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
           <Physics gravity={[0, 0, 0]} debug>
@@ -51,6 +52,22 @@ export default function GamePage() {
       <GameContent />
     </GameProvider>
   )
+}
+
+const CameraMovement: FC = () => {
+  const shakeConfig: CameraShakeProps = {
+    maxYaw: 0.08, // Max amount camera can yaw in either direction
+    maxPitch: 0.08, // Max amount camera can pitch in either direction
+    maxRoll: 0.08, // Max amount camera can roll in either direction
+    yawFrequency: 0.1, // Frequency of the yaw rotation
+    pitchFrequency: 0.1, // Frequency of the pitch rotation
+    rollFrequency: 0.1, // Frequency of the roll rotation
+    intensity: 1, // initial intensity of the shake
+    decay: false, // should the intensity decay over time
+    decayRate: 0.65, // if decay = true this is the rate at which intensity will reduce at
+  }
+
+  return <CameraShake {...shakeConfig} />
 }
 
 const DebugControls: FC = () => {

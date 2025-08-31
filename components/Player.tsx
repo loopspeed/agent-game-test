@@ -1,15 +1,14 @@
 'use client'
 
 import { useGSAP } from '@gsap/react'
-import { useDidUpdate, usePrevious } from '@mantine/hooks'
 import { useFrame } from '@react-three/fiber'
 import { type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
 import { gsap } from 'gsap'
-import { type FC, useCallback, useEffect, useRef } from 'react'
+import { type FC, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
 import { type RigidBodyUserData } from '@/model/game'
-import { LANES_X, LANES_Y, LANES_Y_OFFSET, useGameStore } from '@/stores/GameProvider'
+import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/useInputStore'
 
 gsap.registerPlugin(useGSAP)
@@ -101,7 +100,8 @@ const Player: FC = () => {
     if (isAnswerGate) {
       console.warn('Player hit answer gate', userData)
       const isCorrect = userData.isCorrect
-      onAnswerHit(isCorrect)
+      const answerId = userData.answerId
+      onAnswerHit(isCorrect, answerId)
       if (isCorrect) handleGoodHit()
       else handleBadHit()
     }

@@ -73,7 +73,7 @@ const Question: FC = () => {
   return (
     // TODO: SwitchTransition on the question text
     <div className="absolute top-0 flex max-w-2xl flex-col bg-black/70 text-center text-3xl leading-relaxed font-bold">
-      <p className="px-6 py-5 text-balance">
+      <p className="px-2 py-5">
         {questionIndex + 1}. {currentQuestion.question}
       </p>
 

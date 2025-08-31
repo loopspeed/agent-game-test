@@ -30,6 +30,7 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
   const userData: AnswerGateUserData = {
     type: 'answerGate',
     isCorrect: answer?.isCorrect ?? false,
+    answerId: answer?.id ?? '',
   }
 
   const material = useRef(null)
@@ -180,10 +181,10 @@ const AnswerGates: FC = () => {
       return
     }
 
-    const shouldSlowDown = Math.round(firstGateTranslationZ) === -4 && !isSlowMo
+    const shouldSlowDown = Math.round(firstGateTranslationZ) === -3 && !isSlowMo
 
     if (shouldSlowDown) {
-      console.log('Slowing down obstacles for answer selection', { firstGateTranslationZ })
+      console.warn('Slowing down obstacles for answer selection', { firstGateTranslationZ })
       goSlowMo()
     }
   })

@@ -1,5 +1,3 @@
-import { Answer } from '@/data/questions'
-
 export type ObstacleUserData = {
   type: 'obstacle'
 }
@@ -7,6 +5,7 @@ export type ObstacleUserData = {
 export type AnswerGateUserData = {
   type: 'answerGate'
   isCorrect: boolean
+  answerId: string
 }
 
 export type PlayerUserData = {
