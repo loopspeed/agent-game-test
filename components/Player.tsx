@@ -46,20 +46,21 @@ const Player: FC = () => {
       const { other } = e
 
       console.warn('Player intersected', { e })
-      const otherRB = other.rigidBodyObject
-      const otherCollider = other.colliderObject
+      const otherRB = other.rigidBody
       if (!otherRB?.userData) throw new Error('No userData on other rigid body')
 
       const userData = otherRB.userData as RigidBodyUserData
-      const isObstacle = userData.type === 'obstacle' || otherCollider?.name === 'obstacle'
+      const isObstacle = userData.type === 'obstacle'
       const isAnswerGate = userData.type === 'answerGate'
 
       if (isObstacle) {
+        console.warn('Player hit obstacle', userData)
         onObstacleHit()
         return
       }
 
       if (isAnswerGate) {
+        console.warn('Player hit answer gate', userData)
         const isCorrect = userData.isCorrect
         onAnswerHit(isCorrect)
       }
@@ -121,7 +122,7 @@ const Player: FC = () => {
       z: 0,
     })
 
-    // Store the current position in the global store
+    // Store the current position in the global store (do we need to do this?)
     setPlayerPosition([currentX.current, currentY.current, 0])
   })
 
@@ -132,9 +133,10 @@ const Player: FC = () => {
       colliders="cuboid"
       gravityScale={0}
       sensor={true}
+      canSleep={false}
       onIntersectionEnter={onIntersectionEnter}>
       <mesh>
-        <boxGeometry args={[0.5, 0.5, 0.5]} />
+        <boxGeometry args={[0.6, 0.3, 0.6]} />
         <meshBasicMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={1} />
       </mesh>
     </RigidBody>

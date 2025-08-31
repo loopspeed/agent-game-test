@@ -1,10 +1,11 @@
 'use client'
 import { type FC } from 'react'
-import Player from './Player'
-import AnswerGates from './AnswerGates'
 import * as THREE from 'three'
-import { GRID_SQUARE_SIZE_M } from '@/stores/GameProvider'
+
+import AnswerGates from '@/components/AnswerGates'
 import Obstacles from '@/components/Obstacles'
+import Player from '@/components/Player'
+import { GRID_SQUARE_SIZE_M } from '@/stores/GameProvider'
 
 const Scene: FC = () => {
   // Example of reading player position

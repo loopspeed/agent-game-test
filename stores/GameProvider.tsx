@@ -50,8 +50,6 @@ export const MAX_HEALTH = 10 as const
 const SLOW_MO_DURATION = 4.0
 
 const createGameStore = () => {
-  // TODO: add speed manipulation methods here..
-
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
@@ -136,7 +134,7 @@ const createGameStore = () => {
       const currentHealth = get().health
       if (isCorrect) {
         const newHealth = Math.min(currentHealth + 1, MAX_HEALTH)
-        set((state) => ({ streak: state.streak + 1, health: newHealth }))
+        set((s) => ({ streak: s.streak + 1, health: newHealth }))
       } else {
         const newHealth = Math.max(currentHealth - 1, 0)
         if (newHealth === 0) {

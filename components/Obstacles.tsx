@@ -139,20 +139,15 @@ const Obstacles: FC = () => {
     })
   })
 
-  // const userData: ObstacleUserData = {
-  //   type: 'obstacle',
-  // }
-
   if (!obstacleInstances.length) return null
 
   return (
     <InstancedRigidBodies
       ref={rigidBodies}
       instances={obstacleInstances}
-      type="dynamic" // Dynamic bodies for physics movement
-      gravityScale={0} // No gravity - obstacles move by applied forces
-      canSleep={false} // Keep bodies awake to ensure they keep moving
-      sensor={false} // NOT sensors - they should be solid and visible
+      gravityScale={0}
+      canSleep={false}
+      sensor={true}
       colliders="ball">
       <instancedMesh args={[undefined, undefined, obstacleInstances.length]} count={obstacleInstances.length}>
         <sphereGeometry args={[0.25, 24, 24]} />

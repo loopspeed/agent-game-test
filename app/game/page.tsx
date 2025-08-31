@@ -21,7 +21,7 @@ function GameContent() {
     }
   }, [reset])
 
-  useInput()
+  useKeypadInput()
 
   return (
     <main className="h-lvh w-full overflow-hidden">
@@ -98,7 +98,7 @@ const DebugControls: FC = () => {
   return null
 }
 
-function useInput() {
+function useKeypadInput() {
   const { setKey } = useInputStore()
 
   // Attach keyboard listeners for 4-way movement
