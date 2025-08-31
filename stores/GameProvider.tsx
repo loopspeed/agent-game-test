@@ -64,7 +64,7 @@ export const LANES_X = [-1, 0, 1].map((x) => x * GRID_SQUARE_SIZE_M)
 export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M + LANES_Y_OFFSET)
 
 export const SPAWN_OBSTACLE_Z = -20 as const
-export const KILL_OBSTACLE_Z = 2 as const
+export const KILL_OBSTACLE_Z = 4 as const
 
 export const MAX_HEALTH = 5 as const
 

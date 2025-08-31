@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBody } from '@react-three/rapier'
 import { type FC, useLayoutEffect, useRef, useState } from 'react'
 
+import { Answer } from '@/data/questions'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { ObstacleUserData } from '@/model/game'
 import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/GameProvider'
@@ -17,10 +18,30 @@ type ObstacleData = {
 
 const BASE_SPEED = 10.0
 
-const getNewObstacleData = ({ isAlive }: { isAlive: boolean }): ObstacleData => {
-  // Random lane
-  const ix = Math.floor(Math.random() * LANES_X.length)
-  const iy = Math.floor(Math.random() * LANES_Y.length)
+const getNewObstacleData = ({
+  isAlive,
+  answerMapping,
+}: {
+  isAlive: boolean
+  answerMapping: (Answer | null)[]
+}): ObstacleData => {
+  let ix: number, iy: number, gridIndex: number
+  let attempts = 0
+  const maxAttempts = 12 // Prevent infinite loop
+  // Prevent the obstacle spawning in a lane with an existing answer
+  do {
+    // Random lane
+    ix = Math.floor(Math.random() * LANES_X.length)
+    iy = Math.floor(Math.random() * LANES_Y.length)
+    // Calculate grid index: y * width + x (3x3 grid)
+    gridIndex = iy * LANES_X.length + ix
+    attempts++
+  } while (
+    answerMapping &&
+    answerMapping[gridIndex] !== null && // Lane has an answer
+    attempts < maxAttempts
+  )
+
   const offCenterAmount = Math.random() * 0.2 - 0.1 // Random offset between -0.1 and 0.1
   return {
     x: LANES_X[ix] + offCenterAmount,
@@ -39,6 +60,7 @@ const Obstacles: FC = () => {
   const maxObstacles = useGameStore((s) => s.maxObstacles)
   const spawnInterval = useGameStore((s) => s.spawnInterval)
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
+  const answerMapping = useGameStore((s) => s.answerGatesMapping[s.currentQuestionIndex])
 
   // Store mutable obstacle data in ref (separate from React's memo system)
   const obstaclesData = useRef<ObstacleData[]>([])
@@ -50,14 +72,14 @@ const Obstacles: FC = () => {
 
   useLayoutEffect(() => {
     const setupInstances = () => {
-      console.log('🏗️ Generating obstacle instances:', { maxObstacles })
+      console.warn('🏗️ Generating obstacle instances:', { maxObstacles })
       const instances: InstancedRigidBodyProps[] = []
       // Setup data for each one
       const data: ObstacleData[] = []
 
       for (let i = 0; i < maxObstacles; i++) {
         // All start inactive
-        const obstacleData = getNewObstacleData({ isAlive: false })
+        const obstacleData = getNewObstacleData({ isAlive: false, answerMapping })
         data.push(obstacleData)
 
         const userData: ObstacleUserData = {
@@ -81,6 +103,7 @@ const Obstacles: FC = () => {
     if (isPlaying) {
       setupInstances()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, maxObstacles])
 
   const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
@@ -112,7 +135,7 @@ const Obstacles: FC = () => {
         lastSpawnTime.current = gameTime.current // Update last spawn time
         console.warn(`SPAWNING OBSTACLE ${deadObstacleIndex}`)
 
-        const newData = getNewObstacleData({ isAlive: true })
+        const newData = getNewObstacleData({ isAlive: true, answerMapping })
         const newSpeed = getObstacleSpeed(newData, timeMultiplier.current)
         // Position the body at spawn location (this should make it visible)
         body.setTranslation({ x: newData.x, y: newData.y, z: newData.z }, true)

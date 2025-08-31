@@ -79,7 +79,7 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
             <meshStandardMaterial
               ref={material}
               color={answer.isCorrect ? '#4ade80' : '#f87171'}
-              transparent
+              transparent={true}
               opacity={0.4}
             />
           </mesh>
