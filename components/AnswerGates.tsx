@@ -167,7 +167,6 @@ const AnswerGates: FC = () => {
     if (!firstGate) return
 
     const firstGateTranslationZ = firstGate.translation().z
-
     const gatesNeedKilling = firstGateTranslationZ > KILL_OBSTACLE_Z
 
     if (gatesNeedKilling && !isRespawning.current) {

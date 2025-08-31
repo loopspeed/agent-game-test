@@ -109,9 +109,8 @@ const Player: FC = () => {
 
   // set the initial position once when the body is created
   useEffect(() => {
-    if (bodyRef.current) {
-      bodyRef.current.setTranslation({ x: currentX.current, y: currentY.current, z: 0 }, true)
-    }
+    if (!bodyRef.current) return
+    bodyRef.current.setTranslation({ x: currentX.current, y: currentY.current, z: 0 }, true)
   }, [])
 
   useFrame((_, delta) => {

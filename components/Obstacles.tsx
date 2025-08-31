@@ -73,14 +73,20 @@ const Obstacles: FC = () => {
   useLayoutEffect(() => {
     const setupInstances = () => {
       console.warn('🏗️ Generating obstacle instances:', { maxObstacles })
+
       const instances: InstancedRigidBodyProps[] = []
-      // Setup data for each one
       const data: ObstacleData[] = []
+      const initialData: ObstacleData = {
+        x: 0,
+        y: 0,
+        z: -40,
+        isAlive: false,
+        speedAdjustment: 0,
+      }
+      // Start hidden far away behind spawn
 
       for (let i = 0; i < maxObstacles; i++) {
-        // All start inactive
-        const obstacleData = getNewObstacleData({ isAlive: false, answerMapping })
-        data.push(obstacleData)
+        data.push(initialData)
 
         const userData: ObstacleUserData = {
           type: 'obstacle',
@@ -88,7 +94,7 @@ const Obstacles: FC = () => {
 
         instances.push({
           key: `obstacle_${i}`,
-          position: [obstacleData.x, obstacleData.y, -1000], // Start hidden far away behind spawn
+          position: [initialData.x, initialData.y, initialData.z],
           userData,
         })
       }
@@ -125,7 +131,7 @@ const Obstacles: FC = () => {
     gameTime.current += delta * timeMultiplier.current
     const obstacles = obstaclesData.current
 
-    // Controlled spawning: find first dead obstacle and spawn it based on spawnInterval)
+    // Controlled spawning: find first dead obstacle and spawn it based on spawnInterval
     const deadObstacleIndex = obstacles.findIndex((o) => !o.isAlive)
     const timeSinceLastSpawn = gameTime.current - lastSpawnTime.current
 
@@ -133,10 +139,11 @@ const Obstacles: FC = () => {
       const body = rigidBodies.current[deadObstacleIndex]
       if (!!body) {
         lastSpawnTime.current = gameTime.current // Update last spawn time
-        console.warn(`SPAWNING OBSTACLE ${deadObstacleIndex}`)
 
         const newData = getNewObstacleData({ isAlive: true, answerMapping })
         const newSpeed = getObstacleSpeed(newData, timeMultiplier.current)
+
+        console.warn(`SPAWNING OBSTACLE ${deadObstacleIndex}`, { newData, newSpeed })
         // Position the body at spawn location (this should make it visible)
         body.setTranslation({ x: newData.x, y: newData.y, z: newData.z }, true)
         // Using setLinvel for consistent, even-paced movement
@@ -154,10 +161,13 @@ const Obstacles: FC = () => {
       const currentPos = body.translation()
       if (currentPos.z > KILL_OBSTACLE_Z) {
         // Reset obstacle state
+        obstacle.x = 0
+        obstacle.y = 0
+        obstacle.z = -1000
         obstacle.isAlive = false
         // Move body out of view and stop it moving
         body.setLinvel({ x: 0, y: 0, z: 0 }, true)
-        body.setTranslation({ x: 0, y: 0, z: SPAWN_OBSTACLE_Z - 1000 }, true)
+        body.setTranslation({ x: 0, y: 0, z: -1000 }, true)
         console.warn(`♻️ KILLED OBSTACLE ${i}`)
       }
     })
