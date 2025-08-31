@@ -101,10 +101,9 @@ const AnswerGates: FC = () => {
   const goSlowMo = useGameStore((s) => s.goSlowMo)
 
   const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
-    gatesRefs.current.forEach((gate, index) => {
+    gatesRefs.current.forEach((gate) => {
       if (!gate) return // Check for null ref
       const newSpeed = timeMultiplier * BASE_SPEED
-      console.warn('Updating answer speed:', { index, newSpeed })
       gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
     })
   })

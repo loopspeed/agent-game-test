@@ -38,8 +38,8 @@ const ReadyButton: FC = () => {
 
 const SlowMoCountdown: FC = () => {
   return (
-    <div className="absolute top-4 h-4 w-40 overflow-hidden rounded-full bg-white/20">
-      <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500" />
+    <div className="absolute top-4 h-3 w-64 overflow-hidden rounded-full bg-white/20">
+      <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
     </div>
   )
 }
