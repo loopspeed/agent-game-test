@@ -166,6 +166,7 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
       const newHealth = Math.max(currentHealth - 1, 0)
       if (newHealth === 0) {
         // Handle game over logic here
+        set({ stage: GameStage.GAME_OVER })
       }
       set({ health: newHealth })
     },
@@ -192,6 +193,7 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
         const newHealth = Math.max(currentHealth - 1, 0)
         if (newHealth === 0) {
           // Handle game over logic here
+          set({ stage: GameStage.GAME_OVER })
         }
         set((s) => ({
           streak: 0,

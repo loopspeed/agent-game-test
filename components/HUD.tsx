@@ -5,25 +5,25 @@ import { type FC, useEffect } from 'react'
 import { GameStage, MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
 
 const HUD: FC = () => {
+  const stage = useGameStore((s) => s.stage)
+
+  // TODO:
+  // Use a SwitchTransition to mount them
   return (
-    <div className="pointer-events-none fixed top-0 z-50 flex !h-svh w-full items-center justify-center">
-      <Health />
-
-      <ReadyButton />
-
-      <Question />
+    <div className="pointer-events-none fixed top-0 z-100 flex !h-svh w-full items-center justify-center">
+      {stage === GameStage.INTRO && <IntroUI />}
+      {stage === GameStage.PLAYING && <PlayingUI />}
+      {stage === GameStage.GAME_OVER && <GameOverUI />}
     </div>
   )
 }
 
 export default HUD
 
-const ReadyButton: FC = () => {
-  const stage = useGameStore((s) => s.stage)
+const IntroUI: FC = () => {
   const setStage = useGameStore((s) => s.setStage)
 
   useEffect(() => {
-    if (stage !== GameStage.INTRO) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Enter') {
         setStage(GameStage.PLAYING)
@@ -34,9 +34,7 @@ const ReadyButton: FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [setStage, stage])
-
-  if (stage !== GameStage.INTRO) return null
+  }, [setStage])
 
   return (
     <div className="absolute inset-0 flex items-center justify-center">
@@ -49,12 +47,17 @@ const ReadyButton: FC = () => {
   )
 }
 
-const Health: FC = () => {
-  const stage = useGameStore((s) => s.stage)
-  const health = useGameStore((s) => s.health)
+const PlayingUI: FC = () => {
+  return (
+    <>
+      <Question />
+      <Health />
+    </>
+  )
+}
 
-  const showHealth = stage === GameStage.PLAYING
-  if (!showHealth) return null
+const Health: FC = () => {
+  const health = useGameStore((s) => s.health)
 
   // Determine health bar color based on current health level
   const getHealthColor = (): string => {
@@ -86,6 +89,14 @@ const Question: FC = () => {
       <div className="relative h-2 w-full overflow-hidden bg-white/20">
         <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
       </div>
+    </div>
+  )
+}
+
+const GameOverUI: FC = () => {
+  return (
+    <div className="flex max-w-2xl flex-col bg-black text-center text-3xl leading-relaxed font-bold">
+      <p className="px-2 py-5">Game Over</p>
     </div>
   )
 }
