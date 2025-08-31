@@ -1,6 +1,6 @@
 'use client'
 
-import { type FC } from 'react'
+import { type FC, useEffect } from 'react'
 
 import { GameStage, MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
 
@@ -25,12 +25,26 @@ const ReadyButton: FC = () => {
   const stage = useGameStore((s) => s.stage)
   const setStage = useGameStore((s) => s.setStage)
 
+  useEffect(() => {
+    if (stage !== GameStage.INTRO) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Enter') {
+        setStage(GameStage.PLAYING)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [setStage, stage])
+
   if (stage !== GameStage.INTRO) return null
 
   return (
     <div className="absolute inset-0 flex items-center justify-center">
       <button className="pointer-events-auto bg-white p-8 text-black" onClick={() => setStage(GameStage.PLAYING)}>
-        READY
+        READY (ENTER)
       </button>
     </div>
   )
@@ -52,19 +66,12 @@ const Health: FC = () => {
   if (!showHealth) return null
 
   return (
-    <div className="absolute bottom-4 left-4">
-      <div className="flex items-center gap-3 rounded-lg bg-black/50 px-4 py-2 text-white backdrop-blur">
-        <span className="text-lg font-bold">Health:</span>
-        <div className="flex gap-1">
-          {Array.from({ length: MAX_HEALTH }, (_, i) => (
-            <div
-              key={i}
-              className={`h-3 w-3 rounded-full border ${
-                i < health ? 'border-red-400 bg-red-500' : 'border-gray-600 bg-gray-700'
-              }`}
-            />
-          ))}
-        </div>
+    <div className="absolute bottom-4 flex items-center gap-2">
+      <span className="text-sm font-medium">Health</span>
+      <div className="flex gap-1">
+        {Array.from({ length: MAX_HEALTH }, (_, i) => (
+          <div key={i} className={`size-3 rounded-full ${i < health ? 'bg-red-500' : 'bg-white/40'}`} />
+        ))}
       </div>
     </div>
   )
