@@ -16,6 +16,10 @@ const PlayingUI: FC = () => {
 
 export default PlayingUI
 
+const Controls: FC = () => {
+  return <div></div>
+}
+
 const Health: FC = () => {
   const health = useGameStore((s) => s.health)
 

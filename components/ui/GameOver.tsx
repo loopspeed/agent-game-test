@@ -1,7 +1,7 @@
 import { type FC, useState } from 'react'
 
 import type { Question } from '@/data/questions'
-import { useGameOverData } from '@/hooks/useGameOverData'
+// import { useGameOverData } from '@/hooks/useGameOverData'
 import { GameStage, useGameStore } from '@/stores/GameProvider'
 import { formatAccuracy, formatDate, formatTime } from '@/utils/formatting'
 

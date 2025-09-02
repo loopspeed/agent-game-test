@@ -146,11 +146,8 @@ const createGameStore = ({
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
     goSlowMo: () => {
       if (get().isSlowMo) return
-
       set({ isSlowMo: true })
       gsap.set('#slow-mo-bar', { scaleX: 1, opacity: 1 })
-
-      console.warn('going slow mo')
 
       speedTimeline?.kill()
       speedTimeline = gsap
