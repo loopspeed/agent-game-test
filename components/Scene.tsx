@@ -3,7 +3,7 @@ import { type FC } from 'react'
 import * as THREE from 'three'
 
 import AnswerGates from '@/components/AnswerGates'
-import Obstacles from '@/components/Obstacles'
+import { BeamObstacles, SphereObstacles } from '@/components/Obstacles'
 import Player from '@/components/Player'
 import { GRID_SQUARE_SIZE_M, LANES_Y_OFFSET, SPAWN_OBSTACLE_Z } from '@/stores/GameProvider'
 
@@ -18,7 +18,8 @@ const Scene: FC = () => {
 
       <fog attach="fog" args={['#000000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} />
 
-      <Obstacles />
+      <BeamObstacles />
+      <SphereObstacles />
 
       <AnswerGates />
 

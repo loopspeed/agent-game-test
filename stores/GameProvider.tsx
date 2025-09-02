@@ -4,6 +4,7 @@ import { createContext, type FC, type PropsWithChildren, useContext, useRef } fr
 import { createStore, type StoreApi, useStore } from 'zustand'
 
 import { Answer, Question, SAMPLE_QUESTIONS } from '@/data/questions'
+import { CourseRun, useHistoryStore } from '@/stores/useHistoryStore'
 
 export enum GameStage {
   INTRO = 'INTRO',
@@ -22,6 +23,11 @@ export type GameState = {
   stage: GameStage
   setStage: (stage: GameStage) => void
 
+  // Course metadata
+  courseId: string
+  courseName: string
+  gameStartTime: number
+
   timeMultiplier: number
   setTimeMultiplier: (value: number) => void
   slowMoTimeRemaining: number
@@ -37,22 +43,26 @@ export type GameState = {
   setPlayerPosition: (pos: Vector3Tuple) => void
 
   health: number
-  streak: number
+  currentStreak: number
+  maxStreak: number
   resetHealth: () => void
   onObstacleHit: () => void
   onAnswerHit: (isCorrect: boolean, answerId: string | null) => void
-
-  // Answer tracking
-  answersHit: AnswerHit[]
-  getAnswerSummary: () => AnswerHit[]
+  onGameOver: () => void
 
   // Questions
+  questions: Question[]
   currentQuestion: Question
   currentQuestionIndex: number
   goToNextQuestion: () => void
+
   answerGatesMapping: Array<(Answer | null)[]>
+  answerOccupiedLanes: number[]
+  // Answer tracking
+  answersHit: AnswerHit[]
 
   reset: () => void
+  startNewGame: () => void
 }
 
 type GameStateStore = StoreApi<GameState>
@@ -66,38 +76,56 @@ export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M + LANES_Y_OF
 export const SPAWN_OBSTACLE_Z = -30 as const
 export const KILL_OBSTACLE_Z = 4 as const
 
-export const MAX_HEALTH = 5 as const
+export const MAX_HEALTH = 3 as const
 
 const SLOW_MO_DURATION = 2.0
 
 const INITIAL_STATE: Pick<
   GameState,
   | 'stage'
+  | 'courseId'
+  | 'courseName'
+  | 'gameStartTime'
   | 'timeMultiplier'
   | 'slowMoTimeRemaining'
   | 'spawnInterval'
   | 'isSlowMo'
   | 'maxObstacles'
-  | 'streak'
+  | 'currentStreak'
+  | 'maxStreak'
   | 'playerPosition'
   | 'health'
   | 'currentQuestionIndex'
   | 'answersHit'
+  | 'questions'
+  | 'answerOccupiedLanes'
 > = {
   stage: GameStage.INTRO,
+  courseId: 'ai-history-course',
+  courseName: 'AI History Course',
+  gameStartTime: Date.now(),
   timeMultiplier: 1,
   slowMoTimeRemaining: SLOW_MO_DURATION,
   isSlowMo: false,
   maxObstacles: 10,
   spawnInterval: 0.8,
-  streak: 0,
+  currentStreak: 0,
+  maxStreak: 0,
   playerPosition: [0, 0, 0] as Vector3Tuple,
   health: MAX_HEALTH,
+  questions: SAMPLE_QUESTIONS,
   currentQuestionIndex: 0,
   answersHit: [],
+  answerOccupiedLanes: [],
 }
 
-const createGameStore = ({ questions }: { questions: Question[] }) => {
+const createGameStore = ({
+  questions,
+  addCourseRunToHistory,
+}: {
+  questions: Question[]
+  addCourseRunToHistory: (run: Omit<CourseRun, 'id'>) => void
+}) => {
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
@@ -108,7 +136,13 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
     currentQuestion: questions[0],
     answerGatesMapping: mapAnswersToGatePositions(questions),
 
-    setStage: (stage: GameStage) => set({ stage }),
+    setStage: (stage: GameStage) => {
+      if (stage === GameStage.PLAYING) {
+        set({ stage, gameStartTime: Date.now() })
+      } else {
+        set({ stage })
+      }
+    },
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
     goSlowMo: () => {
       if (get().isSlowMo) return
@@ -165,10 +199,10 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
       const currentHealth = get().health
       const newHealth = Math.max(currentHealth - 1, 0)
       if (newHealth === 0) {
-        // Handle game over logic here
-        set({ stage: GameStage.GAME_OVER })
+        get().onGameOver()
+      } else {
+        set({ health: newHealth })
       }
-      set({ health: newHealth })
     },
     onAnswerHit: (isCorrect: boolean, answerId: string | null) => {
       const currentHealth = get().health
@@ -184,26 +218,60 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
 
       if (isCorrect) {
         const newHealth = Math.min(currentHealth + 1, MAX_HEALTH)
-        set((s) => ({
-          streak: s.streak + 1,
-          health: newHealth,
-          answersHit: [...s.answersHit, answerHit],
-        }))
+        set((s) => {
+          const newCurrentStreak = s.currentStreak + 1
+          const newMaxStreak = Math.max(s.maxStreak, newCurrentStreak)
+          return {
+            currentStreak: newCurrentStreak,
+            maxStreak: newMaxStreak,
+            health: newHealth,
+            answersHit: [...s.answersHit, answerHit],
+          }
+        })
       } else {
         const newHealth = Math.max(currentHealth - 1, 0)
         if (newHealth === 0) {
-          // Handle game over logic here
-          set({ stage: GameStage.GAME_OVER })
+          set((s) => ({
+            currentStreak: 0,
+            health: newHealth,
+            answersHit: [...s.answersHit, answerHit],
+          }))
+          get().onGameOver()
+        } else {
+          set((s) => ({
+            currentStreak: 0,
+            health: newHealth,
+            answersHit: [...s.answersHit, answerHit],
+          }))
         }
-        set((s) => ({
-          streak: 0,
-          health: newHealth,
-          answersHit: [...s.answersHit, answerHit],
-        }))
       }
     },
-    getAnswerSummary: () => {
-      return get().answersHit
+    onGameOver: () => {
+      const state = get()
+      const completionTime = Date.now() - state.gameStartTime
+      const correctAnswers = state.answersHit.filter((hit) => hit.isCorrect).length
+      const incorrectAnswers = state.answersHit.filter((hit) => !hit.isCorrect).length
+      const totalAnswered = correctAnswers + incorrectAnswers
+      const accuracyPercentage = totalAnswered > 0 ? (correctAnswers / totalAnswered) * 100 : 0
+
+      addCourseRunToHistory({
+        courseId: state.courseId,
+        courseName: state.courseName,
+        timestamp: Date.now(),
+        answersHit: state.answersHit,
+        maxStreak: state.maxStreak,
+        finalHealth: state.health,
+        questionsCompleted: state.currentQuestionIndex,
+        totalQuestions: state.questions.length,
+        correctAnswers,
+        incorrectAnswers,
+        accuracyPercentage: Math.round(accuracyPercentage * 100) / 100,
+        completionTime,
+      })
+
+      set({
+        stage: GameStage.GAME_OVER,
+      })
     },
     goToNextQuestion: () => {
       set((state) => {
@@ -211,9 +279,17 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
         const nextIndex = state.currentQuestionIndex + 1
         if (nextIndex >= questions.length) {
           // Handle game completion logic here
-          return { stage: GameStage.GAME_OVER }
+          get().onGameOver()
+          return {}
         }
-        return { currentQuestionIndex: nextIndex, currentQuestion: questions[nextIndex] }
+
+        const answerMapping = state.answerGatesMapping[state.currentQuestionIndex]
+        const answerOccupiedLanes: number[] = []
+        answerMapping.forEach((answer, gridIndex) => {
+          if (!!answer) answerOccupiedLanes.push(gridIndex)
+        })
+
+        return { currentQuestionIndex: nextIndex, currentQuestion: questions[nextIndex], answerOccupiedLanes }
       })
     },
 
@@ -223,12 +299,21 @@ const createGameStore = ({ questions }: { questions: Question[] }) => {
         currentQuestion: questions[0],
         answerGatesMapping: mapAnswersToGatePositions(questions),
       }),
+
+    startNewGame: () =>
+      set({
+        ...INITIAL_STATE,
+        gameStartTime: Date.now(),
+        currentQuestion: questions[0],
+        answerGatesMapping: mapAnswersToGatePositions(questions),
+      }),
   }))
 }
 
 const GameProvider: FC<PropsWithChildren> = ({ children }) => {
-  const gameStore = useRef<GameStateStore>(createGameStore({ questions: SAMPLE_QUESTIONS }))
-
+  // Save to history store
+  const addCourseRunToHistory = useHistoryStore((s) => s.addCourseRun)
+  const gameStore = useRef<GameStateStore>(createGameStore({ questions: SAMPLE_QUESTIONS, addCourseRunToHistory }))
   return <GameContext.Provider value={gameStore.current}>{children}</GameContext.Provider>
 }
 

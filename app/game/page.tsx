@@ -4,11 +4,11 @@ import { CameraShake } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { useControls } from 'leva'
-import { FC, Suspense, useEffect } from 'react'
+import { type FC, Suspense, useEffect } from 'react'
 import React from 'react'
 
-import HUD from '@/components/HUD'
 import Scene from '@/components/Scene'
+import GameUI from '@/components/ui/GameUi'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import GameProvider, { useGameStore, useGameStoreAPI } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/useInputStore'
@@ -41,8 +41,7 @@ function GameContent() {
         </Suspense>
       </Canvas>
 
-      {/* HUD overlay with health display */}
-      <HUD />
+      <GameUI />
     </main>
   )
 }
