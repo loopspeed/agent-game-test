@@ -14,7 +14,7 @@ import GameProvider, { useGameStore, useGameStoreAPI } from '@/stores/GameProvid
 import { useInputStore } from '@/stores/useInputStore'
 
 function GameContent() {
-  const reset = useGameStore((s) => s.reset)
+  const reset = useGameStore((s) => s.resetStore)
 
   useEffect(() => {
     return () => {

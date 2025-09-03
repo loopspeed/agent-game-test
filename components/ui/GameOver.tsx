@@ -1,20 +1,16 @@
 import { type FC, useState } from 'react'
 
 import type { Question } from '@/data/questions'
-// import { useGameOverData } from '@/hooks/useGameOverData'
+import { useGameOverData } from '@/hooks/useGameOverData'
 import { GameStage, useGameStore } from '@/stores/GameProvider'
 import { formatAccuracy, formatDate, formatTime } from '@/utils/formatting'
 
 const GameOverUI: FC = () => {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current')
-  const { startNewGame, setStage } = useGameStore((state) => ({
-    startNewGame: state.startNewGame,
-    setStage: state.setStage,
-  }))
+  const startNewGame = useGameStore((s) => s.restartGame)
 
   const handlePlayAgain = () => {
     startNewGame()
-    setStage(GameStage.PLAYING)
   }
 
   return (

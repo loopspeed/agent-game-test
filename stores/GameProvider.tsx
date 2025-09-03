@@ -61,8 +61,8 @@ export type GameState = {
   // Answer tracking
   answersHit: AnswerHit[]
 
-  reset: () => void
-  startNewGame: () => void
+  resetStore: () => void
+  restartGame: () => void
 }
 
 type GameStateStore = StoreApi<GameState>
@@ -271,33 +271,33 @@ const createGameStore = ({
       })
     },
     goToNextQuestion: () => {
+      const currentQuestionIndex = get().currentQuestionIndex
+      const nextIndex = currentQuestionIndex + 1
+
+      // If it's the end, complete the game
+      if (nextIndex >= questions.length) {
+        // Handle game completion logic here
+        get().onGameOver()
+        return
+      }
       set((state) => {
-        // If it's the end, complete the game
-        const nextIndex = state.currentQuestionIndex + 1
-        if (nextIndex >= questions.length) {
-          // Handle game completion logic here
-          get().onGameOver()
-          return {}
-        }
-
         const answerMapping = state.answerGatesMapping[state.currentQuestionIndex]
-        const answerOccupiedLanes: number[] = []
-        answerMapping.forEach((answer, gridIndex) => {
-          if (!!answer) answerOccupiedLanes.push(gridIndex)
-        })
-
+        const answerOccupiedLanes = getAnswerOccupiedLanes(answerMapping)
         return { currentQuestionIndex: nextIndex, currentQuestion: questions[nextIndex], answerOccupiedLanes }
       })
     },
 
-    reset: () =>
+    resetStore: () => {
+      const answerGateMapping = mapAnswersToGatePositions(questions)
+      const answerOccupiedLanes = getAnswerOccupiedLanes(answerGateMapping[0])
       set({
         ...INITIAL_STATE,
         currentQuestion: questions[0],
-        answerGatesMapping: mapAnswersToGatePositions(questions),
-      }),
-
-    startNewGame: () =>
+        answerGatesMapping: answerGateMapping,
+        answerOccupiedLanes,
+      })
+    },
+    restartGame: () =>
       set({
         ...INITIAL_STATE,
         gameStartTime: Date.now(),
@@ -305,6 +305,15 @@ const createGameStore = ({
         answerGatesMapping: mapAnswersToGatePositions(questions),
       }),
   }))
+}
+
+const getAnswerOccupiedLanes = (answerMapping: (Answer | null)[]): number[] => {
+  const answerOccupiedLanes: number[] = []
+  answerMapping.forEach((answer, gridIndex) => {
+    if (!!answer) answerOccupiedLanes.push(gridIndex)
+  })
+
+  return answerOccupiedLanes
 }
 
 const GameProvider: FC<PropsWithChildren> = ({ children }) => {
