@@ -67,7 +67,7 @@ const CurrentRun: FC = () => {
   const questions = useGameStore((s) => s.questions)
 
   return (
-    <div className="grid w-full grid-cols-[40%_1fr] gap-4 space-y-6 overflow-hidden border">
+    <div className="grid w-full grid-cols-[40%_1fr] gap-4 space-y-6 overflow-hidden">
       {/* Stats Overview */}
       <div className="space-y-3">
         {/* Progress Bar */}
@@ -149,7 +149,7 @@ const CurrentRun: FC = () => {
                       {!answerForQuestion ? (
                         <span className="text-gray-500">Not reached</span>
                       ) : answerForQuestion.answerId === null ? (
-                        <span className="text-red-600">Miss - hit empty gate</span>
+                        <span className="text-red-600">Miss</span>
                       ) : (
                         <span className={answerForQuestion.isCorrect ? 'text-green-600' : 'text-red-600'}>
                           Your answer: {selectedAnswer?.label}
