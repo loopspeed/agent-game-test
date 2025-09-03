@@ -1,8 +1,9 @@
+import Link from 'next/link'
 import { type FC, useState } from 'react'
 
 import type { Question } from '@/data/questions'
 import { useGameOverData } from '@/hooks/useGameOverData'
-import { GameStage, useGameStore } from '@/stores/GameProvider'
+import { useGameStore } from '@/stores/GameProvider'
 import { formatAccuracy, formatDate, formatTime } from '@/utils/formatting'
 
 const GameOverUI: FC = () => {
@@ -14,12 +15,11 @@ const GameOverUI: FC = () => {
   }
 
   return (
-    <div className="bg-opacity-75 fixed inset-0 z-50 flex items-center justify-center bg-black">
-      <div className="mx-4 max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6">
-        <h2 className="mb-6 text-center text-2xl font-bold">Game Over</h2>
-
+    <section className="pointer-events-auto grid size-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-5 bg-black/80 px-24 py-12">
+      <header>
+        <h2 className="text-center text-2xl font-bold">Course Over</h2>
         {/* Tab Navigation */}
-        <div className="mb-4 flex border-b">
+        <div className="flex">
           <button
             className={`px-4 py-2 font-medium ${
               activeTab === 'current' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'
@@ -35,27 +35,28 @@ const GameOverUI: FC = () => {
             Past Runs
           </button>
         </div>
+      </header>
 
-        {/* Current Run Tab */}
-        {activeTab === 'current' && <CurrentRun />}
-        {/* History Tab */}
-        {activeTab === 'history' && <HistoricalRuns />}
+      {/* Current Run Tab */}
+      {activeTab === 'current' && <CurrentRun />}
+      {/* History Tab */}
+      {activeTab === 'history' && <HistoricalRuns />}
 
-        {/* Action Buttons */}
-        <div className="mt-6 flex gap-4">
-          <button
-            onClick={handlePlayAgain}
-            className="flex-1 rounded bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700">
-            Play Again
+      {/* Action Buttons */}
+      <footer className="flex gap-4">
+        <button
+          onClick={handlePlayAgain}
+          className="flex-1 rounded bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700">
+          Play Again
+        </button>
+
+        <Link href="/">
+          <button className="flex-1 rounded bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700">
+            Exit Game
           </button>
-          <button
-            onClick={() => setStage(GameStage.INTRO)}
-            className="flex-1 rounded bg-gray-600 px-4 py-2 text-white transition-colors hover:bg-gray-700">
-            Main Menu
-          </button>
-        </div>
-      </div>
-    </div>
+        </Link>
+      </footer>
+    </section>
   )
 }
 
@@ -66,9 +67,24 @@ const CurrentRun: FC = () => {
   const questions = useGameStore((s) => s.questions)
 
   return (
-    <div className="space-y-6">
+    <div className="grid w-full grid-cols-[40%_1fr] gap-4 space-y-6 overflow-hidden border">
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-3">
+        {/* Progress Bar */}
+        <div className="rounded p-4">
+          <p className="text-lg">
+            Completed {currentRun.questionsCompleted} of {currentRun.totalQuestions} questions
+          </p>
+          <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+            <div
+              className="h-2 rounded-full bg-blue-600"
+              style={{
+                width: `${(currentRun.questionsCompleted / currentRun.totalQuestions) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
+
         <div className="rounded bg-gray-50 p-4">
           <h3 className="font-semibold text-gray-700">Score</h3>
           <p className="text-2xl font-bold text-green-600">
@@ -93,26 +109,10 @@ const CurrentRun: FC = () => {
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="rounded bg-gray-50 p-4">
-        <h3 className="mb-2 font-semibold text-gray-700">Progress</h3>
-        <p className="text-lg">
-          Completed {currentRun.questionsCompleted} of {currentRun.totalQuestions} questions
-        </p>
-        <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
-          <div
-            className="h-2 rounded-full bg-blue-600"
-            style={{
-              width: `${(currentRun.questionsCompleted / currentRun.totalQuestions) * 100}%`,
-            }}
-          />
-        </div>
-      </div>
-
       {/* Questions Summary */}
-      <div className="rounded bg-gray-50 p-4">
+      <div className="h-full overflow-y-auto p-4">
         <h3 className="mb-4 font-semibold text-gray-700">Questions Summary</h3>
-        <div className="max-h-96 space-y-3 overflow-y-auto">
+        <div className="flex flex-col gap-2">
           {questions.map((question: Question, index: number) => {
             const answerForQuestion = currentRun.answersHit.find((hit) => hit.questionId === question.id)
             const selectedAnswer = answerForQuestion?.answerId
@@ -159,11 +159,11 @@ const CurrentRun: FC = () => {
                     </div>
 
                     {/* Show correct answer if answered incorrectly */}
-                    {answerForQuestion && !answerForQuestion.isCorrect && (
+                    {/* {answerForQuestion && !answerForQuestion.isCorrect && (
                       <div className="mt-1 text-sm text-gray-600">
                         Correct answer: {question.answers.find((a) => a.isCorrect)?.label}
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </div>

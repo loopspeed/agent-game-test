@@ -18,6 +18,7 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "tailwind-merge": "^3.3.1",
     "zustand": "latest"
   },
   "devDependencies": {
