@@ -7,7 +7,7 @@ import { useControls } from 'leva'
 import { type FC, Suspense, useEffect, useRef } from 'react'
 import React from 'react'
 
-import Scene from '@/components/Scene'
+import Scene from '@/components/game/Scene'
 import GameUI from '@/components/ui/GameUI'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import GameProvider, { useGameStore, useGameStoreAPI } from '@/stores/GameProvider'

@@ -2,9 +2,9 @@
 import { type FC } from 'react'
 import * as THREE from 'three'
 
-import AnswerGates from '@/components/AnswerGates'
-import { BeamObstacles, SphereObstacles } from '@/components/Obstacles'
-import Player from '@/components/Player'
+import AnswerGates from '@/components/game/AnswerGates'
+import { BeamObstacles, SphereObstacles } from '@/components/game/Obstacles'
+import Player from '@/components/game/Player'
 import { GRID_SQUARE_SIZE_M, LANES_Y_OFFSET, SPAWN_OBSTACLE_Z } from '@/stores/GameProvider'
 
 const Scene: FC = () => {
@@ -18,11 +18,11 @@ const Scene: FC = () => {
 
       <fog attach="fog" args={['#000000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} />
 
-      <BeamObstacles />
-      <SphereObstacles />
-
       {/* World conveyor (−Z translation, spacing, killZ, pooling) */}
       {/* I like the idea of a World Conveyor that manages the planning and generation of obstacles */}
+
+      <BeamObstacles />
+      <SphereObstacles />
       <AnswerGates />
 
       <Player />
