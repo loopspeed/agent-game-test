@@ -2,7 +2,6 @@
 
 import { type FC } from 'react'
 
-import { type Question } from '@/data/questions'
 import { MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
 
 const PlayingUI: FC = () => {
@@ -10,15 +9,12 @@ const PlayingUI: FC = () => {
     <>
       <Question />
       <Health />
+      <Streak />
     </>
   )
 }
 
 export default PlayingUI
-
-const Controls: FC = () => {
-  return <div></div>
-}
 
 const Health: FC = () => {
   const health = useGameStore((s) => s.health)
@@ -35,6 +31,19 @@ const Health: FC = () => {
       {Array.from({ length: MAX_HEALTH }, (_, i) => (
         <div key={i} className={`h-4 w-6 ${i < health ? getHealthColor() : 'bg-white/30'}`} />
       ))}
+    </div>
+  )
+}
+
+const Streak: FC = () => {
+  const streak = useGameStore((s) => s.currentStreak)
+
+  if (streak <= 0) return null
+
+  return (
+    <div className="absolute right-6 bottom-6 rounded-full bg-black/70 px-3 py-1 text-sm font-semibold">
+      <span className="mr-1">🔥</span>
+      {streak}x
     </div>
   )
 }

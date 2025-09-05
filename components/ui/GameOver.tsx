@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { type FC, useState } from 'react'
 
-import type { Question } from '@/data/questions'
+import type { Question } from '@/resources/questions'
 import { useGameOverData } from '@/hooks/useGameOverData'
 import { useGameStore } from '@/stores/GameProvider'
 import { formatAccuracy, formatDate, formatTime } from '@/utils/formatting'

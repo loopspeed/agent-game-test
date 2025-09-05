@@ -21,6 +21,8 @@ const Scene: FC = () => {
       <BeamObstacles />
       <SphereObstacles />
 
+      {/* World conveyor (−Z translation, spacing, killZ, pooling) */}
+      {/* I like the idea of a World Conveyor that manages the planning and generation of obstacles */}
       <AnswerGates />
 
       <Player />

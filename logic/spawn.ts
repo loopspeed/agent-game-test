@@ -1,4 +1,4 @@
-import type { Question } from '../data/questions';
+import type { Question } from '../resources/questions';
 
 // Generate slot positions for a ring given number of answers and radius
 export function generateSlots(question: Question, radius: number): { id: string; label: string; isCorrect: boolean; position: [number, number, number]; }[] {

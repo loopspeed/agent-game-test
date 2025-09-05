@@ -16,9 +16,11 @@
     "gsap": "^3.13.0",
     "leva": "latest",
     "next": "latest",
+    "openai": "^5.19.1",
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "^3.3.1",
+    "zod": "^4.1.5",
     "zustand": "latest"
   },
   "devDependencies": {

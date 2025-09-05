@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
-import { Answer, Question, SAMPLE_QUESTIONS } from '@/data/questions'
+import { Answer, Question, SAMPLE_QUESTIONS } from '@/resources/questions'
 import { CourseRun, useHistoryStore } from '@/stores/useHistoryStore'
 
 export enum GameStage {

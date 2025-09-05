@@ -4,7 +4,7 @@ import { CameraShake } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { useControls } from 'leva'
-import { type FC, Suspense, useEffect } from 'react'
+import { type FC, ReactNode, Suspense, useEffect, useRef } from 'react'
 import React from 'react'
 
 import Scene from '@/components/Scene'
@@ -54,20 +54,24 @@ export default function GamePage() {
   )
 }
 
-const CameraMovement: FC = () => {
-  const shakeConfig: CameraShakeProps = {
-    maxYaw: 0.08, // Max amount camera can yaw in either direction
-    maxPitch: 0.08, // Max amount camera can pitch in either direction
-    maxRoll: 0.08, // Max amount camera can roll in either direction
-    yawFrequency: 0.1, // Frequency of the yaw rotation
-    pitchFrequency: 0.1, // Frequency of the pitch rotation
-    rollFrequency: 0.1, // Frequency of the roll rotation
-    intensity: 1, // initial intensity of the shake
-    decay: false, // should the intensity decay over time
-    decayRate: 0.65, // if decay = true this is the rate at which intensity will reduce at
-  }
+const SHAKE_CONFIG: CameraShakeProps = {
+  maxYaw: 0.08, // Max amount camera can yaw in either direction
+  maxPitch: 0.08, // Max amount camera can pitch in either direction
+  maxRoll: 0.08, // Max amount camera can roll in either direction
+  yawFrequency: 0.1, // Frequency of the yaw rotation
+  pitchFrequency: 0.1, // Frequency of the pitch rotation
+  rollFrequency: 0.1, // Frequency of the roll rotation
+  intensity: 1, // initial intensity of the shake
+  decay: false, // should the intensity decay over time
+  decayRate: 0.65, // if decay = true this is the rate at which intensity will reduce at
+}
 
-  return <CameraShake {...shakeConfig} />
+const CameraMovement: FC = () => {
+  const ref = useRef(null)
+
+  console.log('CameraMovement render', ref.current)
+
+  return <CameraShake ref={ref} {...SHAKE_CONFIG} />
 }
 
 const DebugControls: FC = () => {
