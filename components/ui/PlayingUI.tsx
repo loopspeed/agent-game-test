@@ -1,16 +1,32 @@
 'use client'
-
-import { type FC } from 'react'
+import { useGSAP } from '@gsap/react'
+import gsap from 'gsap'
+import { type FC, useRef } from 'react'
 
 import { MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
+import { type TransitionStatus, Transition, SwitchTransition } from 'react-transition-group'
 
-const PlayingUI: FC = () => {
+const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
+  const container = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      if (transitionStatus === 'entered') {
+        gsap.to(container.current, { opacity: 1, duration: 0.3 })
+      }
+      if (transitionStatus === 'exiting') {
+        gsap.to(container.current, { opacity: 0, duration: 0.4 })
+      }
+    },
+    { scope: container, dependencies: [transitionStatus] },
+  )
+
   return (
-    <>
+    <section ref={container} className="contents">
       <Question />
       <Health />
       <Streak />
-    </>
+    </section>
   )
 }
 
@@ -51,10 +67,13 @@ const Streak: FC = () => {
 const Question: FC = () => {
   const questionIndex = useGameStore((s) => s.currentQuestionIndex)
   const currentQuestion = useGameStore((s) => s.currentQuestion)
+  const container = useRef<HTMLDivElement>(null)
 
   return (
-    // TODO: SwitchTransition on the question text
-    <div className="absolute top-0 flex max-w-2xl flex-col bg-black/70 text-center text-3xl leading-relaxed font-bold">
+    <SwitchTransition>
+      <Transition key={questionIndex} timeout={{ enter: 300, exit: 400 }} nodeRef={container}>
+        {() => (
+    <section className="absolute top-0 flex max-w-2xl flex-col bg-black/70 text-center text-3xl leading-relaxed font-bold">
       <p className="px-2 py-5">
         {questionIndex + 1}. {currentQuestion.question}
       </p>
@@ -62,6 +81,9 @@ const Question: FC = () => {
       <div className="relative h-2 w-full overflow-hidden bg-white/20">
         <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
       </div>
-    </div>
+    </section>
+    )}
+    </Transition>
+    </SwitchTransition>
   )
 }

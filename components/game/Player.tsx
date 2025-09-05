@@ -4,9 +4,10 @@ import { useGSAP } from '@gsap/react'
 import { useFrame } from '@react-three/fiber'
 import { type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
 import { gsap } from 'gsap'
-import { type FC, useEffect, useRef } from 'react'
+import { type FC, useEffect, useImperativeHandle, useRef } from 'react'
 import * as THREE from 'three'
 
+import ThunderbirdFour from '@/components/models/ThunderbirdFour'
 import { type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/useInputStore'
@@ -28,6 +29,16 @@ const Player: FC = () => {
 
   const bodyRef = useRef<RapierRigidBody>(null)
   const materialRef = useRef<THREE.MeshBasicMaterial>(null)
+  const modelRef = useRef<THREE.Group | null>(null)
+
+  useEffect(() => {
+    if (!modelRef.current) return
+    // find first mesh in the group
+    const firstMesh = modelRef.current.getObjectByProperty('type', 'Mesh') as THREE.Mesh | undefined
+    if (firstMesh && (firstMesh.material as any)?.color) {
+      materialRef.current = firstMesh.material as THREE.MeshBasicMaterial
+    }
+  }, [])
 
   // remember previous input to detect key presses
   const prevInput = useRef({
@@ -169,10 +180,11 @@ const Player: FC = () => {
       userData={{
         type: 'player',
       }}>
-      <mesh>
+        <ThunderbirdFour ref={modelRef} rotation={[0, Math.PI, 0]} scale={1.8} position={[0, -0.05, 0]} />
+      {/* <mesh>
         <boxGeometry args={[0.6, 0.3, 0.6]} />
         <meshBasicMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={1} />
-      </mesh>
+      </mesh> */}
     </RigidBody>
   )
 }
