@@ -318,7 +318,6 @@ const getAnswerOccupiedLanes = (answerMapping: (Answer | null)[]): number[] => {
 }
 
 const GameProvider: FC<PropsWithChildren> = ({ children }) => {
-  // Save to history store
   const addCourseRunToHistory = useHistoryStore((s) => s.addCourseRun)
   const gameStore = useRef<GameStateStore>(createGameStore({ questions: SAMPLE_QUESTIONS, addCourseRunToHistory }))
   return <GameContext.Provider value={gameStore.current}>{children}</GameContext.Provider>
