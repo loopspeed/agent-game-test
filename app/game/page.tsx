@@ -4,11 +4,11 @@ import { CameraShake } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { useControls } from 'leva'
-import { type FC, ReactNode, Suspense, useEffect, useRef } from 'react'
+import { type FC, Suspense, useEffect, useRef } from 'react'
 import React from 'react'
 
 import Scene from '@/components/Scene'
-import GameUI from '@/components/ui/GameUi'
+import GameUI from '@/components/ui/GameUI'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import GameProvider, { useGameStore, useGameStoreAPI } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/useInputStore'
@@ -69,7 +69,7 @@ const SHAKE_CONFIG: CameraShakeProps = {
 const CameraMovement: FC = () => {
   const ref = useRef(null)
 
-  console.log('CameraMovement render', ref.current)
+  // Dev: inspect camera ref if needed
 
   return <CameraShake ref={ref} {...SHAKE_CONFIG} />
 }

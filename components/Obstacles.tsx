@@ -4,7 +4,7 @@ import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBod
 import { type FC, useLayoutEffect, useRef, useState } from 'react'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { ObstacleUserData } from '@/model/game'
+import { type ObstacleUserData } from '@/model/game'
 import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/GameProvider'
 
 type ObstacleData = {

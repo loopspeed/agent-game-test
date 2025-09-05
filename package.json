@@ -20,7 +20,7 @@
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "^3.3.1",
-    "zod": "^4.1.5",
+    "zod": "^3.23.8",
     "zustand": "latest"
   },
   "devDependencies": {

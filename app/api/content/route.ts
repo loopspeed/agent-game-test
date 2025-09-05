@@ -1,6 +1,5 @@
-import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import z from 'zod'
+import { z } from 'zod'
 
 // import { editImage, generateImage } from '@/utils/ai/imageGen'
 
@@ -8,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 200 // seconds = 3 minutes
 
 const formSchema = z.object({
-    url: z.string().url().max(2048),
+  url: z.string().url().max(2048),
 })
 
 type FormSchema = z.infer<typeof formSchema>
@@ -24,32 +23,24 @@ async function validateFormData(formData: FormData): Promise<FormSchema> {
   return parsed.data
 }
 
-
-
 export async function POST(request: NextRequest) {
-  const startTime = performance.now() // Start timer
   try {
     const formData = await request.formData()
     const validatedData = await validateFormData(formData)
 
     const url = validatedData.url
-    const randomId = randomUUID()
-
+    // const randomId = randomUUID()
 
     try {
-      // 
-  
-
+      //
     } catch (genError: unknown) {
       console.error('Error generating artwork or signature:', genError)
       throw genError
     }
 
-
     return NextResponse.json(
       {
         url,
-
       },
       { status: 200 },
     )
