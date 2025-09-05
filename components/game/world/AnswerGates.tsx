@@ -73,9 +73,12 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
       {/* Only render visual elements if there's an answer to display (others are "nets" to catch misses) */}
       {!!answer && (
         <>
+        {(() => {
           {/* Flat box container */}
-          <mesh>
-            <boxGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M, 0.1]} />
+          const [w, h, d] = getBoxSize(answer.label);
+      return (
+        <mesh>
+          <boxGeometry args={[w, h, d]} />
             <meshStandardMaterial
               ref={material}
               color={answer.isCorrect ? '#4ade80' : '#f87171'}
@@ -83,6 +86,8 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
               opacity={0.4}
             />
           </mesh>
+          );
+    })()}
           {/* Answer text */}
           <Text
             position={[0, 0, 0.1]}
@@ -234,4 +239,13 @@ const FONTS = {
   'Sirin Stencil': 'https://fonts.gstatic.com/s/sirinstencil/v6/mem4YaWwznmLx-lzGfN7MdRyRc9MAQ.woff',
   'Roboto Slab':
     'https://rawcdn.githack.com/google/fonts/3b179b729ac3306ab2a249d848d94ff08b90a0af/apache/robotoslab/static/RobotoSlab-Black.ttf',
+}
+
+const getBoxSize = (label: string): [number, number, number] => {
+  const minWidth = GRID_SQUARE_SIZE_M; 
+  const padding = 0.4;
+  const widthPerCharacter = 0.1;
+  const width = Math.max(minWidth, label.length * widthPerCharacter + padding);
+
+  return [width, GRID_SQUARE_SIZE_M, 0.1];
 }

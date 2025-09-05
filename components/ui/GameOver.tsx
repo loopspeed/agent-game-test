@@ -1,21 +1,38 @@
+'use client'
 import Link from 'next/link'
-import { type FC, useState } from 'react'
+import { useGSAP } from '@gsap/react'
+import gsap from 'gsap'
+import { type FC, useRef, useState } from 'react'
 
-import { useGameOverData } from '@/hooks/useGameOverData'
 import type { Question } from '@/model/content'
+import { useGameOverData } from '@/hooks/useGameOverData'
 import { useGameStore } from '@/stores/GameProvider'
 import { formatAccuracy, formatDate, formatTime } from '@/utils/formatting'
+import type { TransitionStatus } from 'react-transition-group'
 
-const GameOverUI: FC = () => {
+const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current')
   const startNewGame = useGameStore((s) => s.restartGame)
+  const container = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      if (transitionStatus === 'entered') {
+        gsap.to(container.current, { opacity: 1, duration: 0.3 })
+      }
+      if (transitionStatus === 'exiting') {
+        gsap.to(container.current, { opacity: 0, duration: 0.4 })
+      }
+    },
+    { scope: container, dependencies: [transitionStatus] },
+  )
 
   const handlePlayAgain = () => {
     startNewGame()
   }
 
   return (
-    <section className="pointer-events-auto grid size-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-5 bg-black/80 px-24 py-12">
+    <section ref={container} className="pointer-events-auto grid size-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-5 bg-black/80 px-24 py-12">
       <header>
         <h2 className="text-center text-2xl font-bold">Course Over</h2>
         {/* Tab Navigation */}
