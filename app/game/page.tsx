@@ -1,48 +1,52 @@
 'use client'
-import { CameraShakeProps, Stats } from '@react-three/drei'
-import { CameraShake } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { useControls } from 'leva'
-import { type FC, Suspense, useEffect, useRef } from 'react'
+import { type FC, Suspense, useEffect } from 'react'
 import React from 'react'
 
+import DebugDisplay from '@/components/debug/RhythmDebugDisplay'
+import RhythmSystemManager from '@/components/game/RhythmSystemManager'
 import Scene from '@/components/game/Scene'
 import GameUI from '@/components/ui/GameUI'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import GameProvider, { useGameStore, useGameStoreAPI } from '@/stores/GameProvider'
+import { GameProvider, useGameStore } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/useInputStore'
+import { useWorldStore } from '@/stores/WorldProvider'
 
-function GameContent() {
-  const reset = useGameStore((s) => s.resetStore)
+const GameContent: FC = () => {
+  const resetStore = useGameStore((s) => s.resetStore)
 
   useEffect(() => {
     return () => {
-      reset()
+      resetStore()
     }
-  }, [reset])
+  }, [resetStore])
 
   useKeypadInput()
 
   return (
     <main className="h-lvh w-full overflow-hidden">
+      <RhythmSystemManager />
       <Canvas
         className="!fixed inset-0 !h-lvh"
-        performance={{ min: 0.5, debounce: 300 }}
+        performance={{ min: 0.2, debounce: 300 }}
+        gl={{ powerPreference: 'low-power', antialias: false, alpha: false }}
         camera={{ position: [0, 0.2, 4], fov: 75, far: 50 }}>
-        <CameraMovement />
-        <Stats />
+        {/* <CameraMovement /> */}
+        {/* <Stats /> */}
         <DebugControls />
 
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
-          <Physics gravity={[0, 0, 0]} debug={false}>
+          <Physics gravity={[0, 0, 0]} debug={true}>
             <Scene />
           </Physics>
         </Suspense>
       </Canvas>
 
       <GameUI />
+      <DebugDisplay />
     </main>
   )
 }
@@ -55,31 +59,9 @@ export default function GamePage() {
   )
 }
 
-const SHAKE_CONFIG: CameraShakeProps = {
-  maxYaw: 0.08, // Max amount camera can yaw in either direction
-  maxPitch: 0.08, // Max amount camera can pitch in either direction
-  maxRoll: 0.08, // Max amount camera can roll in either direction
-  yawFrequency: 0.1, // Frequency of the yaw rotation
-  pitchFrequency: 0.1, // Frequency of the pitch rotation
-  rollFrequency: 0.1, // Frequency of the roll rotation
-  intensity: 1, // initial intensity of the shake
-  decay: false, // should the intensity decay over time
-  decayRate: 0.65, // if decay = true this is the rate at which intensity will reduce at
-}
-
-const CameraMovement: FC = () => {
-  const ref = useRef(null)
-
-  // Dev: inspect camera ref if needed
-
-  return <CameraShake ref={ref} {...SHAKE_CONFIG} />
-}
-
 const DebugControls: FC = () => {
-  const gameStoreApi = useGameStoreAPI()
-  const setTimeMultiplier = useGameStore((s) => s.setTimeMultiplier)
-  const setMaxObstacles = useGameStore((s) => s.setMaxObstacles)
-  const setSpawnInterval = useGameStore((s) => s.setSpawnInterval)
+  const setTimeMultiplier = useWorldStore((s) => s.setTimeMultiplier)
+  const timeMultiplier = useWorldStore((s) => s.timeMultiplier)
 
   const [, setControls] = useControls('Game', () => {
     return {
@@ -88,32 +70,16 @@ const DebugControls: FC = () => {
         min: 0.1,
         step: 0.1,
         max: 2,
-        value: gameStoreApi.getState().timeMultiplier,
+        value: timeMultiplier,
         onChange: (value) => setTimeMultiplier(value),
-      },
-      maxObstacles: {
-        label: 'Max Obstacles',
-        min: 5,
-        step: 1,
-        max: 40,
-        value: gameStoreApi.getState().maxObstacles,
-        onChange: (value) => setMaxObstacles(value),
-      },
-      spawnInterval: {
-        label: 'Spawn Interval (seconds)',
-        min: 0.1,
-        max: 5.0,
-        step: 0.1,
-        value: gameStoreApi.getState().spawnInterval,
-        onChange: (value) => setSpawnInterval(value),
       },
     }
   })
 
   // Sync controls with the store state
-  useTimeSubscription((timeMultiplier) => {
+  useTimeSubscription((currentTimeMultiplier) => {
     setControls({
-      time: timeMultiplier,
+      time: currentTimeMultiplier,
     })
   })
 

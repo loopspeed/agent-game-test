@@ -1,14 +1,15 @@
 'use client'
-import Link from 'next/link'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
+import Link from 'next/link'
 import { type FC, useRef, useState } from 'react'
+import type { TransitionStatus } from 'react-transition-group'
 
-import type { Question } from '@/model/content'
 import { useGameOverData } from '@/hooks/useGameOverData'
+import type { Question } from '@/model/content'
+import { SAMPLE_QUESTIONS } from '@/resources/questions'
 import { useGameStore } from '@/stores/GameProvider'
 import { formatAccuracy, formatDate, formatTime } from '@/utils/formatting'
-import type { TransitionStatus } from 'react-transition-group'
 
 const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current')
@@ -32,7 +33,9 @@ const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStat
   }
 
   return (
-    <section ref={container} className="pointer-events-auto grid size-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-5 bg-black/80 px-24 py-12">
+    <section
+      ref={container}
+      className="pointer-events-auto grid size-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-5 bg-black/80 px-24 py-12">
       <header>
         <h2 className="text-center text-2xl font-bold">Course Over</h2>
         {/* Tab Navigation */}
@@ -81,7 +84,7 @@ export default GameOverUI
 
 const CurrentRun: FC = () => {
   const { currentRun } = useGameOverData()
-  const questions = useGameStore((s) => s.questions)
+  const questions = SAMPLE_QUESTIONS
 
   return (
     <div className="grid w-full grid-cols-[40%_1fr] gap-4 space-y-6 overflow-hidden">

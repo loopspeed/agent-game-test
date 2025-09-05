@@ -1,13 +1,14 @@
 'use client'
-
 import { Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { CuboidCollider, type IntersectionEnterPayload, RapierRigidBody, RigidBody } from '@react-three/rapier'
 import gsap from 'gsap'
-import React, { type FC, useEffect, useRef } from 'react'
+import React, { type FC, useRef } from 'react'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
+import type { Answer } from '@/model/content'
 import { type AnswerGateUserData, type RigidBodyUserData } from '@/model/game'
+import { FONTS } from '@/resources/fonts'
 import {
   GameStage,
   GRID_SQUARE_SIZE_M,
@@ -17,16 +18,16 @@ import {
   SPAWN_OBSTACLE_Z,
   useGameStore,
 } from '@/stores/GameProvider'
+import { Phase, useWorldStore } from '@/stores/WorldProvider'
 
 type AnswerGateProps = {
   position: [number, number, number]
   index: number
+  answer: Answer | null
 }
 
-// Answer gate with physics collision
-const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, position }, ref) => {
-  const answer = useGameStore((s) => s.answerGatesMapping[s.currentQuestionIndex][index])
-
+const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, position, answer }, ref) => {
+  // Get answer from rhythm data - this is always provided by the rhythm system
   const userData: AnswerGateUserData = {
     type: 'answerGate',
     isCorrect: answer?.isCorrect ?? false,
@@ -39,8 +40,8 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
     if (!e.other?.rigidBody?.userData) throw new Error('Invalid userData')
     const { type } = e.other.rigidBody.userData as RigidBodyUserData
 
-    // Basic flash for now
     if (type === 'player') {
+      // Enhanced visual feedback for rhythm-based gates
       gsap.to(material.current, {
         opacity: 1.0,
         duration: 0.16,
@@ -50,6 +51,12 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
             duration: 0.12,
           })
         },
+      })
+
+      // Log rhythm context for debugging
+      console.warn('🎵 RHYTHM ANSWER GATE HIT:', {
+        answerId: answer?.id,
+        isCorrect: answer?.isCorrect,
       })
     }
   }
@@ -63,32 +70,24 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
       colliders={false}
       position={position}
       userData={userData}>
-      {/* Full size of the grid square */}
       <CuboidCollider
         args={[GRID_SQUARE_SIZE_M / 2, GRID_SQUARE_SIZE_M / 2, 0.05]}
         sensor={true}
         onIntersectionEnter={onIntersectionEnter}
       />
 
-      {/* Only render visual elements if there's an answer to display (others are "nets" to catch misses) */}
+      {/* Visual elements */}
       {!!answer && (
-        <>
-        {(() => {
-          {/* Flat box container */}
-          const [w, h, d] = getBoxSize(answer.label);
-      return (
-        <mesh>
-          <boxGeometry args={[w, h, d]} />
+        <group>
+          <mesh>
+            <boxGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M, 0.1]} />
             <meshStandardMaterial
               ref={material}
               color={answer.isCorrect ? '#4ade80' : '#f87171'}
               transparent={true}
-              opacity={0.4}
+              opacity={0.6} // Rhythm gates are slightly more opaque
             />
           </mesh>
-          );
-    })()}
-          {/* Answer text */}
           <Text
             position={[0, 0, 0.1]}
             fontSize={0.2}
@@ -100,16 +99,114 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, 
             textAlign="center">
             {answer.label}
           </Text>
-        </>
+
+          {/* Debug indicator for rhythm-based gates */}
+          <mesh position={[0.6, 0.6, 0.11]}>
+            <sphereGeometry args={[0.05]} />
+            <meshBasicMaterial color="#ffd700" />
+          </mesh>
+        </group>
       )}
     </RigidBody>
   )
 })
 
-AnswerGate.displayName = 'AnswerGate'
+RhythmAnswerGate.displayName = 'RhythmAnswerGate'
 
-const gates = new Array(9).fill(null)
-// Create all 9 gate positions (3x3 grid)
+const ANSWER_SPEED_MULTIPLIER = 0.5
+
+const RhythmAnswerGates: FC = () => {
+  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
+  const goSlowMo = useWorldStore((s) => s.goSlowMo)
+  const isSlowMo = useWorldStore((s) => s.isSlowMo)
+  const isQuestionPhase = useWorldStore((s) => s.phase === Phase.QUESTION)
+  const gameSpeed = useWorldStore((s) => s.gameSpeed)
+  const questionIndex = useWorldStore((s) => s.questionIndex)
+  const answersMapping = useWorldStore((s) => s.answersMapping)
+
+  const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
+  const isLive = useRef(false) // True when gates are active and moving
+  const lastSpawnedQuestionIndex = useRef(-1) // Track last spawned question index to prevent duplicate spawns
+
+  const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
+    gatesRefs.current.forEach((gate) => {
+      if (!gate) return
+      const newSpeed = timeMultiplier * gameSpeed * ANSWER_SPEED_MULTIPLIER
+      gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
+    })
+  })
+
+  function spawnAnswerGates() {
+    gatesRefs.current.forEach((gate, index) => {
+      if (!gate) return
+      const position = gatePositions[index]
+      const speed = timeMultiplier.current * gameSpeed * ANSWER_SPEED_MULTIPLIER
+      gate.setLinvel({ x: 0, y: 0, z: speed }, true)
+      gate.setTranslation(
+        {
+          x: position[0],
+          y: position[1],
+          z: SPAWN_OBSTACLE_Z,
+        },
+        true,
+      )
+    })
+  }
+
+  useFrame(() => {
+    if (!isPlaying) return
+
+    // Check for rhythm-based answer gate spawns - only when gates are not currently live
+    if (!isLive.current && isQuestionPhase && questionIndex !== lastSpawnedQuestionIndex.current) {
+      isLive.current = true // Gates are now live and moving
+      lastSpawnedQuestionIndex.current = questionIndex
+      spawnAnswerGates()
+    }
+
+    // Lifecycle management - only when gates are live
+    if (isLive.current) {
+      const firstGate = gatesRefs.current[0]
+      if (!firstGate) return
+
+      const firstGateTranslationZ = firstGate.translation().z
+      const gatesNeedKilling = firstGateTranslationZ > KILL_OBSTACLE_Z
+
+      if (gatesNeedKilling) {
+        console.warn('🎵 RHYTHM GATES LIFECYCLE COMPLETE', { firstGateTranslationZ })
+        // Kill the gates
+        gatesRefs.current.forEach((gate) => {
+          if (!gate) return
+          gate.setLinvel({ x: 0, y: 0, z: 0 }, false)
+          gate.setTranslation({ x: 0, y: 0, z: -40 }, false)
+        })
+        isLive.current = false // Gates are no longer live, ready for next spawn
+        return
+      }
+
+      // Slow-mo timing logic (adjust for rhythm-based timing)
+      const shouldSlowDown = Math.round(firstGateTranslationZ) === -3 && !isSlowMo
+      if (shouldSlowDown) goSlowMo()
+    }
+  })
+
+  return (
+    <>
+      {gatePositions.map((position, index) => (
+        <RhythmAnswerGate
+          ref={(ref) => {
+            gatesRefs.current[index] = ref
+          }}
+          key={index}
+          position={position}
+          index={index}
+          answer={answersMapping[index]}
+        />
+      ))}
+    </>
+  )
+}
+
+// Gate position generation
 const generateGatePositions = (): [number, number, number][] => {
   const positions: [number, number, number][] = []
   for (let y = 0; y < LANES_Y.length; y++) {
@@ -122,130 +219,4 @@ const generateGatePositions = (): [number, number, number][] => {
 
 const gatePositions = generateGatePositions()
 
-const GATES_SPEED = 5.5
-
-const AnswerGates: FC = () => {
-  const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
-  const isRespawning = useRef(false)
-
-  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
-  const currentQuestion = useGameStore((s) => s.currentQuestion)
-  const goToNextQuestion = useGameStore((s) => s.goToNextQuestion)
-  const isSlowMo = useGameStore((s) => s.isSlowMo)
-  const goSlowMo = useGameStore((s) => s.goSlowMo)
-
-  const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
-    gatesRefs.current.forEach((gate) => {
-      if (!gate) return // Check for null ref
-      const newSpeed = timeMultiplier * GATES_SPEED
-      gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
-    })
-  })
-
-  // Set velocity once when gates are created or speed changes
-  useEffect(() => {
-    const gates = gatesRefs.current // Capture refs at effect creation time
-
-    const resetGatePositions = () => {
-      gates.forEach((gate, index) => {
-        if (!gate) return // Check for null ref
-        const position = gatePositions[index]
-        gate.setLinvel({ x: 0, y: 0, z: GATES_SPEED * timeMultiplier.current }, false)
-        gate.setTranslation({ x: position[0], y: position[1], z: SPAWN_OBSTACLE_Z - 2 }, false)
-      })
-    }
-
-    if (isPlaying) {
-      resetGatePositions()
-    }
-  }, [isPlaying, currentQuestion, timeMultiplier])
-
-  // Check lifecycle only
-  useFrame(() => {
-    if (!isPlaying) return
-    if (isRespawning.current) return
-    // Check if gates have passed the kill zone and move to next question
-    const firstGate = gatesRefs.current[0]
-    if (!firstGate) return
-
-    const firstGateTranslationZ = firstGate.translation().z
-    const gatesNeedKilling = firstGateTranslationZ > KILL_OBSTACLE_Z
-
-    if (gatesNeedKilling) {
-      console.warn('Going to next question', { firstGateTranslationZ })
-      isRespawning.current = true
-
-      gatesRefs.current!.forEach((gate) => {
-        // Reset positions and stop movement
-        if (!gate) return
-        gate.setLinvel({ x: 0, y: 0, z: 0 }, false)
-        gate.setTranslation({ x: 0, y: 0, z: -1000 }, false)
-      })
-
-      goToNextQuestion()
-      // Reset the flag after a short delay to allow for next cycle
-      setTimeout(() => {
-        isRespawning.current = false
-      }, 1000)
-      return
-    }
-
-    const shouldSlowDown = Math.round(firstGateTranslationZ) === -3 && !isSlowMo
-
-    if (shouldSlowDown) {
-      console.warn('Slowing down obstacles for answer selection', { firstGateTranslationZ })
-      goSlowMo()
-    }
-  })
-
-  return (
-    <>
-      {gates.map((_, index) => (
-        <AnswerGate
-          ref={(ref) => {
-            gatesRefs.current[index] = ref
-          }}
-          key={index}
-          position={gatePositions[index]}
-          index={index}
-        />
-      ))}
-    </>
-  )
-}
-
-export default AnswerGates
-
-// Examples
-const FONTS = {
-  Roboto: 'https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4mxM.woff',
-  'Noto Sans': 'https://fonts.gstatic.com/s/notosans/v7/o-0IIpQlx3QUlC5A4PNr5TRG.woff',
-  //too thin: 'Alex Brush': 'https://fonts.gstatic.com/s/alexbrush/v8/SZc83FzrJKuqFbwMKk6EhUXz6w.woff',
-  Comfortaa: 'https://fonts.gstatic.com/s/comfortaa/v12/1Ptsg8LJRfWJmhDAuUs4TYFs.woff',
-  Cookie: 'https://fonts.gstatic.com/s/cookie/v8/syky-y18lb0tSbf9kgqU.woff',
-  //throws: 'Cutive Mono': 'https://fonts.gstatic.com/s/cutivemono/v6/m8JWjfRfY7WVjVi2E-K9H6RCTmg.woff',
-  //throws: 'Gabriela': 'https://fonts.gstatic.com/s/gabriela/v6/qkBWXvsO6sreR8E-b8m5xL0.woff',
-  Philosopher: 'https://fonts.gstatic.com/s/philosopher/v9/vEFV2_5QCwIS4_Dhez5jcWBuT0s.woff',
-  Quicksand: 'https://fonts.gstatic.com/s/quicksand/v7/6xKtdSZaM9iE8KbpRA_hK1QL.woff',
-  Trirong: 'https://fonts.gstatic.com/s/trirong/v3/7r3GqXNgp8wxdOdOn4so3g.woff',
-  Trocchi: 'https://fonts.gstatic.com/s/trocchi/v6/qWcqB6WkuIDxDZLcPrxeuw.woff',
-  'Advent Pro': 'https://fonts.gstatic.com/s/adventpro/v7/V8mAoQfxVT4Dvddr_yOwhTqtLg.woff',
-  'Henny Penny': 'https://fonts.gstatic.com/s/hennypenny/v5/wXKvE3UZookzsxz_kjGSfPQtvXQ.woff',
-  Orbitron: 'https://fonts.gstatic.com/s/orbitron/v9/yMJRMIlzdpvBhQQL_Qq7dys.woff',
-  Sacramento: 'https://fonts.gstatic.com/s/sacramento/v5/buEzpo6gcdjy0EiZMBUG4C0f-w.woff',
-  'Snowburst One': 'https://fonts.gstatic.com/s/snowburstone/v5/MQpS-WezKdujBsXY3B7I-UT7SZieOA.woff',
-  Syncopate: 'https://fonts.gstatic.com/s/syncopate/v9/pe0sMIuPIYBCpEV5eFdCBfe5.woff',
-  Wallpoet: 'https://fonts.gstatic.com/s/wallpoet/v9/f0X10em2_8RnXVVdUObp58I.woff',
-  'Sirin Stencil': 'https://fonts.gstatic.com/s/sirinstencil/v6/mem4YaWwznmLx-lzGfN7MdRyRc9MAQ.woff',
-  'Roboto Slab':
-    'https://rawcdn.githack.com/google/fonts/3b179b729ac3306ab2a249d848d94ff08b90a0af/apache/robotoslab/static/RobotoSlab-Black.ttf',
-}
-
-const getBoxSize = (label: string): [number, number, number] => {
-  const minWidth = GRID_SQUARE_SIZE_M; 
-  const padding = 0.4;
-  const widthPerCharacter = 0.1;
-  const width = Math.max(minWidth, label.length * widthPerCharacter + padding);
-
-  return [width, GRID_SQUARE_SIZE_M, 0.1];
-}
+export default RhythmAnswerGates

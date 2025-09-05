@@ -2,9 +2,10 @@
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { type FC, useRef } from 'react'
+import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
 import { MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
-import { type TransitionStatus, Transition, SwitchTransition } from 'react-transition-group'
+import { Phase, useWorldStore } from '@/stores/WorldProvider'
 
 const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
   const container = useRef<HTMLDivElement>(null)
@@ -52,7 +53,7 @@ const Health: FC = () => {
 }
 
 const Streak: FC = () => {
-  const streak = useGameStore((s) => s.currentStreak)
+  const streak = useGameStore((s) => s.streak)
 
   if (streak <= 0) return null
 
@@ -65,25 +66,35 @@ const Streak: FC = () => {
 }
 
 const Question: FC = () => {
-  const questionIndex = useGameStore((s) => s.currentQuestionIndex)
-  const currentQuestion = useGameStore((s) => s.currentQuestion)
+  const isQuestionPhase = useWorldStore((s) => s.phase === Phase.QUESTION)
+  const questionIndex = useWorldStore((s) => s.questionIndex)
+  const currentQuestion = useWorldStore((s) => s.question)
+
   const container = useRef<HTMLDivElement>(null)
+
+  const switchKey = isQuestionPhase ? `question-${questionIndex}` : 'no-question'
 
   return (
     <SwitchTransition>
-      <Transition key={questionIndex} timeout={{ enter: 300, exit: 400 }} nodeRef={container}>
-        {() => (
-    <section className="absolute top-0 flex max-w-2xl flex-col bg-black/70 text-center text-3xl leading-relaxed font-bold">
-      <p className="px-2 py-5">
-        {questionIndex + 1}. {currentQuestion.question}
-      </p>
+      <Transition key={switchKey} timeout={{ enter: 300, exit: 400 }} nodeRef={container}>
+        {() =>
+          !isQuestionPhase ? (
+            <div ref={container} />
+          ) : (
+            <section
+              ref={container}
+              className="absolute top-0 flex max-w-2xl flex-col bg-black/70 text-center text-3xl leading-relaxed font-bold">
+              <p className="px-2 py-5">
+                {questionIndex + 1}. {currentQuestion.question}
+              </p>
 
-      <div className="relative h-2 w-full overflow-hidden bg-white/20">
-        <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
-      </div>
-    </section>
-    )}
-    </Transition>
+              <div className="relative h-2 w-full overflow-hidden bg-white/20">
+                <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
+              </div>
+            </section>
+          )
+        }
+      </Transition>
     </SwitchTransition>
   )
 }

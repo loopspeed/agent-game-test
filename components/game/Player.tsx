@@ -11,15 +11,17 @@ import ThunderbirdFour from '@/components/models/ThunderbirdFour'
 import { type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/useInputStore'
+import { useWorldStore } from '@/stores/WorldProvider'
 
 gsap.registerPlugin(useGSAP)
 
 const Player: FC = () => {
   const input = useInputStore()
 
-  const setPlayerPosition = useGameStore((s) => s.setPlayerPosition)
   const onObstacleHit = useGameStore((s) => s.onObstacleHit)
   const onAnswerHit = useGameStore((s) => s.onAnswerHit)
+
+  const updatePlayerPosition = useWorldStore((s) => s.updatePlayerPosition)
 
   const laneXIndex = useRef(1)
   const laneYIndex = useRef(1)
@@ -164,8 +166,10 @@ const Player: FC = () => {
       z: 0,
     })
 
-    // Store the current position in the global store (do we need to do this?)
-    setPlayerPosition([currentX.current, currentY.current, 0])
+    updatePlayerPosition({
+      pos: [currentX.current, currentY.current, 0],
+      lanes: [laneXIndex.current, laneYIndex.current],
+    })
   })
 
   return (

@@ -1,106 +1,77 @@
 # GitHub Copilot Instructions
 
-## Project Overview
+## Project overview
 
-This is an educational 3D runner game built with Next.js, React Three Fiber, and Rapier physics.
-Players navigate a spaceship through answer gates while avoiding obstacles, answering questions as they go.
+This is an educational 3D runner game built with Next.js, React Three Fiber, and Rapier physics. Players navigate a character down a track, passing through gates with answers while avoiding obstacles. The game is client‑side only; all state lives in the browser.
+
+## Clean Code guidelines
+
+Use meaningful names – variable and function names should clearly communicate what the code does. Avoid abbreviations or cryptic identifiers; clear naming makes the code self‑documenting
+github.com
+
+Be consistent – use the same vocabulary for the same type of entity (e.g. always call the current player position playerPos instead of mixing currentPos, position, and pos).
+
+Write small, pure functions – each function should have a single responsibility. Break complex logic into smaller helpers rather than nesting conditionals.
+
+Early returns over deep nesting – return early to avoid if/else pyramids.
+
+Prefer immutability – never mutate objects or arrays directly. When updating state, return new objects instead of modifying existing ones.
+
+Avoid magic numbers and strings – declare constants (e.g. LANE_COUNT = 3) so that values are descriptive and changeable.
+
+Comment judiciously – write code that is self‑explanatory; when comments are needed, make them precise and consider using // TODO to mark work that should be improved later.
+
+## Zustand best practices
+
+Zustand is used for global state in this project. To keep components fast and predictable:
+
+Split stores by concern – for example, GameProvider holds game state, while useInputStore handles user input.
+
+Use selectors – when consuming state in a component, call the hook with a selector (useStore((state) => state.someValue)) so that the component re‑renders only when that slice changes. Avoid retrieving the entire store in a component.
+
+Subscribe to frequently changing values – for values that update every frame (e.g. game time or physics ticks), subscribe outside of React using subscribe or custom hooks like useTimeSubscription. This takes advantage of Zustand’s fine‑grained reactivity
+refine.dev
+and prevents unnecessary React re‑renders.
+
+Keep state immutable – always use functional updates (set((prev) => {…})) and avoid mutating nested objects.
+
+Avoid derived state in the store – compute derived values (like isRunning) in components or hooks rather than storing them.
 
 ## Architecture & Core Systems
 
-### State Management Pattern
+### State Management
 
-- **Global Game State**: `stores/GameProvider.tsx` uses Zustand with React Context pattern
-- **Input State**: `stores/useInputStore.ts` separate Zustand store for keyboard input
-- **Time Synchronization**: `hooks/useTimeSubscription.ts` syncs GSAP animations with game state
-- **GSAP Integration**: Time scaling and visual effects use GSAP timelines, not React state
+The game uses Zustand wrapped in a React context (stores/GameProvider.tsx) to hold global game state. Keyboard input is handled separately in stores/useInputStore.ts. Time is managed by the useTimeSubscription hook, which synchronises GSAP animations with the game state. GSAP handles time scaling and visual effects; avoid storing animation state in React.
 
-### 3D Game Components Structure
+### Physics & collision
 
-```
-Scene.tsx (root 3D container)
-├── Player.tsx (kinematic physics body with lane-based movement)
-├── Obstacles.tsx (instanced rigid bodies with object pooling)
-└── AnswerGates.tsx (3x3 grid of collision sensors)
-```
+Physics are powered by Rapier with zero gravity. All bodies are kinematic and use sensor={true} so that collisions can be detected without physics response. Each physics body has a userData object (e.g. { type: 'obstacle' }) so collision handlers can discriminate between obstacles, gates, etc. The track uses discrete lane positions (LANES_X, LANES_Y) to move the player between lanes.
 
-### Physics & Collision System
+### Performance patterns
 
-- **Rapier Physics**: Zero gravity, kinematic bodies only
-- **Collision Detection**: Uses `sensor={true}` rigid bodies with `onIntersectionEnter`
-- **User Data Pattern**: All physics bodies have typed `userData` for collision handling
-- **Lane System**: Player moves between discrete positions using `LANES_X/LANES_Y` arrays
+Instanced rendering – obstacles are drawn with instanced meshes (InstancedRigidBodies) to render hundreds of objects efficiently.
 
-## Key Development Patterns
+Refs for mutable state – time‑sensitive or mutable values that should not trigger React re‑renders (like world positions) are stored in useRef. Components read and update these refs in requestAnimationFrame loops or subscriptions.
 
-### Performance Optimization
+Object pooling – physics bodies are reused rather than created and destroyed each time. When adding new obstacles or gates, reuse existing instances if possible.
 
-- **Instanced Rendering**: Obstacles use `InstancedRigidBodies` for hundreds of objects
-- **Ref-based State**: Mutable game data stored in `useRef` to avoid React re-renders
-- **Object Pooling**: Reuse physics bodies instead of creating/destroying
+### Input handling
 
-### Input Handling
+Player movement is discrete: arrow keys or WASD trigger a lane change rather than continuous translation. The input store compares the previous frame’s key states (stored in a ref) to detect presses. Lane movement uses THREE.MathUtils.damp to interpolate smoothly between lane positions.
 
-- **Discrete Movement**: Arrow keys/WASD trigger lane changes, not continuous movement
-- **Input State**: Previous frame comparison in `useRef` to detect key press events
-- **Smooth Interpolation**: `THREE.MathUtils.damp` for smooth movement between lanes
+### Adding new game mechanics
 
-## Development Workflow
+Read the README.md for an overview of the game architecture.
+Once you've made an update, reflect changes in the README.md to keep documentation current.
 
-### Local Development
+## Additional notes
 
-```bash
-npm run dev    # Start development server on localhost:3000
-npm run build  # Production build
-```
+The project deliberately avoids a traditional game engine. It is built on web standards (Three.js, React). Use functional components and hooks; avoid class components.
 
-### Debug Tools
+There is no server state. All game logic runs client‑side.
 
-- **Leva Controls**: Runtime adjustment of game parameters (time, spawn rate, max obstacles)
-- **Physics Debug**: Set `debug={true}` in Physics component to see collision boxes
-- **R3F Stats**: Performance monitoring with `<Stats />` component
+Immutable updates – all Zustand stores should use immutable patterns (e.g. spread operators) to update nested objects.
 
-### Key File Relationships
+When writing new TypeScript, favour type aliases to describe shapes and prefer generics where appropriate.
 
-- `data/questions.ts`: Question data structure and sample content
-- `model/game.ts`: TypeScript types for physics collision userData
-- `logic/spawn.ts`: Utility functions for positioning (partially implemented)
-- `components/HUD.tsx`: UI overlay with health display and question text
-
-## Common Patterns
-
-### Adding New Game Mechanics
-
-1. Add state to `GameProvider.tsx` store
-2. Create physics bodies with typed `userData` in `model/game.ts`
-3. Handle collisions in component's `onIntersectionEnter`
-4. Use `useTimeSubscription` for animations that need time scaling
-
-### Physics Body Creation
-
-```tsx
-<RigidBody
-  type="kinematicPosition" // or "dynamic" for moving objects
-  sensor={true}            // for collision detection without physics response
-  userData={{ type: 'obstacle' }} // typed collision data
-  onIntersectionEnter={handleCollision}>
-```
-
-### State Updates with Visual Feedback
-
-```tsx
-// Pattern: Immediate state update + GSAP visual animation
-onAnswerHit(isCorrect)
-gsap.to(materialRef.current.color, {
-  r: color.r,
-  g: color.g,
-  b: color.b,
-  duration: 0.2,
-})
-```
-
-## Architecture Notes
-
-- **No Traditional Game Engine**: Built on web standards (Three.js/React)
-- **Functional Programming**: Heavy use of React hooks and functional components
-- **Immutable Updates**: Zustand store uses immutable update patterns
-- **Client-Side Only**: No server state, all game logic runs in browser
+By following these guidelines and patterns, you can generate code that fits naturally into the repository and remains easy for developers to understand and maintain.

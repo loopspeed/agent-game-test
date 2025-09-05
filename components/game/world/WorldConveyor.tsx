@@ -1,18 +1,24 @@
+import { useFrame } from '@react-three/fiber'
 import React, { type FC } from 'react'
 
-import AnswerGates from '@/components/game/world/AnswerGates'
-import { BeamObstacles, SphereObstacles } from '@/components/game/world/Obstacles'
+import { useTimeSubscription } from '@/hooks/useTimeSubscription'
+import { useWorldStore } from '@/stores/WorldProvider'
+
+import AnswerGates from './AnswerGates'
+import Obstacles from './Obstacles'
 
 const WorldConveyor: FC = () => {
-  // TODO: rather than spawn obstacles at random, generate a "course" when the Game Provider is initialized
-  // This way we can ensure a fair distribution of obstacles and answers
-  // Also, we can make sure that the course is solvable (i.e. there is always a correct answer gate reachable)
+  const update = useWorldStore((s) => s.update)
+  const { gameTime, timeMultiplier } = useTimeSubscription()
 
-  // Potentially use a single useFrame hook to check all obstacles and gates for recycling
+  useFrame((_, delta) => {
+    const newTime = gameTime.current + delta * timeMultiplier.current
+    update(newTime)
+  })
+
   return (
     <>
-      <BeamObstacles />
-      <SphereObstacles />
+      <Obstacles />
       <AnswerGates />
     </>
   )
