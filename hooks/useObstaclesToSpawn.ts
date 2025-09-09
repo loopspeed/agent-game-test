@@ -16,9 +16,7 @@ export function useObstaclesSpawning() {
     () =>
       // Subscribe to state changes
       storeAPI.subscribe((state, prevState) => {
-        if (state.obstacles.length === prevState.obstacles.length) return // No change
         obstaclesToSpawn.current = state.obstacles
-        console.warn('🪃 Updated obstacles to spawn:', obstaclesToSpawn.current)
       }),
     [storeAPI, isObstaclesPhase],
   )

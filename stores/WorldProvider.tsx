@@ -33,6 +33,8 @@ const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
 const SLOW_MO_DURATION = 2.0
 
 const OBSTACLE_SPAWN_INTERVAL = 1
+const DEFAULT_OBSTACLE_SPEED = 12
+const DEFAULT_ANSWER_SPEED = 6
 
 const QUESTIONS_PHASE_CYCLE = [Phase.REST, Phase.OBSTACLES, Phase.QUESTION] as const
 
@@ -57,7 +59,8 @@ type WorldState = {
   phaseIndex: number
   phase: Phase
   phaseTime: number
-  gameSpeed: number
+  obstacleSpeed: number
+  answerSpeed: number
 
   // Player state
   playerPosition: Vector3Tuple
@@ -87,6 +90,8 @@ type WorldState = {
   setPhaseDurations: (durations: Record<Phase, number>) => void
   setSlowMoDuration: (duration: number) => void
   setObstacleSpawnInterval: (interval: number) => void
+  setObstacleSpeed: (speed: number) => void
+  setAnswerSpeed: (speed: number) => void
 
   // Event system methods
   start: () => void
@@ -110,14 +115,9 @@ const INITIAL_STATE: Pick<
   | 'timeMultiplier'
   | 'slowMoTimeRemaining'
   | 'questionIndex'
-  | 'gameSpeed'
   | 'obstacles'
-  | 'phaseDurations'
-  | 'slowMoDuration'
-  | 'obstacleSpawnInterval'
 > = {
   gameTime: 0,
-
   phaseIndex: 0,
   phase: Phase.INTRO,
   phaseTime: 0,
@@ -128,13 +128,7 @@ const INITIAL_STATE: Pick<
   playerPosition: [0, 0, 0],
   currentPlayerLane: 4, // Center lane in 3x3 grid
   questionIndex: 0,
-  gameSpeed: 12.0,
   obstacles: [],
-
-  // Configurable parameters with default values
-  phaseDurations: DEFAULT_PHASE_DURATIONS,
-  slowMoDuration: SLOW_MO_DURATION,
-  obstacleSpawnInterval: OBSTACLE_SPAWN_INTERVAL,
 }
 
 const createWorldStore = ({ questions }: { questions: Question[] }) => {
@@ -155,15 +149,19 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
     answersMapping: generateAnswerMapping(questions[0].answers),
   }
 
-  console.warn('[World] Initialized with phases:', initialState.phases)
+  console.warn('[World] Initialized:', initialState)
 
   return createStore<WorldState>()((set, get) => ({
+    // Configurable parameters set on load with default values
+    obstacleSpeed: DEFAULT_OBSTACLE_SPEED,
+    answerSpeed: DEFAULT_ANSWER_SPEED,
+    phaseDurations: DEFAULT_PHASE_DURATIONS,
+    slowMoDuration: SLOW_MO_DURATION,
+    obstacleSpawnInterval: OBSTACLE_SPAWN_INTERVAL,
     ...initialState,
 
     start: () => {
-      set({
-        ...initialState,
-      })
+      set(initialState)
     },
     reset: () => {
       set({
@@ -216,7 +214,7 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
           // Generate complete obstacle sequence for this phase
           const obstacleSequence = generateObstacleSequence({
             phaseStartTime: gameTime,
-            gameSpeed: state.gameSpeed,
+            gameSpeed: state.obstacleSpeed,
             phaseDurations: state.phaseDurations,
             obstacleSpawnInterval: state.obstacleSpawnInterval,
           })
@@ -262,6 +260,8 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
     setPhaseDurations: (phaseDurations: Record<Phase, number>) => set({ phaseDurations }),
     setSlowMoDuration: (slowMoDuration: number) => set({ slowMoDuration }),
     setObstacleSpawnInterval: (obstacleSpawnInterval: number) => set({ obstacleSpawnInterval }),
+    setObstacleSpeed: (obstacleSpeed: number) => set({ obstacleSpeed }),
+    setAnswerSpeed: (answerSpeed: number) => set({ answerSpeed }),
 
     goSlowMo: () => {
       if (get().isSlowMo) return

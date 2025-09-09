@@ -1,5 +1,5 @@
 'use client'
-import { CameraShake, type CameraShakeProps, ShakeController } from '@react-three/drei'
+import { CameraShake, type CameraShakeProps, type ShakeController } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { Leva, useControls } from 'leva'
@@ -76,14 +76,12 @@ const SHAKE_CONFIG: CameraShakeProps = {
 
 const CameraMovement: FC = () => {
   const ref = useRef<ShakeController>(null)
+
   useTimeSubscription((timeMultiplier) => {
     if (ref.current) {
       ref.current.setIntensity(timeMultiplier)
-      console.warn('[Camera] Adjusting shake intensity to', timeMultiplier)
     }
   })
-
-  console.log(ref.current)
 
   return <CameraShake ref={ref} {...SHAKE_CONFIG} />
 }
@@ -116,6 +114,10 @@ const DeveloperControls: FC = () => {
   const setSlowMoDuration = useWorldStore((s) => s.setSlowMoDuration)
   const obstacleSpawnInterval = useWorldStore((s) => s.obstacleSpawnInterval)
   const setObstacleSpawnInterval = useWorldStore((s) => s.setObstacleSpawnInterval)
+  const obstacleSpeed = useWorldStore((s) => s.obstacleSpeed)
+  const setObstacleSpeed = useWorldStore((s) => s.setObstacleSpeed)
+  const answerSpeed = useWorldStore((s) => s.answerSpeed)
+  const setAnswerSpeed = useWorldStore((s) => s.setAnswerSpeed)
 
   const [, setControls] = useControls('Game', () => {
     return {
@@ -142,6 +144,22 @@ const DeveloperControls: FC = () => {
         max: 3,
         value: obstacleSpawnInterval,
         onChange: (value) => setObstacleSpawnInterval(value),
+      },
+      obstacleSpeed: {
+        label: 'Obstacle Speed',
+        min: 5,
+        step: 0.5,
+        max: 20,
+        value: obstacleSpeed,
+        onChange: (value) => setObstacleSpeed(value),
+      },
+      answerSpeed: {
+        label: 'Answer Speed',
+        min: 5,
+        step: 0.5,
+        max: 20,
+        value: answerSpeed,
+        onChange: (value) => setAnswerSpeed(value),
       },
       introDuration: {
         label: 'Intro Phase Duration',
@@ -190,13 +208,6 @@ const DeveloperControls: FC = () => {
   useTimeSubscription((currentTimeMultiplier) => {
     setControls({
       time: currentTimeMultiplier,
-      slowMoDuration,
-      obstacleSpawnInterval,
-      introDuration: phaseDurations.INTRO,
-      restDuration: phaseDurations.REST,
-      obstaclesDuration: phaseDurations.OBSTACLES,
-      questionDuration: phaseDurations.QUESTION,
-      outroDuration: phaseDurations.OUTRO,
     })
   })
 

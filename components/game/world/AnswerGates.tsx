@@ -22,11 +22,10 @@ import { Phase, useWorldStore } from '@/stores/WorldProvider'
 
 type AnswerGateProps = {
   position: [number, number, number]
-  index: number
   answer: Answer | null
 }
 
-const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ index, position, answer }, ref) => {
+const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ position, answer }, ref) => {
   // Get answer from rhythm data - this is always provided by the rhythm system
   const userData: AnswerGateUserData = {
     type: 'answerGate',
@@ -113,14 +112,12 @@ const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ i
 
 RhythmAnswerGate.displayName = 'RhythmAnswerGate'
 
-const ANSWER_SPEED_MULTIPLIER = 0.5
-
 const RhythmAnswerGates: FC = () => {
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
   const goSlowMo = useWorldStore((s) => s.goSlowMo)
   const isSlowMo = useWorldStore((s) => s.isSlowMo)
   const isQuestionPhase = useWorldStore((s) => s.phase === Phase.QUESTION)
-  const gameSpeed = useWorldStore((s) => s.gameSpeed)
+  const answerSpeed = useWorldStore((s) => s.answerSpeed)
   const questionIndex = useWorldStore((s) => s.questionIndex)
   const answersMapping = useWorldStore((s) => s.answersMapping)
 
@@ -131,7 +128,7 @@ const RhythmAnswerGates: FC = () => {
   const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
     gatesRefs.current.forEach((gate) => {
       if (!gate) return
-      const newSpeed = timeMultiplier * gameSpeed * ANSWER_SPEED_MULTIPLIER
+      const newSpeed = timeMultiplier * answerSpeed
       gate.setLinvel({ x: 0, y: 0, z: newSpeed }, true)
     })
   })
@@ -140,7 +137,7 @@ const RhythmAnswerGates: FC = () => {
     gatesRefs.current.forEach((gate, index) => {
       if (!gate) return
       const position = gatePositions[index]
-      const speed = timeMultiplier.current * gameSpeed * ANSWER_SPEED_MULTIPLIER
+      const speed = timeMultiplier.current * answerSpeed
       gate.setLinvel({ x: 0, y: 0, z: speed }, true)
       gate.setTranslation(
         {
@@ -198,7 +195,6 @@ const RhythmAnswerGates: FC = () => {
           }}
           key={index}
           position={position}
-          index={index}
           answer={answersMapping[index]}
         />
       ))}
