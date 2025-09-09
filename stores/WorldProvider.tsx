@@ -91,7 +91,6 @@ type WorldState = {
 
   // Event system methods
   start: () => void
-  stop: () => void
   reset: () => void
   update: (gameTime: number) => void
   getDebugInfo: () => DebugInfo
@@ -165,25 +164,14 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
     ...initialState,
 
     start: () => {
-      console.warn('[World] Event system started')
-      // const questionEvents = generateQuestionEvents(questions)
       set({
         ...initialState,
-        // questionEvents,
       })
     },
-
-    stop: () => {
-      console.warn('[World] Event system stopped')
-      set({ ...initialState })
-    },
-
     reset: () => {
-      console.warn('[World] Event system reset')
       set({
         ...initialState,
         question: questions[0],
-        // questionEvents,
       })
     },
 

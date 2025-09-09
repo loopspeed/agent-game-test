@@ -4,7 +4,7 @@ import { useGSAP } from '@gsap/react'
 import { useFrame } from '@react-three/fiber'
 import { type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
 import { gsap } from 'gsap'
-import { type FC, useEffect, useImperativeHandle, useRef } from 'react'
+import { type FC, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
 import ThunderbirdFour from '@/components/models/ThunderbirdFour'
@@ -19,6 +19,7 @@ const Player: FC = () => {
   const input = useInputStore()
 
   const onObstacleHit = useGameStore((s) => s.onObstacleHit)
+  const onObstacleAvoided = useGameStore((s) => s.onObstacleAvoided)
   const onAnswerHit = useGameStore((s) => s.onAnswerHit)
 
   const updatePlayerPosition = useWorldStore((s) => s.updatePlayerPosition)
@@ -62,6 +63,7 @@ const Player: FC = () => {
 
     const userData = otherRB.userData as RigidBodyUserData
     const isObstacle = userData.type === 'obstacle'
+    const isObstacleZone = userData.type === 'obstacle_zone'
     const isAnswerGate = userData.type === 'answerGate'
 
     const defaultColor = new THREE.Color('#fff')
@@ -108,6 +110,12 @@ const Player: FC = () => {
       console.warn('Player hit obstacle', userData)
       onObstacleHit()
       handleBadHit()
+    }
+
+    if (isObstacleZone) {
+      console.warn('Player entered obstacle zone - obstacle avoided!', userData)
+      onObstacleAvoided()
+      handleGoodHit()
     }
 
     if (isAnswerGate) {
@@ -184,7 +192,7 @@ const Player: FC = () => {
       userData={{
         type: 'player',
       }}>
-        <ThunderbirdFour ref={modelRef} rotation={[0, Math.PI, 0]} scale={1.8} position={[0, -0.05, 0]} />
+      <ThunderbirdFour ref={modelRef} rotation={[0, Math.PI, 0]} scale={1.8} position={[0, -0.05, 0]} />
       {/* <mesh>
         <boxGeometry args={[0.6, 0.3, 0.6]} />
         <meshBasicMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={1} />

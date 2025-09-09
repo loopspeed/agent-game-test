@@ -4,7 +4,7 @@ import gsap from 'gsap'
 import { type FC, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
-import { MAX_HEALTH, useGameStore } from '@/stores/GameProvider'
+import { useGameStore } from '@/stores/GameProvider'
 import { Phase, useWorldStore } from '@/stores/WorldProvider'
 
 const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
@@ -25,7 +25,7 @@ const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatu
   return (
     <section ref={container} className="contents">
       <Question />
-      <Health />
+      <Points />
       <Streak />
     </section>
   )
@@ -33,21 +33,23 @@ const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatu
 
 export default PlayingUI
 
-const Health: FC = () => {
-  const health = useGameStore((s) => s.health)
+const Points: FC = () => {
+  const points = useGameStore((s) => s.points)
 
-  // Determine health bar color based on current health level
-  const getHealthColor = (): string => {
-    if (health >= 4) return 'bg-green-500' // High health (4-5)
-    if (health === 3) return 'bg-amber-500' // Medium health (3)
-    return 'bg-red-700' // Low health (1-2)
+  // Determine color based on points value
+  const getPointsColor = (): string => {
+    if (points > 0) return 'text-green-400' // Positive points
+    if (points < 0) return 'text-red-400' // Negative points
+    return 'text-white' // Zero points
   }
 
   return (
-    <div className="absolute bottom-6 flex gap-0.5 overflow-hidden rounded-full">
-      {Array.from({ length: MAX_HEALTH }, (_, i) => (
-        <div key={i} className={`h-4 w-6 ${i < health ? getHealthColor() : 'bg-white/30'}`} />
-      ))}
+    <div className="absolute bottom-6 left-6">
+      <div className={`text-4xl font-bold ${getPointsColor()}`}>
+        {points > 0 ? '+' : ''}
+        {points}
+      </div>
+      <div className="text-sm font-medium text-white/70">POINTS</div>
     </div>
   )
 }

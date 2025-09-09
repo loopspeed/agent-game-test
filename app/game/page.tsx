@@ -1,13 +1,15 @@
 'use client'
+import { CameraShake, ShakeController, type CameraShakeProps } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { Leva, useControls } from 'leva'
-import { type FC, Suspense, useEffect } from 'react'
+import { LevaCustomTheme } from 'leva/dist/declarations/src/styles'
+import { type FC, Suspense, useEffect, useRef } from 'react'
 import React from 'react'
 
 import DebugDisplay from '@/components/debug/RhythmDebugDisplay'
-import RhythmSystemManager from '@/components/game/RhythmSystemManager'
 import Scene from '@/components/game/Scene'
+import WorldStoreManager from '@/components/game/world/WorldStoreManager'
 import GameUI from '@/components/ui/GameUI'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { GameProvider, useGameStore } from '@/stores/GameProvider'
@@ -15,7 +17,7 @@ import { useInputStore } from '@/stores/useInputStore'
 import { useWorldStore } from '@/stores/WorldProvider'
 
 // Custom theme to make controls much bigger and more visible
-const LEVA_CONTROLS_THEME = {
+const LEVA_CONTROLS_THEME: LevaCustomTheme = {
   fontSizes: {
     root: '12px', // Increased from default 11px to 14px for better readability
   },
@@ -23,7 +25,7 @@ const LEVA_CONTROLS_THEME = {
     rootWidth: '480px', // Increased from default 280px for more width
     controlWidth: '220px', // Increased from default 160px for wider controls
     rowHeight: '32px', // Increased from default 24px for taller rows
-    folderTitleHeight: '28px', // Increased from default 20px for taller folder titles
+    folderTitleHeight: '24px', // Increased from default 20px for taller folder titles
   },
   space: {
     sm: '8px', // Increased from default 6px
@@ -46,13 +48,13 @@ const GameContent: FC = () => {
 
   return (
     <main className="h-lvh w-full overflow-hidden">
-      <RhythmSystemManager />
+      <WorldStoreManager />
       <Canvas
         className="!fixed inset-0 !h-lvh"
         performance={{ min: 0.2, debounce: 300 }}
         gl={{ powerPreference: 'low-power', antialias: false, alpha: false }}
         camera={{ position: [0, 0.2, 4], fov: 75, far: 50 }}>
-        {/* <CameraMovement /> */}
+        <CameraMovement />
         {/* <Stats /> */}
         <DeveloperControls />
 
@@ -77,6 +79,32 @@ export default function GamePage() {
       <GameContent />
     </GameProvider>
   )
+}
+
+const SHAKE_CONFIG: CameraShakeProps = {
+  maxYaw: 0.08, // Max amount camera can yaw in either direction
+  maxPitch: 0.08, // Max amount camera can pitch in either direction
+  maxRoll: 0.08, // Max amount camera can roll in either direction
+  yawFrequency: 0.1, // Frequency of the yaw rotation
+  pitchFrequency: 0.1, // Frequency of the pitch rotation
+  rollFrequency: 0.1, // Frequency of the roll rotation
+  intensity: 1, // initial intensity of the shake
+  decay: false, // should the intensity decay over time
+  decayRate: 0.65, // if decay = true this is the rate at which intensity will reduce at
+}
+
+const CameraMovement: FC = () => {
+  const ref = useRef<ShakeController>(null)
+  useTimeSubscription((timeMultiplier) => {
+    if (ref.current) {
+      ref.current.setIntensity(timeMultiplier)
+      console.warn('[Camera] Adjusting shake intensity to', timeMultiplier)
+    }
+  })
+
+  console.log(ref.current)
+
+  return <CameraShake ref={ref} {...SHAKE_CONFIG} />
 }
 
 const DeveloperControls: FC = () => {

@@ -19,6 +19,12 @@ export type AnswerHit = {
   timestamp: number
 }
 
+export type ScoreEvent = {
+  type: 'obstacle_hit' | 'obstacle_avoided' | 'answer_correct' | 'answer_incorrect'
+  points: number
+  timestamp: number
+}
+
 type GameState = {
   stage: GameStage
   setStage: (stage: GameStage) => void
@@ -28,11 +34,15 @@ type GameState = {
   courseName: string
   gameStartTime: number
 
-  health: number
+  // Points system
+  points: number
+  scoreEvents: ScoreEvent[]
   streak: number
   maxStreak: number
-  resetHealth: () => void
+
+  // Game events
   onObstacleHit: () => void
+  onObstacleAvoided: () => void
   onAnswerHit: (isCorrect: boolean, answerId: string | null) => void
   onGameOver: () => void
 
@@ -51,11 +61,24 @@ export const LANES_X = [-1, 0, 1].map((x) => x * GRID_SQUARE_SIZE_M)
 export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M + LANES_Y_OFFSET)
 export const SPAWN_OBSTACLE_Z = -30 as const
 export const KILL_OBSTACLE_Z = 4 as const
-export const MAX_HEALTH = 7 as const
+
+// Points system constants
+export const POINTS_OBSTACLE_HIT = -10 as const
+export const POINTS_OBSTACLE_AVOIDED = 5 as const
+export const POINTS_ANSWER_CORRECT = 20 as const
+export const POINTS_ANSWER_INCORRECT = -5 as const
 
 const INITIAL_STATE: Pick<
   GameState,
-  'stage' | 'courseId' | 'courseName' | 'gameStartTime' | 'streak' | 'maxStreak' | 'health' | 'answersHit'
+  | 'stage'
+  | 'courseId'
+  | 'courseName'
+  | 'gameStartTime'
+  | 'streak'
+  | 'maxStreak'
+  | 'points'
+  | 'scoreEvents'
+  | 'answersHit'
 > = {
   stage: GameStage.INTRO,
   courseId: 'ai-history-course',
@@ -63,7 +86,8 @@ const INITIAL_STATE: Pick<
   gameStartTime: Date.now(),
   streak: 0,
   maxStreak: 0,
-  health: MAX_HEALTH,
+  points: 0,
+  scoreEvents: [],
   answersHit: [],
 }
 
@@ -83,19 +107,39 @@ const createGameStore = ({
         set({ stage })
       }
     },
-    resetHealth: () => set({ health: MAX_HEALTH }),
     onObstacleHit: () => {
-      const currentHealth = get().health
-      const newHealth = Math.max(currentHealth - 1, 0)
-      if (newHealth === 0) {
+      const scoreEvent: ScoreEvent = {
+        type: 'obstacle_hit',
+        points: POINTS_OBSTACLE_HIT,
+        timestamp: Date.now(),
+      }
+
+      set((state) => ({
+        points: state.points + POINTS_OBSTACLE_HIT,
+        scoreEvents: [...state.scoreEvents, scoreEvent],
+        streak: 0, // Reset streak on obstacle hit
+      }))
+
+      // Check if points are too low (game over condition)
+      const newPoints = get().points
+      if (newPoints <= -50) {
+        // Game over threshold
         get().onGameOver()
-      } else {
-        set({ health: newHealth })
       }
     },
-    onAnswerHit: (isCorrect: boolean, answerId: string | null) => {
-      const currentHealth = get().health
+    onObstacleAvoided: () => {
+      const scoreEvent: ScoreEvent = {
+        type: 'obstacle_avoided',
+        points: POINTS_OBSTACLE_AVOIDED,
+        timestamp: Date.now(),
+      }
 
+      set((state) => ({
+        points: state.points + POINTS_OBSTACLE_AVOIDED,
+        scoreEvents: [...state.scoreEvents, scoreEvent],
+      }))
+    },
+    onAnswerHit: (isCorrect: boolean, answerId: string | null) => {
       // Record the answer hit - we'll need to get the current question from WorldProvider
       const answerHit: AnswerHit = {
         questionId: 'current-question', // This will need to be passed from component
@@ -105,33 +149,20 @@ const createGameStore = ({
       }
 
       if (isCorrect) {
-        const newHealth = Math.min(currentHealth + 1, MAX_HEALTH)
         set((s) => {
           const newCurrentStreak = s.streak + 1
           const newMaxStreak = Math.max(s.maxStreak, newCurrentStreak)
           return {
             streak: newCurrentStreak,
             maxStreak: newMaxStreak,
-            health: newHealth,
             answersHit: [...s.answersHit, answerHit],
           }
         })
       } else {
-        const newHealth = Math.max(currentHealth - 1, 0)
-        if (newHealth === 0) {
-          set((s) => ({
-            streak: 0,
-            health: newHealth,
-            answersHit: [...s.answersHit, answerHit],
-          }))
-          get().onGameOver()
-        } else {
-          set((s) => ({
-            streak: 0,
-            health: newHealth,
-            answersHit: [...s.answersHit, answerHit],
-          }))
-        }
+        set((s) => ({
+          streak: 0,
+          answersHit: [...s.answersHit, answerHit],
+        }))
       }
     },
     onGameOver: () => {
@@ -148,7 +179,7 @@ const createGameStore = ({
         timestamp: Date.now(),
         answersHit: state.answersHit,
         maxStreak: state.maxStreak,
-        finalHealth: state.health,
+        finalHealth: 0, // Not used anymore, but keeping for compatibility
         questionsCompleted: 0, // This will need to be tracked elsewhere
         totalQuestions: SAMPLE_QUESTIONS.length,
         correctAnswers,
