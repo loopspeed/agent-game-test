@@ -3,9 +3,9 @@
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { type FC, useEffect, useRef } from 'react'
+import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
 import { GameStage, useGameStore } from '@/stores/GameProvider'
-import { type TransitionStatus, Transition, SwitchTransition } from 'react-transition-group'
 
 import GameOverUI from './GameOver'
 import PlayingUI from './PlayingUI'
@@ -18,12 +18,12 @@ const GameUI: FC = () => {
     <SwitchTransition>
       <Transition key={stage} timeout={{ enter: 300, exit: 400 }} nodeRef={container} appear>
         {(status) => (
-          <div className="pointer-events-none fixed top-0 z-100 flex !h-svh w-full items-center justify-center" 
-          ref={container}
-          >
+          <div
+            className="pointer-events-none fixed top-0 z-100 flex !h-svh w-full items-center justify-center"
+            ref={container}>
             {stage === GameStage.INTRO && <IntroUI transitionStatus={status} />}
             {stage === GameStage.PLAYING && <PlayingUI transitionStatus={status} />}
-            {stage === GameStage.GAME_OVER && <GameOverUI transitionStatus={status}  />}
+            {stage === GameStage.GAME_OVER && <GameOverUI transitionStatus={status} />}
           </div>
         )}
       </Transition>

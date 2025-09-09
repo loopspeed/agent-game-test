@@ -22,7 +22,7 @@ export enum Phase {
   OUTRO = 'OUTRO',
 }
 
-const PHASE_DURATIONS: Record<Phase, number> = {
+const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
   INTRO: 1,
   REST: 3,
   OBSTACLES: 8,
@@ -30,11 +30,11 @@ const PHASE_DURATIONS: Record<Phase, number> = {
   OUTRO: 3,
 } as const
 
+const SLOW_MO_DURATION = 2.0
+
 const OBSTACLE_SPAWN_INTERVAL = 1
 
 const QUESTIONS_PHASE_CYCLE = [Phase.REST, Phase.OBSTACLES, Phase.QUESTION] as const
-
-const SLOW_MO_DURATION = 2.0
 
 // Obstacle event types
 export enum ObstacleType {
@@ -81,6 +81,14 @@ type WorldState = {
   // Obstacle state
   obstacles: ObstacleSpawnData[]
 
+  // Configurable parameters
+  phaseDurations: Record<Phase, number>
+  slowMoDuration: number
+  obstacleSpawnInterval: number
+  setPhaseDurations: (durations: Record<Phase, number>) => void
+  setSlowMoDuration: (duration: number) => void
+  setObstacleSpawnInterval: (interval: number) => void
+
   // Event system methods
   start: () => void
   stop: () => void
@@ -107,6 +115,9 @@ const INITIAL_STATE: Pick<
   | 'questionIndex'
   | 'gameSpeed'
   | 'obstacles'
+  | 'phaseDurations'
+  | 'slowMoDuration'
+  | 'obstacleSpawnInterval'
 > = {
   gameTime: 0,
 
@@ -123,6 +134,11 @@ const INITIAL_STATE: Pick<
   questionIndex: 0,
   gameSpeed: 12.0,
   obstacles: [],
+
+  // Configurable parameters with default values
+  phaseDurations: DEFAULT_PHASE_DURATIONS,
+  slowMoDuration: SLOW_MO_DURATION,
+  obstacleSpawnInterval: OBSTACLE_SPAWN_INTERVAL,
 }
 
 const createWorldStore = ({ questions }: { questions: Question[] }) => {
@@ -177,7 +193,7 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
       let phaseIndex = state.phaseIndex
       let phase = state.phase
       let phaseTime = state.phaseTime + (gameTime - state.gameTime)
-      const shouldMoveToNextPhase = phaseTime >= PHASE_DURATIONS[phase]
+      const shouldMoveToNextPhase = phaseTime >= state.phaseDurations[phase]
 
       // Handle phase transitions
       if (shouldMoveToNextPhase) {
@@ -216,6 +232,8 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
           const obstacleSequence = generateObstacleSequence({
             phaseStartTime: gameTime,
             gameSpeed: state.gameSpeed,
+            phaseDurations: state.phaseDurations,
+            obstacleSpawnInterval: state.obstacleSpawnInterval,
           })
           set({
             gameTime,
@@ -256,18 +274,25 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
 
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
 
+    setPhaseDurations: (phaseDurations: Record<Phase, number>) => set({ phaseDurations }),
+    setSlowMoDuration: (slowMoDuration: number) => set({ slowMoDuration }),
+    setObstacleSpawnInterval: (obstacleSpawnInterval: number) => set({ obstacleSpawnInterval }),
+
     goSlowMo: () => {
       if (get().isSlowMo) return
       console.warn('🎵 SLOW-MO TRIGGERED')
       set({ isSlowMo: true })
       gsap.set('#slow-mo-bar', { scaleX: 1, opacity: 1 })
 
+      const { slowMoDuration } = get()
+      slowMoTimeRemainingTarget.value = slowMoDuration
+
       speedTimeline?.kill()
       speedTimeline = gsap
         .timeline({
           onComplete: () => {
             gsap.set('#slow-mo-bar', { scaleX: 1, opacity: 0 })
-            set({ isSlowMo: false, slowMoTimeRemaining: SLOW_MO_DURATION })
+            set({ isSlowMo: false, slowMoTimeRemaining: slowMoDuration })
           },
         })
         // Slow time down as the answer gate approaches
@@ -281,7 +306,7 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
         })
         .to('#slow-mo-bar', {
           scaleX: 0,
-          duration: SLOW_MO_DURATION,
+          duration: slowMoDuration,
           ease: 'none',
           onUpdate: () => {
             set({ slowMoTimeRemaining: slowMoTimeRemainingTarget.value })
@@ -298,7 +323,7 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
               set({ timeMultiplier: timeTweenTarget.value })
             },
           },
-          SLOW_MO_DURATION + 0.6,
+          slowMoDuration + 0.6,
         )
     },
 
@@ -355,13 +380,17 @@ const generateAnswerMapping = (answers: Answer[]): (Answer | null)[] => {
 const generateObstacleSequence = ({
   phaseStartTime,
   gameSpeed,
+  phaseDurations,
+  obstacleSpawnInterval,
 }: {
   phaseStartTime: number
   gameSpeed: number
+  phaseDurations: Record<Phase, number>
+  obstacleSpawnInterval: number
 }): ObstacleSpawnData[] => {
   const obstacles: ObstacleSpawnData[] = []
-  const phaseDuration = PHASE_DURATIONS[Phase.OBSTACLES]
-  const obstacleCount = Math.floor(phaseDuration / OBSTACLE_SPAWN_INTERVAL)
+  const phaseDuration = phaseDurations[Phase.OBSTACLES]
+  const obstacleCount = Math.floor(phaseDuration / obstacleSpawnInterval)
 
   // Define lane groups for strategic coverage
   const leftLanes = [0, 3, 6] // Left column
@@ -372,7 +401,7 @@ const generateObstacleSequence = ({
   const bottomLanes = [6, 7, 8] // Bottom row
 
   for (let i = 0; i < obstacleCount; i++) {
-    const spawnTime = phaseStartTime + i * OBSTACLE_SPAWN_INTERVAL
+    const spawnTime = phaseStartTime + i * obstacleSpawnInterval
     const speedVariation = (Math.random() - 0.5) * 2 // Random between -1 and +1
     const obstacleSpeed = Math.max(1, gameSpeed + speedVariation)
 
@@ -418,7 +447,7 @@ const generateObstacleSequence = ({
   console.warn(`🎯 GENERATED OBSTACLE SEQUENCE:`, {
     obstacleCount,
     phaseDuration,
-    interval: OBSTACLE_SPAWN_INTERVAL,
+    interval: obstacleSpawnInterval,
     obstacles: obstacles.map((o) => ({
       id: o.id,
       spawnTime: o.spawnTime.toFixed(2),

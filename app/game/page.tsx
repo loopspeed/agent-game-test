@@ -35,7 +35,7 @@ const GameContent: FC = () => {
         camera={{ position: [0, 0.2, 4], fov: 75, far: 50 }}>
         {/* <CameraMovement /> */}
         {/* <Stats /> */}
-        <DebugControls />
+        <DeveloperControls />
 
         <Suspense fallback={null}>
           {/* Physics world with zero gravity (kinematic bodies only) */}
@@ -59,19 +59,81 @@ export default function GamePage() {
   )
 }
 
-const DebugControls: FC = () => {
+const DeveloperControls: FC = () => {
   const setTimeMultiplier = useWorldStore((s) => s.setTimeMultiplier)
   const timeMultiplier = useWorldStore((s) => s.timeMultiplier)
+  const phaseDurations = useWorldStore((s) => s.phaseDurations)
+  const setPhaseDurations = useWorldStore((s) => s.setPhaseDurations)
+  const slowMoDuration = useWorldStore((s) => s.slowMoDuration)
+  const setSlowMoDuration = useWorldStore((s) => s.setSlowMoDuration)
+  const obstacleSpawnInterval = useWorldStore((s) => s.obstacleSpawnInterval)
+  const setObstacleSpawnInterval = useWorldStore((s) => s.setObstacleSpawnInterval)
 
   const [, setControls] = useControls('Game', () => {
     return {
       time: {
-        label: 'Time',
+        label: 'Time Multiplier',
         min: 0.1,
         step: 0.1,
         max: 2,
         value: timeMultiplier,
         onChange: (value) => setTimeMultiplier(value),
+      },
+      slowMoDuration: {
+        label: 'Slow-Mo Duration',
+        min: 0.5,
+        step: 0.1,
+        max: 5,
+        value: slowMoDuration,
+        onChange: (value) => setSlowMoDuration(value),
+      },
+      obstacleSpawnInterval: {
+        label: 'Obstacle Spawn Interval',
+        min: 0.5,
+        step: 0.1,
+        max: 3,
+        value: obstacleSpawnInterval,
+        onChange: (value) => setObstacleSpawnInterval(value),
+      },
+      introDuration: {
+        label: 'Intro Phase Duration',
+        min: 0.5,
+        step: 0.1,
+        max: 10,
+        value: phaseDurations.INTRO,
+        onChange: (value) => setPhaseDurations({ ...phaseDurations, INTRO: value }),
+      },
+      restDuration: {
+        label: 'Rest Phase Duration',
+        min: 1,
+        step: 0.5,
+        max: 10,
+        value: phaseDurations.REST,
+        onChange: (value) => setPhaseDurations({ ...phaseDurations, REST: value }),
+      },
+      obstaclesDuration: {
+        label: 'Obstacles Phase Duration',
+        min: 2,
+        step: 0.5,
+        max: 20,
+        value: phaseDurations.OBSTACLES,
+        onChange: (value) => setPhaseDurations({ ...phaseDurations, OBSTACLES: value }),
+      },
+      questionDuration: {
+        label: 'Question Phase Duration',
+        min: 3,
+        step: 0.5,
+        max: 20,
+        value: phaseDurations.QUESTION,
+        onChange: (value) => setPhaseDurations({ ...phaseDurations, QUESTION: value }),
+      },
+      outroDuration: {
+        label: 'Outro Phase Duration',
+        min: 0.5,
+        step: 0.1,
+        max: 10,
+        value: phaseDurations.OUTRO,
+        onChange: (value) => setPhaseDurations({ ...phaseDurations, OUTRO: value }),
       },
     }
   })
@@ -80,6 +142,13 @@ const DebugControls: FC = () => {
   useTimeSubscription((currentTimeMultiplier) => {
     setControls({
       time: currentTimeMultiplier,
+      slowMoDuration,
+      obstacleSpawnInterval,
+      introDuration: phaseDurations.INTRO,
+      restDuration: phaseDurations.REST,
+      obstaclesDuration: phaseDurations.OBSTACLES,
+      questionDuration: phaseDurations.QUESTION,
+      outroDuration: phaseDurations.OUTRO,
     })
   })
 
