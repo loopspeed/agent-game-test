@@ -113,19 +113,11 @@ const createGameStore = ({
         points: POINTS_OBSTACLE_HIT,
         timestamp: Date.now(),
       }
-
       set((state) => ({
         points: state.points + POINTS_OBSTACLE_HIT,
         scoreEvents: [...state.scoreEvents, scoreEvent],
         streak: 0, // Reset streak on obstacle hit
       }))
-
-      // Check if points are too low (game over condition)
-      const newPoints = get().points
-      if (newPoints <= -50) {
-        // Game over threshold
-        get().onGameOver()
-      }
     },
     onObstacleAvoided: () => {
       const scoreEvent: ScoreEvent = {
@@ -133,7 +125,6 @@ const createGameStore = ({
         points: POINTS_OBSTACLE_AVOIDED,
         timestamp: Date.now(),
       }
-
       set((state) => ({
         points: state.points + POINTS_OBSTACLE_AVOIDED,
         scoreEvents: [...state.scoreEvents, scoreEvent],
