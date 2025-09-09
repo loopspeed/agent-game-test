@@ -1,7 +1,7 @@
 'use client'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
-import { useControls } from 'leva'
+import { Leva, useControls } from 'leva'
 import { type FC, Suspense, useEffect } from 'react'
 import React from 'react'
 
@@ -13,6 +13,25 @@ import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { GameProvider, useGameStore } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/useInputStore'
 import { useWorldStore } from '@/stores/WorldProvider'
+
+// Custom theme to make controls much bigger and more visible
+const LEVA_CONTROLS_THEME = {
+  fontSizes: {
+    root: '12px', // Increased from default 11px to 14px for better readability
+  },
+  sizes: {
+    rootWidth: '480px', // Increased from default 280px for more width
+    controlWidth: '220px', // Increased from default 160px for wider controls
+    rowHeight: '32px', // Increased from default 24px for taller rows
+    folderTitleHeight: '28px', // Increased from default 20px for taller folder titles
+  },
+  space: {
+    sm: '8px', // Increased from default 6px
+    md: '14px', // Increased from default 10px
+    rowGap: '8px', // Increased from default 7px for more spacing between rows
+    colGap: '8px', // Increased from default 7px for more spacing between columns
+  },
+}
 
 const GameContent: FC = () => {
   const resetStore = useGameStore((s) => s.resetStore)
@@ -47,6 +66,7 @@ const GameContent: FC = () => {
 
       <GameUI />
       <DebugDisplay />
+      <Leva theme={LEVA_CONTROLS_THEME} />
     </main>
   )
 }
