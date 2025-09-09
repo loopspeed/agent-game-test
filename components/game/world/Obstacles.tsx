@@ -5,7 +5,15 @@ import { type FC, useLayoutEffect, useRef, useState } from 'react'
 
 import { useObstaclesSpawning } from '@/hooks/useObstaclesToSpawn'
 import { type ObstacleUserData, type ObstacleZoneUserData } from '@/model/game'
-import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/GameProvider'
+import {
+  GameStage,
+  GRID_SQUARE_SIZE_M,
+  KILL_OBSTACLE_Z,
+  LANES_X,
+  LANES_Y,
+  SPAWN_OBSTACLE_Z,
+  useGameStore,
+} from '@/stores/GameProvider'
 import { type ObstacleSpawnData, Phase, useLevelStore } from '@/stores/LevelProvider'
 
 type ObstacleInstance = {
@@ -271,7 +279,7 @@ const Obstacles: FC = () => {
           colliders="cuboid">
           <instancedMesh args={[undefined, undefined, zoneInstances.length]} count={zoneInstances.length}>
             {/* Large invisible box covering the entire grid area */}
-            <boxGeometry args={[6, 6, 2]} />
+            <boxGeometry args={[GRID_SQUARE_SIZE_M * 3, GRID_SQUARE_SIZE_M * 3, 0.3]} />
             <meshBasicMaterial color="#00ff00" transparent opacity={0} />
           </instancedMesh>
         </InstancedRigidBodies>

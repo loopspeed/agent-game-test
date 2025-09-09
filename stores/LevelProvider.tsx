@@ -24,16 +24,16 @@ export enum Phase {
 
 const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
   INTRO: 1,
-  REST: 3,
+  REST: 1,
   OBSTACLES: 12,
   QUESTION: 10,
-  OUTRO: 3,
+  OUTRO: 2,
 } as const
 
 const SLOW_MO_DURATION = 2.0
 const OBSTACLE_SPAWN_INTERVAL = 1
-const DEFAULT_OBSTACLE_SPEED = 12
-const DEFAULT_ANSWER_SPEED = 6
+const DEFAULT_OBSTACLE_SPEED = 15
+const DEFAULT_ANSWER_SPEED = 7
 
 const QUESTIONS_PHASE_CYCLE = [Phase.REST, Phase.OBSTACLES, Phase.QUESTION] as const
 

@@ -12,7 +12,7 @@ import Scene from '@/components/game/Scene'
 import LevelManager from '@/components/game/world/WorldStoreManager'
 import GameUI from '@/components/ui/GameUI'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { GameProvider, useGameStore } from '@/stores/GameProvider'
+import { CAMERA_FAR, GameProvider, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 import { useInputStore } from '@/stores/useInputStore'
 
@@ -34,7 +34,7 @@ const GameContent: FC = () => {
         className="!fixed inset-0 !h-lvh"
         performance={{ min: 0.2, debounce: 300 }}
         gl={{ powerPreference: 'low-power', antialias: false, alpha: false }}
-        camera={{ position: [0, 0.2, 4], fov: 75, far: 50 }}>
+        camera={{ position: [0, 0.2, 4], fov: 75, far: CAMERA_FAR }}>
         <CameraMovement />
         <Stats />
         <DeveloperControls />
@@ -125,7 +125,7 @@ const DeveloperControls: FC = () => {
         label: 'Time Multiplier',
         min: 0.1,
         step: 0.1,
-        max: 2,
+        max: 1,
         value: timeMultiplier,
         onChange: (value) => setTimeMultiplier(value),
       },
@@ -147,15 +147,15 @@ const DeveloperControls: FC = () => {
       },
       obstacleSpeed: {
         label: 'Obstacle Speed',
-        min: 5,
+        min: 4,
         step: 0.5,
-        max: 20,
+        max: 30,
         value: obstacleSpeed,
         onChange: (value) => setObstacleSpeed(value),
       },
       answerSpeed: {
         label: 'Answer Speed',
-        min: 5,
+        min: 4,
         step: 0.5,
         max: 20,
         value: answerSpeed,
@@ -165,7 +165,7 @@ const DeveloperControls: FC = () => {
         label: 'Intro Phase Duration',
         min: 0.5,
         step: 0.1,
-        max: 10,
+        max: 5,
         value: phaseDurations.INTRO,
         onChange: (value) => setPhaseDurations({ ...phaseDurations, INTRO: value }),
       },
@@ -179,16 +179,16 @@ const DeveloperControls: FC = () => {
       },
       obstaclesDuration: {
         label: 'Obstacles Phase Duration',
-        min: 2,
-        step: 0.5,
-        max: 20,
+        min: 1,
+        step: 1,
+        max: 30,
         value: phaseDurations.OBSTACLES,
         onChange: (value) => setPhaseDurations({ ...phaseDurations, OBSTACLES: value }),
       },
       questionDuration: {
         label: 'Question Phase Duration',
-        min: 3,
-        step: 0.5,
+        min: 6,
+        step: 1,
         max: 20,
         value: phaseDurations.QUESTION,
         onChange: (value) => setPhaseDurations({ ...phaseDurations, QUESTION: value }),

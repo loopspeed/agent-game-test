@@ -59,7 +59,9 @@ export const GRID_SQUARE_SIZE_M = 1.6 // Meters
 export const LANES_Y_OFFSET = -0.6 // Move them down to avoid question
 export const LANES_X = [-1, 0, 1].map((x) => x * GRID_SQUARE_SIZE_M)
 export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M + LANES_Y_OFFSET)
-export const SPAWN_OBSTACLE_Z = -30 as const
+
+export const CAMERA_FAR = 50
+export const SPAWN_OBSTACLE_Z = -40 as const
 export const KILL_OBSTACLE_Z = 4 as const
 
 // Points system constants

@@ -51,9 +51,7 @@ const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ p
           })
         },
       })
-
-      // Log rhythm context for debugging
-      console.warn('🎵 RHYTHM ANSWER GATE HIT:', {
+      console.warn('🎵 ANSWER GATE HIT:', {
         answerId: answer?.id,
         isCorrect: answer?.isCorrect,
       })
@@ -98,12 +96,6 @@ const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ p
             textAlign="center">
             {answer.label}
           </Text>
-
-          {/* Debug indicator for rhythm-based gates */}
-          <mesh position={[0.6, 0.6, 0.11]}>
-            <sphereGeometry args={[0.05]} />
-            <meshBasicMaterial color="#ffd700" />
-          </mesh>
         </group>
       )}
     </RigidBody>
@@ -174,7 +166,7 @@ const RhythmAnswerGates: FC = () => {
         gatesRefs.current.forEach((gate) => {
           if (!gate) return
           gate.setLinvel({ x: 0, y: 0, z: 0 }, false)
-          gate.setTranslation({ x: 0, y: 0, z: -40 }, false)
+          gate.setTranslation({ x: 0, y: 0, z: 5 }, false)
         })
         isLive.current = false // Gates are no longer live, ready for next spawn
         return
