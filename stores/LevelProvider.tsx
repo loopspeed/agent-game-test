@@ -31,7 +31,6 @@ const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
 } as const
 
 const SLOW_MO_DURATION = 2.0
-
 const OBSTACLE_SPAWN_INTERVAL = 1
 const DEFAULT_OBSTACLE_SPEED = 12
 const DEFAULT_ANSWER_SPEED = 6
@@ -53,7 +52,7 @@ export type ObstacleSpawnData = {
   speed: number
 }
 
-type WorldState = {
+type LevelState = {
   // Phase state
   phases: Phase[]
   phaseIndex: number
@@ -100,11 +99,11 @@ type WorldState = {
   getDebugInfo: () => DebugInfo
 }
 
-type WorldStateStore = StoreApi<WorldState>
-const WorldContext = createContext<WorldStateStore>(undefined!)
+type LevelStore = StoreApi<LevelState>
+const LevelContext = createContext<LevelStore>(undefined!)
 
 const INITIAL_STATE: Pick<
-  WorldState,
+  LevelState,
   | 'gameTime'
   | 'phaseIndex'
   | 'phase'
@@ -131,7 +130,7 @@ const INITIAL_STATE: Pick<
   obstacles: [],
 }
 
-const createWorldStore = ({ questions }: { questions: Question[] }) => {
+const createLevelStore = ({ questions }: { questions: Question[] }) => {
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
@@ -149,9 +148,9 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
     answersMapping: generateAnswerMapping(questions[0].answers),
   }
 
-  console.warn('[World] Initialized:', initialState)
+  console.warn('Initialized:', initialState)
 
-  return createStore<WorldState>()((set, get) => ({
+  return createStore<LevelState>()((set, get) => ({
     // Configurable parameters set on load with default values
     obstacleSpeed: DEFAULT_OBSTACLE_SPEED,
     answerSpeed: DEFAULT_ANSWER_SPEED,
@@ -256,7 +255,6 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
     },
 
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
-
     setPhaseDurations: (phaseDurations: Record<Phase, number>) => set({ phaseDurations }),
     setSlowMoDuration: (slowMoDuration: number) => set({ slowMoDuration }),
     setObstacleSpawnInterval: (obstacleSpawnInterval: number) => set({ obstacleSpawnInterval }),
@@ -322,21 +320,21 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
   }))
 }
 
-export const WorldProvider: FC<PropsWithChildren<{ questions: Question[] }>> = ({ children, questions }) => {
-  const worldStore = useRef<WorldStateStore>(createWorldStore({ questions }))
-  return <WorldContext.Provider value={worldStore.current}>{children}</WorldContext.Provider>
+export const LevelProvider: FC<PropsWithChildren<{ questions: Question[] }>> = ({ children, questions }) => {
+  const store = useRef<LevelStore>(createLevelStore({ questions }))
+  return <LevelContext.Provider value={store.current}>{children}</LevelContext.Provider>
 }
 
-export function useWorldStore<T>(selector: (state: WorldState) => T): T {
-  const worldStore = useContext(WorldContext)
-  if (!worldStore) throw new Error('Missing WorldContext.Provider in the tree')
-  return useStore(worldStore, selector)
+export function useLevelStore<T>(selector: (state: LevelState) => T): T {
+  const store = useContext(LevelContext)
+  if (!store) throw new Error('Missing LevelContext.Provider in the tree')
+  return useStore(store, selector)
 }
 
-export function useWorldStoreAPI(): WorldStateStore {
-  const worldStore = useContext(WorldContext)
-  if (!worldStore) throw new Error('Missing WorldContext.Provider in the tree')
-  return worldStore
+export function useLevelStoreAPI(): LevelStore {
+  const levelStore = useContext(LevelContext)
+  if (!levelStore) throw new Error('Missing LevelContext.Provider in the tree')
+  return levelStore
 }
 
 // Generate random answer mapping for 3x3 grid

@@ -18,7 +18,7 @@ import {
   SPAWN_OBSTACLE_Z,
   useGameStore,
 } from '@/stores/GameProvider'
-import { Phase, useWorldStore } from '@/stores/WorldProvider'
+import { Phase, useLevelStore } from '@/stores/LevelProvider'
 
 type AnswerGateProps = {
   position: [number, number, number]
@@ -114,12 +114,12 @@ RhythmAnswerGate.displayName = 'RhythmAnswerGate'
 
 const RhythmAnswerGates: FC = () => {
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
-  const goSlowMo = useWorldStore((s) => s.goSlowMo)
-  const isSlowMo = useWorldStore((s) => s.isSlowMo)
-  const isQuestionPhase = useWorldStore((s) => s.phase === Phase.QUESTION)
-  const answerSpeed = useWorldStore((s) => s.answerSpeed)
-  const questionIndex = useWorldStore((s) => s.questionIndex)
-  const answersMapping = useWorldStore((s) => s.answersMapping)
+  const goSlowMo = useLevelStore((s) => s.goSlowMo)
+  const isSlowMo = useLevelStore((s) => s.isSlowMo)
+  const isQuestionPhase = useLevelStore((s) => s.phase === Phase.QUESTION)
+  const answerSpeed = useLevelStore((s) => s.answerSpeed)
+  const questionIndex = useLevelStore((s) => s.questionIndex)
+  const answersMapping = useLevelStore((s) => s.answersMapping)
 
   const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
   const isLive = useRef(false) // True when gates are active and moving

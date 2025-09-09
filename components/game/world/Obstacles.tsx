@@ -6,7 +6,7 @@ import { type FC, useLayoutEffect, useRef, useState } from 'react'
 import { useObstaclesSpawning } from '@/hooks/useObstaclesToSpawn'
 import { type ObstacleUserData, type ObstacleZoneUserData } from '@/model/game'
 import { GameStage, KILL_OBSTACLE_Z, LANES_X, LANES_Y, SPAWN_OBSTACLE_Z, useGameStore } from '@/stores/GameProvider'
-import { type ObstacleSpawnData, Phase, useWorldStore } from '@/stores/WorldProvider'
+import { type ObstacleSpawnData, Phase, useLevelStore } from '@/stores/LevelProvider'
 
 type ObstacleInstance = {
   id: string
@@ -33,7 +33,7 @@ const ZONE_INSTANCES_COUNT = 16 // Detection zones for obstacle avoidance
 
 const Obstacles: FC = () => {
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
-  const isObstaclesPhase = useWorldStore((s) => s.phase === Phase.OBSTACLES)
+  const isObstaclesPhase = useLevelStore((s) => s.phase === Phase.OBSTACLES)
 
   const obstaclesData = useRef<ObstacleInstance[]>([])
   const obstacleZonesData = useRef<ObstacleZoneInstance[]>([])

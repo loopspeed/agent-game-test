@@ -1,11 +1,11 @@
 'use client'
 import { type FC } from 'react'
 
-import { useWorldStore } from '@/stores/WorldProvider'
+import { useLevelStore } from '@/stores/LevelProvider'
 
 const DebugDisplay: FC = () => {
-  useWorldStore((s) => s.gameTime) // used to trigger re-renders
-  const getDebugInfo = useWorldStore((s) => s.getDebugInfo)
+  useLevelStore((s) => s.gameTime) // used to trigger re-renders
+  const getDebugInfo = useLevelStore((s) => s.getDebugInfo)
   const debugInfo = getDebugInfo()
 
   return (

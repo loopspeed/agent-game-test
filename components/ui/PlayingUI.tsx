@@ -5,7 +5,7 @@ import { type FC, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
 import { useGameStore } from '@/stores/GameProvider'
-import { Phase, useWorldStore } from '@/stores/WorldProvider'
+import { Phase, useLevelStore } from '@/stores/LevelProvider'
 
 const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
   const container = useRef<HTMLDivElement>(null)
@@ -68,9 +68,9 @@ const Streak: FC = () => {
 }
 
 const Question: FC = () => {
-  const isQuestionPhase = useWorldStore((s) => s.phase === Phase.QUESTION)
-  const questionIndex = useWorldStore((s) => s.questionIndex)
-  const currentQuestion = useWorldStore((s) => s.question)
+  const isQuestionPhase = useLevelStore((s) => s.phase === Phase.QUESTION)
+  const questionIndex = useLevelStore((s) => s.questionIndex)
+  const currentQuestion = useLevelStore((s) => s.question)
 
   const container = useRef<HTMLDivElement>(null)
 

@@ -11,7 +11,7 @@ import ThunderbirdFour from '@/components/models/ThunderbirdFour'
 import { type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/useInputStore'
-import { useWorldStore } from '@/stores/WorldProvider'
+import { useLevelStore } from '@/stores/LevelProvider'
 
 gsap.registerPlugin(useGSAP)
 
@@ -22,7 +22,7 @@ const Player: FC = () => {
   const onObstacleAvoided = useGameStore((s) => s.onObstacleAvoided)
   const onAnswerHit = useGameStore((s) => s.onAnswerHit)
 
-  const updatePlayerPosition = useWorldStore((s) => s.updatePlayerPosition)
+  const updatePlayerPosition = useLevelStore((s) => s.updatePlayerPosition)
 
   const laneXIndex = useRef(1)
   const laneYIndex = useRef(1)

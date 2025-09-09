@@ -4,7 +4,7 @@ import { createStore, type StoreApi, useStore } from 'zustand'
 import { SAMPLE_QUESTIONS } from '@/resources/questions'
 import { type CourseRun, useHistoryStore } from '@/stores/useHistoryStore'
 
-import { WorldProvider } from './WorldProvider'
+import { LevelProvider } from './LevelProvider'
 
 export enum GameStage {
   INTRO = 'INTRO',
@@ -204,8 +204,7 @@ export const GameProvider: FC<PropsWithChildren> = ({ children }) => {
 
   return (
     <GameContext.Provider value={gameStore.current}>
-      {/* World provider handles rhythm system and questions */}
-      <WorldProvider questions={SAMPLE_QUESTIONS}>{children}</WorldProvider>
+      <LevelProvider questions={SAMPLE_QUESTIONS}>{children}</LevelProvider>
     </GameContext.Provider>
   )
 }

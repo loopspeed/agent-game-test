@@ -13,8 +13,8 @@ import WorldStoreManager from '@/components/game/world/WorldStoreManager'
 import GameUI from '@/components/ui/GameUI'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { GameProvider, useGameStore } from '@/stores/GameProvider'
+import { useLevelStore } from '@/stores/LevelProvider'
 import { useInputStore } from '@/stores/useInputStore'
-import { useWorldStore } from '@/stores/WorldProvider'
 
 const GameContent: FC = () => {
   const resetStore = useGameStore((s) => s.resetStore)
@@ -106,18 +106,18 @@ const LEVA_CONTROLS_THEME: LevaCustomTheme = {
 }
 
 const DeveloperControls: FC = () => {
-  const setTimeMultiplier = useWorldStore((s) => s.setTimeMultiplier)
-  const timeMultiplier = useWorldStore((s) => s.timeMultiplier)
-  const phaseDurations = useWorldStore((s) => s.phaseDurations)
-  const setPhaseDurations = useWorldStore((s) => s.setPhaseDurations)
-  const slowMoDuration = useWorldStore((s) => s.slowMoDuration)
-  const setSlowMoDuration = useWorldStore((s) => s.setSlowMoDuration)
-  const obstacleSpawnInterval = useWorldStore((s) => s.obstacleSpawnInterval)
-  const setObstacleSpawnInterval = useWorldStore((s) => s.setObstacleSpawnInterval)
-  const obstacleSpeed = useWorldStore((s) => s.obstacleSpeed)
-  const setObstacleSpeed = useWorldStore((s) => s.setObstacleSpeed)
-  const answerSpeed = useWorldStore((s) => s.answerSpeed)
-  const setAnswerSpeed = useWorldStore((s) => s.setAnswerSpeed)
+  const setTimeMultiplier = useLevelStore((s) => s.setTimeMultiplier)
+  const timeMultiplier = useLevelStore((s) => s.timeMultiplier)
+  const phaseDurations = useLevelStore((s) => s.phaseDurations)
+  const setPhaseDurations = useLevelStore((s) => s.setPhaseDurations)
+  const slowMoDuration = useLevelStore((s) => s.slowMoDuration)
+  const setSlowMoDuration = useLevelStore((s) => s.setSlowMoDuration)
+  const obstacleSpawnInterval = useLevelStore((s) => s.obstacleSpawnInterval)
+  const setObstacleSpawnInterval = useLevelStore((s) => s.setObstacleSpawnInterval)
+  const obstacleSpeed = useLevelStore((s) => s.obstacleSpeed)
+  const setObstacleSpeed = useLevelStore((s) => s.setObstacleSpeed)
+  const answerSpeed = useLevelStore((s) => s.answerSpeed)
+  const setAnswerSpeed = useLevelStore((s) => s.setAnswerSpeed)
 
   const [, setControls] = useControls('Game', () => {
     return {

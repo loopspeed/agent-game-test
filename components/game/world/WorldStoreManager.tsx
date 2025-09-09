@@ -3,14 +3,14 @@
 import { FC, useEffect } from 'react'
 
 import { GameStage, useGameStore } from '@/stores/GameProvider'
-import { useWorldStore } from '@/stores/WorldProvider'
+import { useLevelStore } from '@/stores/LevelProvider'
 
 const WorldStoreManager: FC = () => {
   const stage = useGameStore((s) => s.stage)
 
-  const start = useWorldStore((s) => s.start)
-  const reset = useWorldStore((s) => s.reset)
-  const updatePlayerPosition = useWorldStore((s) => s.updatePlayerPosition)
+  const start = useLevelStore((s) => s.start)
+  const reset = useLevelStore((s) => s.reset)
+  const updatePlayerPosition = useLevelStore((s) => s.updatePlayerPosition)
 
   useEffect(() => {
     if (stage === GameStage.PLAYING) {
