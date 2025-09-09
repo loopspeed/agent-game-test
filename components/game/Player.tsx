@@ -10,8 +10,8 @@ import * as THREE from 'three'
 import ThunderbirdFour from '@/components/models/ThunderbirdFour'
 import { type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
-import { useInputStore } from '@/stores/useInputStore'
 import { useLevelStore } from '@/stores/LevelProvider'
+import { useInputStore } from '@/stores/useInputStore'
 
 gsap.registerPlugin(useGSAP)
 

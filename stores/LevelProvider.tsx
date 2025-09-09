@@ -75,6 +75,7 @@ type LevelState = {
   goSlowMo: () => void
 
   // Question state
+  questions: Question[]
   question: Question
   questionIndex: number
   answersMapping: (Answer | null)[]
@@ -143,6 +144,7 @@ const createLevelStore = ({ questions }: { questions: Question[] }) => {
 
   const initialState = {
     ...INITIAL_STATE,
+    questions,
     question: questions[0],
     phases: mapQuestionsToPhases(questions),
     answersMapping: generateAnswerMapping(questions[0].answers),

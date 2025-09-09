@@ -3,6 +3,7 @@ import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { type FC, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
+import { twJoin } from 'tailwind-merge'
 
 import { useGameStore } from '@/stores/GameProvider'
 import { Phase, useLevelStore } from '@/stores/LevelProvider'
@@ -49,7 +50,6 @@ const Points: FC = () => {
         {points > 0 ? '+' : ''}
         {points}
       </div>
-      <div className="text-sm font-medium text-white/70">POINTS</div>
     </div>
   )
 }
@@ -60,9 +60,9 @@ const Streak: FC = () => {
   if (streak <= 0) return null
 
   return (
-    <div className="absolute right-6 bottom-6 rounded-full bg-black/70 px-3 py-1 text-sm font-semibold">
+    <div className="absolute right-6 bottom-6 rounded-full bg-black/70 px-3 py-1 text-xl font-semibold">
       <span className="mr-1">🔥</span>
-      {streak}x
+      {streak}
     </div>
   )
 }
@@ -71,17 +71,38 @@ const Question: FC = () => {
   const isQuestionPhase = useLevelStore((s) => s.phase === Phase.QUESTION)
   const questionIndex = useLevelStore((s) => s.questionIndex)
   const currentQuestion = useLevelStore((s) => s.question)
+  const questions = useLevelStore((s) => s.questions)
+
+  const answersHit = useGameStore((s) => s.answersHit)
 
   const container = useRef<HTMLDivElement>(null)
 
   const switchKey = isQuestionPhase ? `question-${questionIndex}` : 'no-question'
+
+  // TODO: add onEnter and onExit transitions (simple for now.)
 
   return (
     <SwitchTransition>
       <Transition key={switchKey} timeout={{ enter: 300, exit: 400 }} nodeRef={container}>
         {() =>
           !isQuestionPhase ? (
-            <div ref={container} />
+            <div ref={container} className="absolute top-8 flex items-center gap-4">
+              {/* TODO: Indicators need work */}
+              {questions.map((question, index) => {
+                const isUpcoming = index > questionIndex
+
+                const getIndicatorClass = (): string => {
+                  if (isUpcoming) return 'bg-white/40'
+
+                  // Find the answer hit for this specific question
+                  const answerHit = answersHit.find((hit) => hit.questionId === question.id)
+                  if (answerHit?.isCorrect) return 'bg-green-400'
+                  if (answerHit?.isCorrect === false) return 'bg-red-400'
+                  return 'bg-red-400/40'
+                }
+                return <div key={question.id} className={twJoin('size-5 rounded-full', getIndicatorClass())}></div>
+              })}
+            </div>
           ) : (
             <section
               ref={container}

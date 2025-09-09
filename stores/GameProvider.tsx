@@ -7,6 +7,7 @@ import { type CourseRun, useHistoryStore } from '@/stores/useHistoryStore'
 import { LevelProvider } from './LevelProvider'
 
 export enum GameStage {
+  // TODO: these don't quite align with level just yet, a better combo will be needed.
   INTRO = 'INTRO',
   PLAYING = 'PLAYING',
   GAME_OVER = 'GAME_OVER',
@@ -83,6 +84,7 @@ const INITIAL_STATE: Pick<
   | 'answersHit'
 > = {
   stage: GameStage.INTRO,
+  // THIS stuff isn't correct, needs a proper data structure with questions inside the chapter.
   courseId: 'ai-history-course',
   courseName: 'AI History Course',
   gameStartTime: Date.now(),
