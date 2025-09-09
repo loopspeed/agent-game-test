@@ -1,11 +1,11 @@
 'use client'
 
-import { FC, useEffect } from 'react'
+import { type FC, useEffect } from 'react'
 
 import { GameStage, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 
-const WorldStoreManager: FC = () => {
+const LevelManager: FC = () => {
   const stage = useGameStore((s) => s.stage)
 
   const start = useLevelStore((s) => s.start)
@@ -23,4 +23,4 @@ const WorldStoreManager: FC = () => {
   return null
 }
 
-export default WorldStoreManager
+export default LevelManager

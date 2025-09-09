@@ -1,5 +1,5 @@
 'use client'
-import { CameraShake, type CameraShakeProps, type ShakeController } from '@react-three/drei'
+import { CameraShake, Stats, type CameraShakeProps, type ShakeController } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { Leva, useControls } from 'leva'
@@ -9,7 +9,7 @@ import React from 'react'
 
 import DebugDisplay from '@/components/debug/DebugDisplay'
 import Scene from '@/components/game/Scene'
-import WorldStoreManager from '@/components/game/world/WorldStoreManager'
+import LevelManager from '@/components/game/world/WorldStoreManager'
 import GameUI from '@/components/ui/GameUI'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { GameProvider, useGameStore } from '@/stores/GameProvider'
@@ -29,14 +29,14 @@ const GameContent: FC = () => {
 
   return (
     <main className="h-lvh w-full overflow-hidden">
-      <WorldStoreManager />
+      <LevelManager />
       <Canvas
         className="!fixed inset-0 !h-lvh"
         performance={{ min: 0.2, debounce: 300 }}
         gl={{ powerPreference: 'low-power', antialias: false, alpha: false }}
         camera={{ position: [0, 0.2, 4], fov: 75, far: 50 }}>
         <CameraMovement />
-        {/* <Stats /> */}
+        <Stats />
         <DeveloperControls />
 
         <Suspense fallback={null}>

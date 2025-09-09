@@ -7,7 +7,7 @@ import { useLevelStore } from '@/stores/LevelProvider'
 import AnswerGates from './AnswerGates'
 import Obstacles from './Obstacles'
 
-const WorldConveyor: FC = () => {
+const LevelConveyor: FC = () => {
   const update = useLevelStore((s) => s.update)
   const { gameTime, timeMultiplier } = useTimeSubscription()
 
@@ -24,4 +24,4 @@ const WorldConveyor: FC = () => {
   )
 }
 
-export default WorldConveyor
+export default LevelConveyor
