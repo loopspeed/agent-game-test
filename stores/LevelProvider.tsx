@@ -384,6 +384,7 @@ const generateObstacleSequence = ({
   const topLanes = [0, 1, 2] // Top row
   const middleLanes = [3, 4, 5] // Middle row
   const bottomLanes = [6, 7, 8] // Bottom row
+  const outerLanes = [0, 1, 2, 3, 5, 6, 7, 8]
 
   console.warn(`🎯 GENERATING NEW OBSTACLE SEQUENCE:`, {
     phaseStartTime: phaseStartTime.toFixed(2),
@@ -402,7 +403,7 @@ const generateObstacleSequence = ({
     let occupiedLanes: number[]
     let safeLanes: number[]
 
-    const patternIndex = i % 4
+    const patternIndex = i % 5 // Updated to include 5 patterns
     switch (patternIndex) {
       case 0: // Force player left - block center and right
         occupiedLanes = [...centerLanes, ...rightLanes]
@@ -419,6 +420,10 @@ const generateObstacleSequence = ({
       case 3: // Force player up - block middle and bottom
         occupiedLanes = [...middleLanes, ...bottomLanes]
         safeLanes = topLanes
+        break
+      case 4: // Force player to center - block all outer lanes
+        occupiedLanes = outerLanes
+        safeLanes = [4] // Only center lane is safe
         break
       default:
         occupiedLanes = [...centerLanes, ...rightLanes]
