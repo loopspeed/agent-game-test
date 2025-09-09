@@ -48,7 +48,7 @@ const Obstacles: FC = () => {
 
   // Clear spawned IDs when entering obstacles phase to reset for new obstacle sequence
   useLayoutEffect(() => {
-    if (isObstaclesPhase) {
+    if (!isObstaclesPhase) {
       spawnedIds.current = []
       console.warn('🧹 CLEARED SPAWNED IDS FOR NEW OBSTACLES PHASE')
     }

@@ -25,7 +25,7 @@ export enum Phase {
 const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
   INTRO: 1,
   REST: 3,
-  OBSTACLES: 8,
+  OBSTACLES: 12,
   QUESTION: 10,
   OUTRO: 3,
 } as const
@@ -61,7 +61,6 @@ type WorldState = {
 
   // Player state
   playerPosition: Vector3Tuple
-  playerLanes: [xIndex: number, yIndex: number]
   currentPlayerLane: number // 0-8 index for 3x3 grid
   updatePlayerPosition: ({ pos, lanes }: { pos: Vector3Tuple; lanes: [xIndex: number, yIndex: number] }) => void
 
@@ -107,7 +106,6 @@ const INITIAL_STATE: Pick<
   | 'phaseTime'
   | 'isSlowMo'
   | 'playerPosition'
-  | 'playerLanes'
   | 'currentPlayerLane'
   | 'timeMultiplier'
   | 'slowMoTimeRemaining'
@@ -128,7 +126,6 @@ const INITIAL_STATE: Pick<
   timeMultiplier: 1,
   slowMoTimeRemaining: 0,
   playerPosition: [0, 0, 0],
-  playerLanes: [1, 1],
   currentPlayerLane: 4, // Center lane in 3x3 grid
   questionIndex: 0,
   gameSpeed: 12.0,
@@ -272,7 +269,7 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
       set({ isSlowMo: true })
       gsap.set('#slow-mo-bar', { scaleX: 1, opacity: 1 })
 
-      const { slowMoDuration } = get()
+      const slowMoDuration = get().slowMoDuration
       slowMoTimeRemainingTarget.value = slowMoDuration
 
       speedTimeline?.kill()
@@ -319,7 +316,6 @@ const createWorldStore = ({ questions }: { questions: Question[] }) => {
       const currentPlayerLane = lanes[1] * 3 + lanes[0] // Convert to 0-8 index
       set({
         playerPosition: pos,
-        playerLanes: lanes,
         currentPlayerLane,
       })
     },
@@ -380,6 +376,9 @@ const generateObstacleSequence = ({
   const phaseDuration = phaseDurations[Phase.OBSTACLES]
   const obstacleCount = Math.floor(phaseDuration / obstacleSpawnInterval)
 
+  // Add a small delay to the first obstacle to ensure proper spacing
+  const INITIAL_DELAY = 0.5 // Half second delay before first obstacle
+
   // Define lane groups for strategic coverage
   const leftLanes = [0, 3, 6] // Left column
   const centerLanes = [1, 4, 7] // Center column
@@ -388,8 +387,16 @@ const generateObstacleSequence = ({
   const middleLanes = [3, 4, 5] // Middle row
   const bottomLanes = [6, 7, 8] // Bottom row
 
+  console.warn(`🎯 GENERATING NEW OBSTACLE SEQUENCE:`, {
+    phaseStartTime: phaseStartTime.toFixed(2),
+    phaseDuration,
+    obstacleCount,
+    interval: obstacleSpawnInterval,
+    initialDelay: INITIAL_DELAY,
+  })
+
   for (let i = 0; i < obstacleCount; i++) {
-    const spawnTime = phaseStartTime + i * obstacleSpawnInterval
+    const spawnTime = phaseStartTime + INITIAL_DELAY + i * obstacleSpawnInterval
     const speedVariation = (Math.random() - 0.5) * 2 // Random between -1 and +1
     const obstacleSpeed = Math.max(1, gameSpeed + speedVariation)
 
@@ -420,8 +427,9 @@ const generateObstacleSequence = ({
         safeLanes = leftLanes
     }
 
+    // Use phase index to ensure unique IDs across different phases
     const obstacle: ObstacleSpawnData = {
-      id: `obstacle-${i}-${spawnTime.toFixed(2)}`,
+      id: `obstacle-phase-${Math.floor(phaseStartTime)}-${i}-${spawnTime.toFixed(2)}`,
       type: ObstacleType.CLUSTER,
       lanes: occupiedLanes,
       safeLanes,
@@ -432,10 +440,11 @@ const generateObstacleSequence = ({
     obstacles.push(obstacle)
   }
 
-  console.warn(`🎯 GENERATED OBSTACLE SEQUENCE:`, {
-    obstacleCount,
-    phaseDuration,
-    interval: obstacleSpawnInterval,
+  console.warn(`🎯 COMPLETED OBSTACLE SEQUENCE GENERATION:`, {
+    obstacleCount: obstacles.length,
+    firstSpawnTime: obstacles[0]?.spawnTime.toFixed(2),
+    lastSpawnTime: obstacles[obstacles.length - 1]?.spawnTime.toFixed(2),
+    spawnTimes: obstacles.map((o) => o.spawnTime.toFixed(2)),
     obstacles: obstacles.map((o) => ({
       id: o.id,
       spawnTime: o.spawnTime.toFixed(2),
