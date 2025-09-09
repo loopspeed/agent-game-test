@@ -56,8 +56,6 @@ const Player: FC = () => {
   // Intersection handler for sensor collisions
   const onIntersectionEnter: IntersectionEnterHandler = contextSafe((e) => {
     const { other } = e
-
-    console.warn('Player intersected', { e })
     const otherRB = other.rigidBody
     if (!otherRB?.userData) throw new Error('No userData on other rigid body')
 
@@ -107,19 +105,19 @@ const Player: FC = () => {
     }
 
     if (isObstacle) {
-      console.warn('Player hit obstacle', userData)
+      console.warn('Player HIT obstacle', userData)
       onObstacleHit()
       handleBadHit()
     }
 
     if (isObstacleZone) {
-      console.warn('Player entered obstacle zone - obstacle avoided!', userData)
+      console.warn('Player AVOIDED obstacle', userData)
       onObstacleAvoided()
       handleGoodHit()
     }
 
     if (isAnswerGate) {
-      console.warn('Player hit answer gate', userData)
+      console.warn('Player ANSWER gate', userData)
       const isCorrect = userData.isCorrect
       const answerId = userData.answerId
 

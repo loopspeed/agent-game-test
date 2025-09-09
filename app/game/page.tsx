@@ -7,7 +7,7 @@ import { LevaCustomTheme } from 'leva/dist/declarations/src/styles'
 import { type FC, Suspense, useEffect, useRef } from 'react'
 import React from 'react'
 
-import DebugDisplay from '@/components/debug/RhythmDebugDisplay'
+import DebugDisplay from '@/components/debug/DebugDisplay'
 import Scene from '@/components/game/Scene'
 import WorldStoreManager from '@/components/game/world/WorldStoreManager'
 import GameUI from '@/components/ui/GameUI'
@@ -15,25 +15,6 @@ import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { GameProvider, useGameStore } from '@/stores/GameProvider'
 import { useInputStore } from '@/stores/useInputStore'
 import { useWorldStore } from '@/stores/WorldProvider'
-
-// Custom theme to make controls much bigger and more visible
-const LEVA_CONTROLS_THEME: LevaCustomTheme = {
-  fontSizes: {
-    root: '12px', // Increased from default 11px to 14px for better readability
-  },
-  sizes: {
-    rootWidth: '480px', // Increased from default 280px for more width
-    controlWidth: '220px', // Increased from default 160px for wider controls
-    rowHeight: '32px', // Increased from default 24px for taller rows
-    folderTitleHeight: '24px', // Increased from default 20px for taller folder titles
-  },
-  space: {
-    sm: '8px', // Increased from default 6px
-    md: '14px', // Increased from default 10px
-    rowGap: '8px', // Increased from default 7px for more spacing between rows
-    colGap: '8px', // Increased from default 7px for more spacing between columns
-  },
-}
 
 const GameContent: FC = () => {
   const resetStore = useGameStore((s) => s.resetStore)
@@ -105,6 +86,25 @@ const CameraMovement: FC = () => {
   console.log(ref.current)
 
   return <CameraShake ref={ref} {...SHAKE_CONFIG} />
+}
+
+// Custom theme to make controls much bigger and more visible
+const LEVA_CONTROLS_THEME: LevaCustomTheme = {
+  fontSizes: {
+    root: '12px', // Increased from default 11px to 14px for better readability
+  },
+  sizes: {
+    rootWidth: '480px', // Increased from default 280px for more width
+    controlWidth: '220px', // Increased from default 160px for wider controls
+    rowHeight: '32px', // Increased from default 24px for taller rows
+    folderTitleHeight: '24px', // Increased from default 20px for taller folder titles
+  },
+  space: {
+    sm: '8px', // Increased from default 6px
+    md: '14px', // Increased from default 10px
+    rowGap: '8px', // Increased from default 7px for more spacing between rows
+    colGap: '8px', // Increased from default 7px for more spacing between columns
+  },
 }
 
 const DeveloperControls: FC = () => {

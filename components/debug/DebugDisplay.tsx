@@ -15,7 +15,7 @@ const DebugDisplay: FC = () => {
   const debugInfo = getDebugInfo()
 
   return (
-    <div className="fixed top-0 left-0 max-w-md bg-black p-8 text-sm text-white">
+    <div className="fixed top-0 left-0 max-w-md bg-black p-8 text-white">
       <p className="text-sm">
         Game Time (s): <span className="text-yellow-300">{debugInfo.gameTime.toFixed(2)}</span>
         <br />

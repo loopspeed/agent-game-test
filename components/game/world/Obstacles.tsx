@@ -28,8 +28,8 @@ type ObstacleZoneInstance = {
   hasBeenTriggered: boolean // Track if player has passed through this zone
 }
 
-const INSTANCES_COUNT = 50 // Increased to handle cluster spawning (8 obstacles at once)
-const ZONE_INSTANCES_COUNT = 20 // Detection zones for obstacle avoidance
+const INSTANCES_COUNT = 64 // Increased to handle cluster spawning (8 obstacles at once)
+const ZONE_INSTANCES_COUNT = 16 // Detection zones for obstacle avoidance
 
 const Obstacles: FC = () => {
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
@@ -46,19 +46,11 @@ const Obstacles: FC = () => {
   const { gameTime, obstaclesToSpawn } = useObstaclesSpawning()
   const spawnedIds = useRef<string[]>([])
 
-  // Clear spawned IDs when entering obstacles phase to reset for new obstacle sequence
-  useLayoutEffect(() => {
-    if (!isObstaclesPhase) {
-      spawnedIds.current = []
-      console.warn('🧹 CLEARED SPAWNED IDS FOR NEW OBSTACLES PHASE')
-    }
-  }, [isObstaclesPhase])
-
   useLayoutEffect(() => {
     const setupInstances = () => {
       if (isSetup.current) return // Prevent double setup
 
-      console.warn('🏗️ Setting up rhythm-based obstacle instances:')
+      console.warn('🏗️ Setting up obstacle instances:')
 
       // Setup obstacle instances
       const instances: InstancedRigidBodyProps[] = []
@@ -142,7 +134,7 @@ const Obstacles: FC = () => {
       if (gameTime.current < spawnData.spawnTime) return // Not yet time to spawn
 
       console.warn(
-        `⏰ SPAWNING OBSTACLE AT TIME: ${gameTime.current.toFixed(2)} >= ${spawnData.spawnTime.toFixed(2)}`,
+        `⏰ SPAWNING OBSTACLE AT TIME: ${gameTime.current.toFixed(2)} >= SPAWN TIME: ${spawnData.spawnTime.toFixed(2)}`,
         {
           obstacleId: spawnData.id,
           lanesCount: spawnData.lanes.length,
@@ -170,14 +162,6 @@ const Obstacles: FC = () => {
               isAlive: true,
               speed: spawnData.speed,
             }
-
-            console.warn(`🎵 SPAWNING OBSTACLE ${index + 1}/${spawnPositions.length}:`, {
-              id: newData.id,
-              lane: spawnPos.laneIndex,
-              position: { x: spawnPos.x, y: spawnPos.y },
-              speed: newData.speed,
-            })
-
             // Position and start moving the obstacle
             body.setTranslation({ x: newData.x, y: newData.y, z: newData.z }, true)
             body.setLinvel({ x: 0, y: 0, z: newData.speed }, true)
@@ -230,11 +214,9 @@ const Obstacles: FC = () => {
 
       const currentPos = body.translation()
       if (currentPos.z > KILL_OBSTACLE_Z) {
-        // Reset obstacle
         obstacle.isAlive = false
         body.setLinvel({ x: 0, y: 0, z: 0 }, true)
         body.setTranslation({ x: 0, y: 0, z: -40 }, true)
-        console.warn(`♻️ RECYCLED RHYTHM OBSTACLE: ${obstacle.id}`)
       }
     })
 
@@ -246,14 +228,10 @@ const Obstacles: FC = () => {
       if (!body) return
 
       const currentPos = body.translation()
-      if (currentPos.z > KILL_OBSTACLE_Z + 2) {
-        // Give zones a bit more time to trigger
-        // Reset zone
+      if (currentPos.z > KILL_OBSTACLE_Z) {
         zone.isAlive = false
-        zone.hasBeenTriggered = false
         body.setLinvel({ x: 0, y: 0, z: 0 }, true)
         body.setTranslation({ x: 0, y: 0, z: -40 }, true)
-        console.warn(`♻️ RECYCLED DETECTION ZONE: ${zone.id}`)
       }
     })
   }
