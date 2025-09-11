@@ -1,18 +1,16 @@
 'use client'
-import { CameraShake, type CameraShakeProps, type ShakeController, Stats } from '@react-three/drei'
-import { Canvas } from '@react-three/fiber'
-import { Physics } from '@react-three/rapier'
+
 import { Leva, useControls } from 'leva'
 import { LevaCustomTheme } from 'leva/dist/declarations/src/styles'
-import { type FC, Suspense, useEffect, useRef } from 'react'
+import { type FC, useEffect } from 'react'
 import React from 'react'
 
 import DebugDisplay from '@/components/debug/DebugDisplay'
-import Scene from '@/components/game/Scene'
-import LevelManager from '@/components/game/world/WorldStoreManager'
+import LevelCanvas from '@/components/game/level/LevelCanvas'
+import LevelManager from '@/components/game/level/LevelManager'
 import GameUI from '@/components/ui/GameUI'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { CAMERA_FAR, GameProvider, useGameStore } from '@/stores/GameProvider'
+import { GameProvider, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 import { useInputStore } from '@/stores/useInputStore'
 
@@ -30,25 +28,10 @@ const GameContent: FC = () => {
   return (
     <main className="h-lvh w-full overflow-hidden">
       <LevelManager />
-      <Canvas
-        className="!fixed inset-0 !h-lvh"
-        performance={{ min: 0.2, debounce: 300 }}
-        gl={{ powerPreference: 'low-power', antialias: false, alpha: false }}
-        camera={{ position: [0, 0.2, 4], fov: 75, far: CAMERA_FAR }}>
-        <CameraMovement />
-        <Stats />
-        <DeveloperControls />
-
-        <Suspense fallback={null}>
-          {/* Physics world with zero gravity (kinematic bodies only) */}
-          <Physics gravity={[0, 0, 0]} debug={true}>
-            <Scene />
-          </Physics>
-        </Suspense>
-      </Canvas>
-
+      <LevelCanvas />
       <GameUI />
       <DebugDisplay />
+      <DeveloperControls />
       <Leva theme={LEVA_CONTROLS_THEME} />
     </main>
   )
@@ -60,30 +43,6 @@ export default function GamePage() {
       <GameContent />
     </GameProvider>
   )
-}
-
-const SHAKE_CONFIG: CameraShakeProps = {
-  maxYaw: 0.08, // Max amount camera can yaw in either direction
-  maxPitch: 0.08, // Max amount camera can pitch in either direction
-  maxRoll: 0.08, // Max amount camera can roll in either direction
-  yawFrequency: 0.1, // Frequency of the yaw rotation
-  pitchFrequency: 0.1, // Frequency of the pitch rotation
-  rollFrequency: 0.1, // Frequency of the roll rotation
-  intensity: 1, // initial intensity of the shake
-  decay: false, // should the intensity decay over time
-  decayRate: 0.65, // if decay = true this is the rate at which intensity will reduce at
-}
-
-const CameraMovement: FC = () => {
-  const ref = useRef<ShakeController>(null)
-
-  useTimeSubscription((timeMultiplier) => {
-    if (ref.current) {
-      ref.current.setIntensity(timeMultiplier)
-    }
-  })
-
-  return <CameraShake ref={ref} {...SHAKE_CONFIG} />
 }
 
 // Custom theme to make controls much bigger and more visible
