@@ -33,7 +33,6 @@ type ObstacleZoneInstance = {
   isAlive: boolean
   speed: number
   obstacleId: string // Reference to the obstacle group this zone belongs to
-  hasBeenTriggered: boolean // Track if player has passed through this zone
 }
 
 const INSTANCES_COUNT = 64
@@ -95,7 +94,6 @@ const Obstacles: FC = () => {
         isAlive: false,
         speed: 0,
         obstacleId: '',
-        hasBeenTriggered: false,
       }
 
       for (let i = 0; i < ZONE_INSTANCES_COUNT; i++) {
@@ -189,7 +187,6 @@ const Obstacles: FC = () => {
             isAlive: true,
             speed: spawnData.speed,
             obstacleId: spawnData.id,
-            hasBeenTriggered: false,
           }
 
           console.warn(`🎯 SPAWNING DETECTION ZONE:`, {

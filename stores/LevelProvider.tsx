@@ -28,7 +28,7 @@ export enum Phase {
 const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
   INTRO: 1, // For entry animation
   REST: 1, // Short rest before obstacles start
-  OBSTACLES: 12,
+  OBSTACLES: 1,
   QUESTION: 10000, // Effectively infinite until question is answered and the gate is killed - when phase is advanced manually
   OUTRO: 5, // For showing "level complete"
   FINISHED: 10000, // For showing level complete screen
@@ -125,7 +125,6 @@ const INITIAL_STATE: Pick<
   phaseIndex: 0,
   phase: Phase.INTRO,
   phaseTime: 0,
-
   isSlowMo: false,
   timeMultiplier: 1,
   slowMoTimeRemaining: 0,
@@ -135,43 +134,34 @@ const INITIAL_STATE: Pick<
   obstacles: [],
 }
 
-const createLevelStore = ({ questions, onGameOver }: { questions: Question[]; onGameOver: () => void }) => {
+const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; onCompleted: () => void }) => {
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
   const slowMoTimeRemainingTarget = { value: SLOW_MO_DURATION }
 
-  const generatePhasesFromQuestions = (questions: Question[]): Phase[] => {
-    const questionPhases = questions.flatMap(() => QUESTIONS_PHASE_CYCLE)
-    return [Phase.INTRO, ...questionPhases, Phase.OUTRO, Phase.FINISHED]
-  }
-
-  const initialState = {
-    ...INITIAL_STATE,
-    questions,
-    question: questions[0],
-    phases: generatePhasesFromQuestions(questions),
-    answersMapping: generateAnswerMapping(questions[0].answers),
-  }
-
-  console.warn('Initialized:', initialState)
-
   return createStore<LevelState>()((set, get) => ({
     // Configurable parameters set on load with default values
+    ...INITIAL_STATE,
     obstacleSpeed: DEFAULT_OBSTACLE_SPEED,
     answerSpeed: DEFAULT_ANSWER_SPEED,
     phaseDurations: DEFAULT_PHASE_DURATIONS,
     slowMoDuration: SLOW_MO_DURATION,
     obstacleSpawnInterval: OBSTACLE_SPAWN_INTERVAL,
-    ...initialState,
+    questions,
+    question: questions[0],
+    phases: generatePhasesFromQuestions(questions),
+    answersMapping: generateAnswerMapping(questions[0].answers),
 
     start: () => {
-      set(initialState)
+      set(INITIAL_STATE)
     },
     reset: () => {
       set({
-        ...initialState,
+        ...INITIAL_STATE,
         question: questions[0],
+        phases: generatePhasesFromQuestions(questions),
+        answersMapping: generateAnswerMapping(questions[0].answers),
       })
     },
 
@@ -203,7 +193,6 @@ const createLevelStore = ({ questions, onGameOver }: { questions: Question[]; on
 
     update: (gameTime: number) => {
       const state = get()
-
       let phaseIndex = state.phaseIndex
       let phase = state.phase
       let phaseTime = state.phaseTime + (gameTime - state.gameTime)
@@ -218,21 +207,13 @@ const createLevelStore = ({ questions, onGameOver }: { questions: Question[]; on
         phaseTime = 0
         phase = state.phases[phaseIndex]
 
-        // Handle transition to new question
+        if (phase === Phase.REST) {
+          console.warn('[LevelProvider] Transitioning to REST phase')
+        }
         if (phase === Phase.QUESTION) {
           console.warn('[LevelProvider] Transitioning to new QUESTION phase')
-          set({
-            gameTime,
-            phase,
-            phaseTime,
-            phaseIndex,
-          })
-          return
         }
-
-        // Handle entering obstacles phase
         if (phase === Phase.OBSTACLES) {
-          console.warn('[LevelProvider] Transitioning to new OBSTACLES phase')
           // Generate complete obstacle sequence for this phase
           const obstacleSequence = generateObstacleSequence({
             phaseStartTime: gameTime,
@@ -240,26 +221,15 @@ const createLevelStore = ({ questions, onGameOver }: { questions: Question[]; on
             phaseDurations: state.phaseDurations,
             obstacleSpawnInterval: state.obstacleSpawnInterval,
           })
+          console.warn('[LevelProvider] Transitioning to new OBSTACLES phase', { obstacleSequence })
           set({
-            gameTime,
-            phase,
-            phaseTime,
-            phaseIndex,
             obstacles: obstacleSequence,
           })
-          return
         }
 
         if (phase === Phase.FINISHED) {
           console.warn('[LevelProvider] Reached FINISHED phase, triggering game over')
-          onGameOver()
-          set({
-            gameTime,
-            phase,
-            phaseTime,
-            phaseIndex,
-          })
-          return
+          onCompleted()
         }
 
         set({
@@ -357,8 +327,8 @@ const createLevelStore = ({ questions, onGameOver }: { questions: Question[]; on
 type Props = PropsWithChildren<{ questions: Question[] }>
 
 export const LevelProvider: FC<Props> = ({ children, questions }) => {
-  const onGameOver = useGameStore((s) => s.onGameOver)
-  const store = useRef<LevelStore>(createLevelStore({ questions, onGameOver }))
+  const onCompleted = useGameStore((s) => s.onCompleted)
+  const store = useRef<LevelStore>(createLevelStore({ questions, onCompleted }))
   return <LevelContext.Provider value={store.current}>{children}</LevelContext.Provider>
 }
 
@@ -372,6 +342,12 @@ export function useLevelStoreAPI(): LevelStore {
   const levelStore = useContext(LevelContext)
   if (!levelStore) throw new Error('Missing LevelContext.Provider in the tree')
   return levelStore
+}
+
+// Produces complete phase sequence based on number of questions
+const generatePhasesFromQuestions = (questions: Question[]): Phase[] => {
+  const questionPhases = questions.flatMap(() => QUESTIONS_PHASE_CYCLE)
+  return [Phase.INTRO, ...questionPhases, Phase.OUTRO, Phase.FINISHED]
 }
 
 // Generate random answer mapping for 3x3 grid

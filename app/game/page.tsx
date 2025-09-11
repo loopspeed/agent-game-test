@@ -7,7 +7,6 @@ import React from 'react'
 
 import DebugDisplay from '@/components/debug/DebugDisplay'
 import LevelCanvas from '@/components/game/level/LevelCanvas'
-import LevelManager from '@/components/game/level/LevelManager'
 import GameUI from '@/components/ui/GameUI'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { GameProvider, useGameStore } from '@/stores/GameProvider'
@@ -15,19 +14,20 @@ import { useLevelStore } from '@/stores/LevelProvider'
 import { useInputStore } from '@/stores/useInputStore'
 
 const GameContent: FC = () => {
-  const resetStore = useGameStore((s) => s.resetStore)
+  const resetGame = useGameStore((s) => s.resetStore)
+  const resetLevel = useLevelStore((s) => s.reset)
 
   useEffect(() => {
     return () => {
-      resetStore()
+      resetGame()
+      resetLevel()
     }
-  }, [resetStore])
+  }, [resetGame, resetLevel])
 
   useKeypadInput()
 
   return (
     <main className="h-lvh w-full overflow-hidden">
-      <LevelManager />
       <LevelCanvas />
       <GameUI />
       <DebugDisplay />

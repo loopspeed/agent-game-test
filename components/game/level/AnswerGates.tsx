@@ -26,7 +26,7 @@ type AnswerGateProps = {
   questionId: string | null
 }
 
-const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ position, answer, questionId }, ref) => {
+const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ position, answer, questionId }, ref) => {
   // Get answer from rhythm data - this is always provided by the rhythm system
   const userData: AnswerGateUserData = {
     type: RigidBodyType.ANSWER_GATE,
@@ -104,9 +104,9 @@ const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ p
   )
 })
 
-RhythmAnswerGate.displayName = 'RhythmAnswerGate'
+AnswerGate.displayName = 'AnswerGate'
 
-const RhythmAnswerGates: FC = () => {
+const AnswerGates: FC = () => {
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
   const goSlowMo = useLevelStore((s) => s.goSlowMo)
   const isSlowMo = useLevelStore((s) => s.isSlowMo)
@@ -134,7 +134,6 @@ const RhythmAnswerGates: FC = () => {
       if (!gate) return
       const position = gatePositions[index]
       const speed = timeMultiplier.current * answerSpeed
-      gate.setLinvel({ x: 0, y: 0, z: speed }, true)
       gate.setTranslation(
         {
           x: position[0],
@@ -143,6 +142,7 @@ const RhythmAnswerGates: FC = () => {
         },
         true,
       )
+      gate.setLinvel({ x: 0, y: 0, z: speed }, true)
     })
   }
 
@@ -185,7 +185,7 @@ const RhythmAnswerGates: FC = () => {
   return (
     <>
       {gatePositions.map((position, index) => (
-        <RhythmAnswerGate
+        <AnswerGate
           ref={(ref) => {
             gatesRefs.current[index] = ref
           }}
@@ -212,4 +212,4 @@ const generateGatePositions = (): [number, number, number][] => {
 
 const gatePositions = generateGatePositions()
 
-export default RhythmAnswerGates
+export default AnswerGates

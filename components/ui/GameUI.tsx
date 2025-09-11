@@ -5,6 +5,7 @@ import gsap from 'gsap'
 import { type FC, useEffect, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
+import useGameControls from '@/hooks/useGameControls'
 import { GameStage, useGameStore } from '@/stores/GameProvider'
 
 import GameOverUI from './GameOver'
@@ -21,9 +22,9 @@ const GameUI: FC = () => {
           <div
             className="pointer-events-none fixed top-0 z-100 flex !h-svh w-full items-center justify-center"
             ref={container}>
-            {stage === GameStage.INTRO && <IntroUI transitionStatus={status} />}
+            {stage === GameStage.READY && <ReadyUI transitionStatus={status} />}
             {stage === GameStage.PLAYING && <PlayingUI transitionStatus={status} />}
-            {stage === GameStage.GAME_OVER && <GameOverUI transitionStatus={status} />}
+            {stage === GameStage.COMPLETED && <GameOverUI transitionStatus={status} />}
           </div>
         )}
       </Transition>
@@ -33,14 +34,15 @@ const GameUI: FC = () => {
 
 export default GameUI
 
-const IntroUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
-  const setStage = useGameStore((s) => s.setStage)
+const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
   const container = useRef<HTMLDivElement>(null)
+
+  const { handleStart } = useGameControls()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Enter') {
-        setStage(GameStage.PLAYING)
+        handleStart()
       }
     }
 
@@ -48,7 +50,7 @@ const IntroUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [setStage])
+  }, [handleStart])
 
   useGSAP(
     () => {
@@ -64,11 +66,8 @@ const IntroUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
 
   return (
     <div ref={container} className="absolute inset-0 flex items-center justify-center">
-      <button
-        className="pointer-events-auto bg-black p-8 text-xl font-black text-white"
-        onClick={() => setStage(GameStage.PLAYING)}>
-        READY (ENTER)
-      </button>
+      <span className="text-5xl font-black text-white">PRESS ENTER</span>
     </div>
   )
 }
+4

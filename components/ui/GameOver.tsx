@@ -5,15 +5,16 @@ import Link from 'next/link'
 import { type FC, useRef, useState } from 'react'
 import type { TransitionStatus } from 'react-transition-group'
 
+import useGameControls from '@/hooks/useGameControls'
 import { useGameOverData } from '@/hooks/useGameOverData'
 import type { Question } from '@/model/content'
 import { SAMPLE_QUESTIONS } from '@/resources/course'
-import { useGameStore } from '@/stores/GameProvider'
 import { formatAccuracy, formatDate, formatTime } from '@/utils/formatting'
 
 const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
+  const { handleReplay } = useGameControls()
+
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current')
-  const startNewGame = useGameStore((s) => s.restartGame)
   const container = useRef<HTMLDivElement>(null)
 
   useGSAP(
@@ -27,10 +28,6 @@ const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStat
     },
     { scope: container, dependencies: [transitionStatus] },
   )
-
-  const handlePlayAgain = () => {
-    startNewGame()
-  }
 
   return (
     <section
@@ -65,9 +62,9 @@ const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStat
       {/* Action Buttons */}
       <footer className="flex gap-4">
         <button
-          onClick={handlePlayAgain}
+          onClick={handleReplay}
           className="flex-1 rounded bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700">
-          Play Again
+          Replay
         </button>
 
         <Link href="/">

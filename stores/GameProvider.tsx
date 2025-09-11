@@ -1,7 +1,6 @@
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
-import type { Chapter } from '@/model/content'
 import type { AnswerGateUserData } from '@/model/game'
 import { SAMPLE_COURSE, SAMPLE_QUESTIONS } from '@/resources/course'
 import { type ChapterRun, useHistoryStore } from '@/stores/useHistoryStore'
@@ -9,10 +8,9 @@ import { type ChapterRun, useHistoryStore } from '@/stores/useHistoryStore'
 import { LevelProvider } from './LevelProvider'
 
 export enum GameStage {
-  // TODO: these don't quite align with level just yet, a better combo will be needed.
-  INTRO = 'INTRO',
+  READY = 'READY',
   PLAYING = 'PLAYING',
-  GAME_OVER = 'GAME_OVER',
+  COMPLETED = 'COMPLETED',
 }
 
 export type AnswerHit = {
@@ -33,27 +31,21 @@ type GameState = {
   chapterId: string
 
   stage: GameStage
-  setStage: (stage: GameStage) => void
+  start: () => void
+  reset: () => void
 
-  // Course metadata
   gameStartTime: number
-
-  // Points system
   points: number
   scoreEvents: ScoreEvent[]
   streak: number
   maxStreak: number
+  answersHit: AnswerHit[]
 
   // Game events
   onObstacleHit: () => void
   onObstacleAvoided: () => void
   onAnswerHit: (data: AnswerGateUserData) => void
-  onGameOver: () => void
-
-  answersHit: AnswerHit[]
-
-  resetStore: () => void
-  restartGame: () => void
+  onCompleted: () => void
 }
 
 type GameStateStore = StoreApi<GameState>
@@ -74,12 +66,8 @@ export const POINTS_OBSTACLE_AVOIDED = 5 as const
 export const POINTS_ANSWER_CORRECT = 20 as const
 export const POINTS_ANSWER_INCORRECT = -5 as const
 
-const INITIAL_STATE: Pick<
-  GameState,
-  'stage' | 'gameStartTime' | 'streak' | 'maxStreak' | 'points' | 'scoreEvents' | 'answersHit'
-> = {
-  stage: GameStage.INTRO,
-  gameStartTime: Date.now(),
+const INITIAL_STATE: Pick<GameState, 'stage' | 'streak' | 'maxStreak' | 'points' | 'scoreEvents' | 'answersHit'> = {
+  stage: GameStage.READY,
   streak: 0,
   maxStreak: 0,
   points: 0,
@@ -100,12 +88,15 @@ const createGameStore = ({
     ...INITIAL_STATE,
     courseId,
     chapterId,
-    setStage: (stage: GameStage) => {
-      if (stage === GameStage.PLAYING) {
-        set({ stage, gameStartTime: Date.now() })
-      } else {
-        set({ stage })
-      }
+    gameStartTime: 0,
+
+    start: () => {
+      // Start the game
+      set({ stage: GameStage.PLAYING, gameStartTime: Date.now() })
+    },
+    reset: () => {
+      // Sets it to ready to begin again.
+      set({ ...INITIAL_STATE })
     },
     onObstacleHit: () => {
       const scoreEvent: ScoreEvent = {
@@ -154,7 +145,7 @@ const createGameStore = ({
         }))
       }
     },
-    onGameOver: () => {
+    onCompleted: () => {
       const state = get()
       const completionTime = Date.now() - state.gameStartTime
       const correctAnswers = state.answersHit.filter((hit) => hit.isCorrect).length
@@ -177,18 +168,7 @@ const createGameStore = ({
       })
 
       set({
-        stage: GameStage.GAME_OVER,
-      })
-    },
-    resetStore: () => {
-      set({
-        ...INITIAL_STATE,
-      })
-    },
-    restartGame: () => {
-      set({
-        ...INITIAL_STATE,
-        gameStartTime: Date.now(),
+        stage: GameStage.COMPLETED,
       })
     },
   }))
