@@ -5,6 +5,8 @@ import { createStore, type StoreApi, useStore } from 'zustand'
 
 import type { Answer, Question } from '@/model/content'
 
+import { useGameStore } from './GameProvider'
+
 type DebugInfo = {
   gameTime: number
   phase: Phase
@@ -20,14 +22,16 @@ export enum Phase {
   OBSTACLES = 'OBSTACLES',
   QUESTION = 'QUESTION',
   OUTRO = 'OUTRO',
+  FINISHED = 'FINISHED',
 }
 
 const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
-  INTRO: 1,
-  REST: 1,
+  INTRO: 1, // For entry animation
+  REST: 1, // Short rest before obstacles start
   OBSTACLES: 12,
   QUESTION: 10000, // Effectively infinite until question is answered and the gate is killed - when phase is advanced manually
-  OUTRO: 2,
+  OUTRO: 5, // For showing "level complete"
+  FINISHED: 10000, // For showing level complete screen
 } as const
 
 const SLOW_MO_DURATION = 2.0
@@ -131,22 +135,22 @@ const INITIAL_STATE: Pick<
   obstacles: [],
 }
 
-const createLevelStore = ({ questions }: { questions: Question[] }) => {
+const createLevelStore = ({ questions, onGameOver }: { questions: Question[]; onGameOver: () => void }) => {
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
   const slowMoTimeRemainingTarget = { value: SLOW_MO_DURATION }
 
-  const mapQuestionsToPhases = (questions: Question[]): Phase[] => {
+  const generatePhasesFromQuestions = (questions: Question[]): Phase[] => {
     const questionPhases = questions.flatMap(() => QUESTIONS_PHASE_CYCLE)
-    return [Phase.INTRO, ...questionPhases, Phase.OUTRO]
+    return [Phase.INTRO, ...questionPhases, Phase.OUTRO, Phase.FINISHED]
   }
 
   const initialState = {
     ...INITIAL_STATE,
     questions,
     question: questions[0],
-    phases: mapQuestionsToPhases(questions),
+    phases: generatePhasesFromQuestions(questions),
     answersMapping: generateAnswerMapping(questions[0].answers),
   }
 
@@ -174,12 +178,22 @@ const createLevelStore = ({ questions }: { questions: Question[] }) => {
     onQuestionPhaseCompleted: () => {
       const state = get()
       const newPhaseIndex = state.phaseIndex + 1
-      if (newPhaseIndex >= state.phases.length) {
-        console.warn('[LevelProvider] Already at final phase, cannot go to next phase')
-        return
-      }
       const newPhase = state.phases[newPhaseIndex]
       console.warn('[LevelProvider] Question phase completed, moving to next phase:', { newPhase, newPhaseIndex })
+      const newQuestionIndex = state.questionIndex + 1
+
+      const hasMoreQuestions = newQuestionIndex < questions.length
+      if (hasMoreQuestions) {
+        const nextQuestion = questions[newQuestionIndex]
+        if (!nextQuestion) throw new Error('Expected next question to be defined')
+        const answersMapping = generateAnswerMapping(nextQuestion.answers)
+        set({
+          questionIndex: newQuestionIndex,
+          question: nextQuestion,
+          answersMapping,
+        })
+      }
+
       set({
         phase: newPhase,
         phaseIndex: newPhaseIndex,
@@ -193,41 +207,32 @@ const createLevelStore = ({ questions }: { questions: Question[] }) => {
       let phaseIndex = state.phaseIndex
       let phase = state.phase
       let phaseTime = state.phaseTime + (gameTime - state.gameTime)
+
+      if (phase === Phase.FINISHED) return // No updates once in the finished phase (this is in the background of the level complete screen)
+
       const shouldMoveToNextPhase = phaseTime >= state.phaseDurations[phase]
 
       // Handle phase transitions
       if (shouldMoveToNextPhase) {
         phaseIndex++
-
-        const isCompleted = phaseIndex >= state.phases.length
-        if (isCompleted) {
-          console.warn('[LevelProvider] Completed all phases')
-          return
-        }
-
         phaseTime = 0
         phase = state.phases[phaseIndex]
 
         // Handle transition to new question
         if (phase === Phase.QUESTION) {
-          const newQuestionIndex = state.questionIndex + 1
-          const nextQuestion = questions[newQuestionIndex]
-          if (!nextQuestion) throw new Error('No more questions available')
-          const answersMapping = generateAnswerMapping(nextQuestion.answers)
+          console.warn('[LevelProvider] Transitioning to new QUESTION phase')
           set({
             gameTime,
             phase,
             phaseTime,
             phaseIndex,
-            answersMapping,
-            question: nextQuestion,
-            questionIndex: newQuestionIndex,
           })
           return
         }
 
         // Handle entering obstacles phase
         if (phase === Phase.OBSTACLES) {
+          console.warn('[LevelProvider] Transitioning to new OBSTACLES phase')
           // Generate complete obstacle sequence for this phase
           const obstacleSequence = generateObstacleSequence({
             phaseStartTime: gameTime,
@@ -241,6 +246,18 @@ const createLevelStore = ({ questions }: { questions: Question[] }) => {
             phaseTime,
             phaseIndex,
             obstacles: obstacleSequence,
+          })
+          return
+        }
+
+        if (phase === Phase.FINISHED) {
+          console.warn('[LevelProvider] Reached FINISHED phase, triggering game over')
+          onGameOver()
+          set({
+            gameTime,
+            phase,
+            phaseTime,
+            phaseIndex,
           })
           return
         }
@@ -337,8 +354,11 @@ const createLevelStore = ({ questions }: { questions: Question[] }) => {
   }))
 }
 
-export const LevelProvider: FC<PropsWithChildren<{ questions: Question[] }>> = ({ children, questions }) => {
-  const store = useRef<LevelStore>(createLevelStore({ questions }))
+type Props = PropsWithChildren<{ questions: Question[] }>
+
+export const LevelProvider: FC<Props> = ({ children, questions }) => {
+  const onGameOver = useGameStore((s) => s.onGameOver)
+  const store = useRef<LevelStore>(createLevelStore({ questions, onGameOver }))
   return <LevelContext.Provider value={store.current}>{children}</LevelContext.Provider>
 }
 

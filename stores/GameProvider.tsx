@@ -203,7 +203,7 @@ export const GameProvider: FC<PropsWithChildren> = ({ children }) => {
 
   return (
     <GameContext.Provider value={gameStore.current}>
-      <LevelProvider questions={SAMPLE_QUESTIONS}>{children}</LevelProvider>
+      <LevelProvider questions={SAMPLE_COURSE.chapters[0].questions}>{children}</LevelProvider>
     </GameContext.Provider>
   )
 }
