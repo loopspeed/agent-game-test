@@ -22,8 +22,6 @@ const DebugDisplay: FC = () => {
         </span>
         <hr />
         Question Index: <span className="text-yellow-300">{debugInfo.questionIndex}</span>
-        <br />
-        Current Question: <span className="text-yellow-300">{debugInfo.question?.question || 'N/A'}</span>
       </p>
     </div>
   )

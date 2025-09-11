@@ -29,9 +29,7 @@ Split stores by concern – for example, GameProvider holds game state, while us
 
 Use selectors – when consuming state in a component, call the hook with a selector (useStore((state) => state.someValue)) so that the component re‑renders only when that slice changes. Avoid retrieving the entire store in a component.
 
-Subscribe to frequently changing values – for values that update every frame (e.g. game time or physics ticks), subscribe outside of React using subscribe or custom hooks like useTimeSubscription. This takes advantage of Zustand’s fine‑grained reactivity
-refine.dev
-and prevents unnecessary React re‑renders.
+Subscribe to frequently changing values – for values that update every frame (e.g. game time or physics ticks), subscribe to the value and set it in a ref, like useTimeSubscription.
 
 Keep state immutable – always use functional updates (set((prev) => {…})) and avoid mutating nested objects.
 

@@ -36,8 +36,8 @@ type ObstacleZoneInstance = {
   hasBeenTriggered: boolean // Track if player has passed through this zone
 }
 
-const INSTANCES_COUNT = 64 // Increased to handle cluster spawning (8 obstacles at once)
-const ZONE_INSTANCES_COUNT = 16 // Detection zones for obstacle avoidance
+const INSTANCES_COUNT = 64
+const ZONE_INSTANCES_COUNT = 8
 
 const Obstacles: FC = () => {
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
@@ -279,7 +279,7 @@ const Obstacles: FC = () => {
           colliders="cuboid">
           <instancedMesh args={[undefined, undefined, zoneInstances.length]} count={zoneInstances.length}>
             {/* Large invisible box covering the entire grid area */}
-            <boxGeometry args={[GRID_SQUARE_SIZE_M * 3, GRID_SQUARE_SIZE_M * 3, 0.3]} />
+            <boxGeometry args={[GRID_SQUARE_SIZE_M * 3, GRID_SQUARE_SIZE_M * 3, 0.2]} />
             <meshBasicMaterial color="#00ff00" transparent opacity={0} />
           </instancedMesh>
         </InstancedRigidBodies>
