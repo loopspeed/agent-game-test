@@ -7,7 +7,7 @@ import React, { type FC, useRef } from 'react'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import type { Answer } from '@/model/content'
-import { type AnswerGateUserData, type RigidBodyUserData } from '@/model/game'
+import { type AnswerGateUserData, RigidBodyType, type RigidBodyUserData } from '@/model/game'
 import { FONTS } from '@/resources/fonts'
 import {
   GameStage,
@@ -23,14 +23,16 @@ import { Phase, useLevelStore } from '@/stores/LevelProvider'
 type AnswerGateProps = {
   position: [number, number, number]
   answer: Answer | null
+  questionId: string | null
 }
 
-const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ position, answer }, ref) => {
+const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ position, answer, questionId }, ref) => {
   // Get answer from rhythm data - this is always provided by the rhythm system
   const userData: AnswerGateUserData = {
-    type: 'answerGate',
+    type: RigidBodyType.ANSWER_GATE,
     isCorrect: answer?.isCorrect ?? false,
     answerId: answer?.id ?? '',
+    questionId: questionId ?? '',
   }
 
   const material = useRef(null)
@@ -39,7 +41,7 @@ const RhythmAnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ p
     if (!e.other?.rigidBody?.userData) throw new Error('Invalid userData')
     const { type } = e.other.rigidBody.userData as RigidBodyUserData
 
-    if (type === 'player') {
+    if (type === RigidBodyType.PLAYER) {
       // Enhanced visual feedback for rhythm-based gates
       gsap.to(material.current, {
         opacity: 1.0,
@@ -113,6 +115,7 @@ const RhythmAnswerGates: FC = () => {
   const questionIndex = useLevelStore((s) => s.questionIndex)
   const answersMapping = useLevelStore((s) => s.answersMapping)
   const onQuestionPhaseCompleted = useLevelStore((s) => s.onQuestionPhaseCompleted)
+  const question = useLevelStore((s) => s.question)
 
   const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
   const isLive = useRef(false) // True when gates are active and moving
@@ -189,6 +192,7 @@ const RhythmAnswerGates: FC = () => {
           key={index}
           position={position}
           answer={answersMapping[index]}
+          questionId={question.id}
         />
       ))}
     </>

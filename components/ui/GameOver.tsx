@@ -7,7 +7,7 @@ import type { TransitionStatus } from 'react-transition-group'
 
 import { useGameOverData } from '@/hooks/useGameOverData'
 import type { Question } from '@/model/content'
-import { SAMPLE_QUESTIONS } from '@/resources/questions'
+import { SAMPLE_QUESTIONS } from '@/resources/course'
 import { useGameStore } from '@/stores/GameProvider'
 import { formatAccuracy, formatDate, formatTime } from '@/utils/formatting'
 
@@ -83,8 +83,12 @@ const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStat
 export default GameOverUI
 
 const CurrentRun: FC = () => {
-  const { currentRun } = useGameOverData()
+  const { lastRun } = useGameOverData()
   const questions = SAMPLE_QUESTIONS
+
+  if (!lastRun) {
+    throw new Error('No last run data available')
+  }
 
   return (
     <div className="grid w-full grid-cols-[40%_1fr] gap-4 space-y-6 overflow-hidden">
@@ -93,13 +97,13 @@ const CurrentRun: FC = () => {
         {/* Progress Bar */}
         <div className="rounded p-4">
           <p className="text-lg">
-            Completed {currentRun.questionsCompleted} of {currentRun.totalQuestions} questions
+            Completed {lastRun.questionsCompleted} of {lastRun.totalQuestions} questions
           </p>
           <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
             <div
               className="h-2 rounded-full bg-blue-600"
               style={{
-                width: `${(currentRun.questionsCompleted / currentRun.totalQuestions) * 100}%`,
+                width: `${(lastRun.questionsCompleted / lastRun.totalQuestions) * 100}%`,
               }}
             />
           </div>
@@ -108,24 +112,19 @@ const CurrentRun: FC = () => {
         <div className="rounded bg-gray-50 p-4">
           <h3 className="font-semibold text-gray-700">Score</h3>
           <p className="text-2xl font-bold text-green-600">
-            {currentRun.correctAnswers}/{currentRun.questionsCompleted}
+            {lastRun.correctAnswers}/{lastRun.questionsCompleted}
           </p>
-          <p className="text-sm text-gray-500">{formatAccuracy(currentRun.accuracyPercentage)} accuracy</p>
+          <p className="text-sm text-gray-500">{formatAccuracy(lastRun.accuracyPercentage)} accuracy</p>
         </div>
 
         <div className="rounded bg-gray-50 p-4">
-          <h3 className="font-semibold text-gray-700">Max Streak</h3>
-          <p className="text-2xl font-bold text-blue-600">{currentRun.maxStreak}</p>
+          <h3 className="font-semibold text-gray-700">Total Points</h3>
+          <p className="text-2xl font-bold text-blue-600">{lastRun.points}</p>
         </div>
 
         <div className="rounded bg-gray-50 p-4">
           <h3 className="font-semibold text-gray-700">Time</h3>
-          <p className="text-2xl font-bold text-purple-600">{formatTime(currentRun.completionTime)}</p>
-        </div>
-
-        <div className="rounded bg-gray-50 p-4">
-          <h3 className="font-semibold text-gray-700">Final Health</h3>
-          <p className="text-2xl font-bold text-red-600">{currentRun.finalHealth}/5</p>
+          <p className="text-2xl font-bold text-purple-600">{formatTime(lastRun.completionTime)}</p>
         </div>
       </div>
 
@@ -134,7 +133,7 @@ const CurrentRun: FC = () => {
         <h3 className="mb-4 font-semibold text-gray-700">Questions Summary</h3>
         <div className="flex flex-col gap-2">
           {questions.map((question: Question, index: number) => {
-            const answerForQuestion = currentRun.answersHit.find((hit) => hit.questionId === question.id)
+            const answerForQuestion = lastRun.answersHit.find((hit) => hit.questionId === question.id)
             const selectedAnswer = answerForQuestion?.answerId
               ? question.answers.find((a) => a.id === answerForQuestion.answerId)
               : null
@@ -243,7 +242,7 @@ const HistoricalRuns: FC = () => {
                     <p className="text-sm text-gray-500">{formatDate(run.timestamp)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm">Streak: {run.maxStreak}</p>
+                    <p className="text-sm">Points: {run.points}</p>
                     <p className="text-sm text-gray-500">{formatTime(run.completionTime)}</p>
                   </div>
                 </div>

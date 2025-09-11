@@ -3,14 +3,13 @@ import { persist } from 'zustand/middleware'
 
 import { AnswerHit } from './GameProvider'
 
-export type CourseRun = {
+export type ChapterRun = {
   id: string
-  courseId: string // identifier for the question set used
-  courseName: string // display name for the course
+  courseId: string // identifier for the course
+  chapterId: string // identifier for the chapter
   timestamp: number
+  points: number
   answersHit: AnswerHit[]
-  maxStreak: number
-  finalHealth: number
   questionsCompleted: number
   totalQuestions: number
   correctAnswers: number
@@ -20,15 +19,15 @@ export type CourseRun = {
 }
 
 export type HistoryState = {
-  courseRuns: CourseRun[]
-  addCourseRun: (courseRun: Omit<CourseRun, 'id'>) => void
-  getCourseRuns: (courseId?: string) => CourseRun[]
-  getLastRun: () => CourseRun | null
+  chapterRuns: ChapterRun[]
+  addChapterRun: (chapterRun: Omit<ChapterRun, 'id'>) => void
+  getChapterRuns: (courseId?: string) => ChapterRun[]
+  getLastRun: () => ChapterRun | null
   clearHistory: () => void
   getStats: () => {
     totalRuns: number
     averageAccuracy: number
-    bestStreak: number
+    mostPoints: number
     totalQuestionsAnswered: number
     totalCorrectAnswers: number
   }
@@ -37,11 +36,11 @@ export type HistoryState = {
 export const useHistoryStore = create<HistoryState>()(
   persist(
     (set, get) => ({
-      courseRuns: [],
+      chapterRuns: [],
 
-      addCourseRun: (courseRunData) => {
+      addChapterRun: (courseRunData) => {
         console.warn('[useHistoryStore] Adding course run:', courseRunData)
-        const courseRun: CourseRun = {
+        const courseRun: ChapterRun = {
           ...courseRunData,
           id: `run_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         }
@@ -49,17 +48,16 @@ export const useHistoryStore = create<HistoryState>()(
 
         set((state) => {
           const newState = {
-            courseRuns: [...state.courseRuns, courseRun],
+            chapterRuns: [...state.chapterRuns, courseRun],
           }
-          console.warn('[useHistoryStore] New state - total runs:', newState.courseRuns.length)
           return newState
         })
       },
 
-      getCourseRuns: (courseId) => {
-        const runs = get().courseRuns
+      getChapterRuns: (courseId) => {
+        const runs = get().chapterRuns
         console.warn(
-          `[useHistoryStore] getCourseRuns called with courseId: ${courseId}, found ${runs.length} total runs`,
+          `[useHistoryStore] getChapterRuns called with courseId: ${courseId}, found ${runs.length} total runs`,
         )
         if (courseId) {
           const filtered = runs.filter((run) => run.courseId === courseId)
@@ -70,7 +68,7 @@ export const useHistoryStore = create<HistoryState>()(
       },
 
       getLastRun: () => {
-        const runs = get().courseRuns
+        const runs = get().chapterRuns
         console.warn(`[useHistoryStore] getLastRun called, found ${runs.length} total runs`)
         if (runs.length === 0) {
           console.warn('[useHistoryStore] No runs found, returning null')
@@ -81,17 +79,17 @@ export const useHistoryStore = create<HistoryState>()(
         return lastRun
       },
 
-      clearHistory: () => set({ courseRuns: [] }),
+      clearHistory: () => set({ chapterRuns: [] }),
 
       getStats: () => {
-        const runs = get().courseRuns
+        const runs = get().chapterRuns
         console.warn(`[useHistoryStore] getStats called with ${runs.length} runs`)
         if (runs.length === 0) {
           console.warn('[useHistoryStore] No runs found, returning zero stats')
           return {
             totalRuns: 0,
             averageAccuracy: 0,
-            bestStreak: 0,
+            mostPoints: 0,
             totalQuestionsAnswered: 0,
             totalCorrectAnswers: 0,
           }
@@ -101,12 +99,12 @@ export const useHistoryStore = create<HistoryState>()(
         const totalCorrectAnswers = runs.reduce((sum, run) => sum + run.correctAnswers, 0)
         const totalQuestionsAnswered = runs.reduce((sum, run) => sum + (run.correctAnswers + run.incorrectAnswers), 0)
         const averageAccuracy = totalQuestionsAnswered > 0 ? (totalCorrectAnswers / totalQuestionsAnswered) * 100 : 0
-        const bestStreak = Math.max(...runs.map((run) => run.maxStreak))
+        const mostPoints = Math.max(...runs.map((run) => run.points))
 
         const stats = {
           totalRuns,
           averageAccuracy: Math.round(averageAccuracy * 100) / 100,
-          bestStreak,
+          mostPoints,
           totalQuestionsAnswered,
           totalCorrectAnswers,
         }

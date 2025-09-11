@@ -4,7 +4,7 @@ import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBod
 import { type FC, useLayoutEffect, useRef, useState } from 'react'
 
 import { useObstaclesSpawning } from '@/hooks/useObstaclesToSpawn'
-import { type ObstacleUserData, type ObstacleZoneUserData } from '@/model/game'
+import { type ObstacleUserData, type ObstacleZoneUserData, RigidBodyType } from '@/model/game'
 import {
   GameStage,
   GRID_SQUARE_SIZE_M,
@@ -75,7 +75,7 @@ const Obstacles: FC = () => {
       for (let i = 0; i < INSTANCES_COUNT; i++) {
         data.push({ ...initialData, id: `obstacle-${i}` })
         const userData: ObstacleUserData = {
-          type: 'obstacle',
+          type: RigidBodyType.OBSTACLE,
         }
         instances.push({
           key: `obstacle-${i}`,
@@ -101,7 +101,7 @@ const Obstacles: FC = () => {
       for (let i = 0; i < ZONE_INSTANCES_COUNT; i++) {
         zoneDataArray.push({ ...initialZoneData, id: `zone-${i}` })
         const userData: ObstacleZoneUserData = {
-          type: 'obstacle_zone',
+          type: RigidBodyType.OBSTACLE_AVOIDED,
           obstacleId: '',
         }
         zoneInstancesArray.push({
@@ -116,10 +116,6 @@ const Obstacles: FC = () => {
       setObstacleInstances(instances)
       setZoneInstances(zoneInstancesArray)
       isSetup.current = true
-      console.warn('Rhythm obstacle instances set up:', {
-        obstacles: instances.length,
-        zones: zoneInstancesArray.length,
-      })
     }
 
     if (isPlaying && !isSetup.current) {

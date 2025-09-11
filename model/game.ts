@@ -1,20 +1,28 @@
+export enum RigidBodyType {
+  OBSTACLE = 'obstacle',
+  OBSTACLE_AVOIDED = 'obstacleAvoided',
+  ANSWER_GATE = 'answerGate',
+  PLAYER = 'player',
+}
+
 export type ObstacleUserData = {
-  type: 'obstacle'
+  type: RigidBodyType.OBSTACLE
 }
 
 export type ObstacleZoneUserData = {
-  type: 'obstacle_zone'
+  type: RigidBodyType.OBSTACLE_AVOIDED
   obstacleId: string
 }
 
 export type AnswerGateUserData = {
-  type: 'answerGate'
+  type: RigidBodyType.ANSWER_GATE
   isCorrect: boolean
   answerId: string
+  questionId: string
 }
 
 export type PlayerUserData = {
-  type: 'player'
+  type: RigidBodyType.PLAYER
 }
 
 export type RigidBodyUserData = ObstacleUserData | ObstacleZoneUserData | AnswerGateUserData | PlayerUserData

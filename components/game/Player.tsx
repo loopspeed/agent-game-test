@@ -8,7 +8,7 @@ import { type FC, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
 import ThunderbirdFour from '@/components/models/ThunderbirdFour'
-import { type RigidBodyUserData } from '@/model/game'
+import { RigidBodyType, type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 import { useInputStore } from '@/stores/useInputStore'
@@ -60,9 +60,9 @@ const Player: FC = () => {
     if (!otherRB?.userData) throw new Error('No userData on other rigid body')
 
     const userData = otherRB.userData as RigidBodyUserData
-    const isObstacle = userData.type === 'obstacle'
-    const isObstacleZone = userData.type === 'obstacle_zone'
-    const isAnswerGate = userData.type === 'answerGate'
+    const isObstacle = userData.type === RigidBodyType.OBSTACLE
+    const isObstacleAvoided = userData.type === RigidBodyType.OBSTACLE_AVOIDED
+    const isAnswerGate = userData.type === RigidBodyType.ANSWER_GATE
 
     const defaultColor = new THREE.Color('#fff')
 
@@ -110,25 +110,21 @@ const Player: FC = () => {
       handleBadHit()
     }
 
-    if (isObstacleZone) {
+    if (isObstacleAvoided) {
       console.warn('Player AVOIDED obstacle', userData)
       onObstacleAvoided()
       handleGoodHit()
     }
 
     if (isAnswerGate) {
-      console.warn('Player ANSWER gate', userData)
+      console.warn('Player HIT ANSWER gate', userData)
       const isCorrect = userData.isCorrect
       const answerId = userData.answerId
-
-      // Handle miss case (empty answer gate)
-      if (!answerId) {
-        onAnswerHit(false, null)
+      onAnswerHit(userData)
+      if (!answerId || !isCorrect) {
         handleBadHit()
       } else {
-        onAnswerHit(isCorrect, answerId)
-        if (isCorrect) handleGoodHit()
-        else handleBadHit()
+        handleGoodHit()
       }
     }
   })

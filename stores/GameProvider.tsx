@@ -1,8 +1,10 @@
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
-import { SAMPLE_QUESTIONS } from '@/resources/questions'
-import { type CourseRun, useHistoryStore } from '@/stores/useHistoryStore'
+import type { Chapter } from '@/model/content'
+import type { AnswerGateUserData } from '@/model/game'
+import { SAMPLE_COURSE, SAMPLE_QUESTIONS } from '@/resources/course'
+import { type ChapterRun, useHistoryStore } from '@/stores/useHistoryStore'
 
 import { LevelProvider } from './LevelProvider'
 
@@ -27,12 +29,13 @@ export type ScoreEvent = {
 }
 
 type GameState = {
+  courseId: string
+  chapterId: string
+
   stage: GameStage
   setStage: (stage: GameStage) => void
 
   // Course metadata
-  courseId: string
-  courseName: string
   gameStartTime: number
 
   // Points system
@@ -44,7 +47,7 @@ type GameState = {
   // Game events
   onObstacleHit: () => void
   onObstacleAvoided: () => void
-  onAnswerHit: (isCorrect: boolean, answerId: string | null) => void
+  onAnswerHit: (data: AnswerGateUserData) => void
   onGameOver: () => void
 
   answersHit: AnswerHit[]
@@ -73,20 +76,9 @@ export const POINTS_ANSWER_INCORRECT = -5 as const
 
 const INITIAL_STATE: Pick<
   GameState,
-  | 'stage'
-  | 'courseId'
-  | 'courseName'
-  | 'gameStartTime'
-  | 'streak'
-  | 'maxStreak'
-  | 'points'
-  | 'scoreEvents'
-  | 'answersHit'
+  'stage' | 'gameStartTime' | 'streak' | 'maxStreak' | 'points' | 'scoreEvents' | 'answersHit'
 > = {
   stage: GameStage.INTRO,
-  // THIS stuff isn't correct, needs a proper data structure with questions inside the chapter.
-  courseId: 'ai-history-course',
-  courseName: 'AI History Course',
   gameStartTime: Date.now(),
   streak: 0,
   maxStreak: 0,
@@ -96,17 +88,21 @@ const INITIAL_STATE: Pick<
 }
 
 const createGameStore = ({
-  addCourseRunToHistory,
+  courseId,
+  chapterId,
+  addChapterRunToHistory,
 }: {
-  addCourseRunToHistory: (run: Omit<CourseRun, 'id'>) => void
+  courseId: string
+  chapterId: string
+  addChapterRunToHistory: (run: Omit<ChapterRun, 'id'>) => void
 }) => {
   return createStore<GameState>()((set, get) => ({
     ...INITIAL_STATE,
+    courseId,
+    chapterId,
     setStage: (stage: GameStage) => {
       if (stage === GameStage.PLAYING) {
         set({ stage, gameStartTime: Date.now() })
-        // Note: Rhythm system start/stop/reset is now handled by components
-        // that directly access WorldProvider via useWorldStore
       } else {
         set({ stage })
       }
@@ -134,16 +130,14 @@ const createGameStore = ({
         scoreEvents: [...state.scoreEvents, scoreEvent],
       }))
     },
-    onAnswerHit: (isCorrect: boolean, answerId: string | null) => {
+    onAnswerHit: (data: AnswerGateUserData) => {
       // Record the answer hit - we'll need to get the current question from WorldProvider
       const answerHit: AnswerHit = {
-        questionId: 'current-question', // This will need to be passed from component
-        answerId,
-        isCorrect,
+        ...data,
         timestamp: Date.now(),
       }
 
-      if (isCorrect) {
+      if (data.isCorrect) {
         set((s) => {
           const newCurrentStreak = s.streak + 1
           const newMaxStreak = Math.max(s.maxStreak, newCurrentStreak)
@@ -168,14 +162,13 @@ const createGameStore = ({
       const totalAnswered = correctAnswers + incorrectAnswers
       const accuracyPercentage = totalAnswered > 0 ? (correctAnswers / totalAnswered) * 100 : 0
 
-      addCourseRunToHistory({
-        courseId: state.courseId,
-        courseName: state.courseName,
+      addChapterRunToHistory({
+        courseId,
+        chapterId,
         timestamp: Date.now(),
         answersHit: state.answersHit,
-        maxStreak: state.maxStreak,
-        finalHealth: 0, // Not used anymore, but keeping for compatibility
-        questionsCompleted: 0, // This will need to be tracked elsewhere
+        points: state.points,
+        questionsCompleted: totalAnswered,
         totalQuestions: SAMPLE_QUESTIONS.length,
         correctAnswers,
         incorrectAnswers,
@@ -202,9 +195,11 @@ const createGameStore = ({
 }
 
 export const GameProvider: FC<PropsWithChildren> = ({ children }) => {
-  const addCourseRunToHistory = useHistoryStore((s) => s.addCourseRun)
+  const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
   // Create the game store with incoming configuration
-  const gameStore = useRef<GameStateStore>(createGameStore({ addCourseRunToHistory }))
+  const gameStore = useRef<GameStateStore>(
+    createGameStore({ courseId: SAMPLE_COURSE.id, chapterId: SAMPLE_COURSE.chapters[0].id, addChapterRunToHistory }),
+  )
 
   return (
     <GameContext.Provider value={gameStore.current}>
