@@ -144,13 +144,13 @@ const RhythmAnswerGates: FC = () => {
   }
 
   function killAnswerGates() {
-    onQuestionPhaseCompleted() // Move to next phase as soon as the gates are killed
     gatesRefs.current.forEach((gate) => {
       if (!gate) return
       gate.setLinvel({ x: 0, y: 0, z: 0 }, false)
       gate.setTranslation({ x: 0, y: 0, z: 5 }, false)
     })
     isLive.current = false // Gates are no longer live, ready for next spawn
+    onQuestionPhaseCompleted() // Move to next phase as soon as the gates are killed
   }
 
   useFrame(() => {
@@ -163,19 +163,20 @@ const RhythmAnswerGates: FC = () => {
       spawnAnswerGates()
     }
 
+    if (!isLive.current) return
+
     // Lifecycle management - only when gates are live
-    if (isLive.current) {
-      const firstGate = gatesRefs.current[0]
-      if (!firstGate) return
+    const firstGate = gatesRefs.current[0]
+    if (!firstGate) return
+    const firstGateTranslationZ = firstGate.translation().z
 
-      const firstGateTranslationZ = firstGate.translation().z
-      const gatesNeedKilling = firstGateTranslationZ > KILL_OBSTACLE_Z
-      if (gatesNeedKilling) return killAnswerGates()
+    // Check if gates need killing
+    const gatesNeedKilling = firstGateTranslationZ > KILL_OBSTACLE_Z
+    if (gatesNeedKilling) return killAnswerGates()
 
-      // Slow-mo timing logic (adjust for rhythm-based timing)
-      const shouldSlowDown = Math.round(firstGateTranslationZ) === -3 && !isSlowMo
-      if (shouldSlowDown) goSlowMo()
-    }
+    // Slow-mo timing logic (adjust for rhythm-based timing)
+    const shouldSlowDown = Math.round(firstGateTranslationZ) === -4 && !isSlowMo
+    if (shouldSlowDown) goSlowMo()
   })
 
   return (

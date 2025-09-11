@@ -26,7 +26,7 @@ const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
   INTRO: 1,
   REST: 1,
   OBSTACLES: 12,
-  QUESTION: 100, // Effectively infinite until question is answered
+  QUESTION: 10000, // Effectively infinite until question is answered and the gate is killed - when phase is advanced manually
   OUTRO: 2,
 } as const
 
