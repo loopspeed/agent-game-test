@@ -112,6 +112,7 @@ const RhythmAnswerGates: FC = () => {
   const answerSpeed = useLevelStore((s) => s.answerSpeed)
   const questionIndex = useLevelStore((s) => s.questionIndex)
   const answersMapping = useLevelStore((s) => s.answersMapping)
+  const onQuestionPhaseCompleted = useLevelStore((s) => s.onQuestionPhaseCompleted)
 
   const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
   const isLive = useRef(false) // True when gates are active and moving
@@ -142,6 +143,16 @@ const RhythmAnswerGates: FC = () => {
     })
   }
 
+  function killAnswerGates() {
+    onQuestionPhaseCompleted() // Move to next phase as soon as the gates are killed
+    gatesRefs.current.forEach((gate) => {
+      if (!gate) return
+      gate.setLinvel({ x: 0, y: 0, z: 0 }, false)
+      gate.setTranslation({ x: 0, y: 0, z: 5 }, false)
+    })
+    isLive.current = false // Gates are no longer live, ready for next spawn
+  }
+
   useFrame(() => {
     if (!isPlaying) return
 
@@ -159,18 +170,7 @@ const RhythmAnswerGates: FC = () => {
 
       const firstGateTranslationZ = firstGate.translation().z
       const gatesNeedKilling = firstGateTranslationZ > KILL_OBSTACLE_Z
-
-      if (gatesNeedKilling) {
-        console.warn('🎵 RHYTHM GATES LIFECYCLE COMPLETE', { firstGateTranslationZ })
-        // Kill the gates
-        gatesRefs.current.forEach((gate) => {
-          if (!gate) return
-          gate.setLinvel({ x: 0, y: 0, z: 0 }, false)
-          gate.setTranslation({ x: 0, y: 0, z: 5 }, false)
-        })
-        isLive.current = false // Gates are no longer live, ready for next spawn
-        return
-      }
+      if (gatesNeedKilling) return killAnswerGates()
 
       // Slow-mo timing logic (adjust for rhythm-based timing)
       const shouldSlowDown = Math.round(firstGateTranslationZ) === -3 && !isSlowMo

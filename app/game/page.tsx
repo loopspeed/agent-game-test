@@ -144,14 +144,6 @@ const DeveloperControls: FC = () => {
         value: phaseDurations.OBSTACLES,
         onChange: (value) => setPhaseDurations({ ...phaseDurations, OBSTACLES: value }),
       },
-      questionDuration: {
-        label: 'Question Phase Duration',
-        min: 6,
-        step: 1,
-        max: 20,
-        value: phaseDurations.QUESTION,
-        onChange: (value) => setPhaseDurations({ ...phaseDurations, QUESTION: value }),
-      },
       outroDuration: {
         label: 'Outro Phase Duration',
         min: 0.5,

@@ -26,7 +26,7 @@ const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
   INTRO: 1,
   REST: 1,
   OBSTACLES: 12,
-  QUESTION: 10,
+  QUESTION: 100, // Effectively infinite until question is answered
   OUTRO: 2,
 } as const
 
@@ -34,7 +34,6 @@ const SLOW_MO_DURATION = 2.0
 const OBSTACLE_SPAWN_INTERVAL = 1
 const DEFAULT_OBSTACLE_SPEED = 15
 const DEFAULT_ANSWER_SPEED = 7
-
 const QUESTIONS_PHASE_CYCLE = [Phase.REST, Phase.OBSTACLES, Phase.QUESTION] as const
 
 // Obstacle event types
@@ -60,6 +59,7 @@ type LevelState = {
   phaseTime: number
   obstacleSpeed: number
   answerSpeed: number
+  onQuestionPhaseCompleted: () => void // Manually trigger transition to next phase rather than time based because questions could need dynamic time to answer.
 
   // Player state
   playerPosition: Vector3Tuple
@@ -171,6 +171,22 @@ const createLevelStore = ({ questions }: { questions: Question[] }) => {
       })
     },
 
+    onQuestionPhaseCompleted: () => {
+      const state = get()
+      const newPhaseIndex = state.phaseIndex + 1
+      if (newPhaseIndex >= state.phases.length) {
+        console.warn('[LevelProvider] Already at final phase, cannot go to next phase')
+        return
+      }
+      const newPhase = state.phases[newPhaseIndex]
+      console.warn('[LevelProvider] Question phase completed, moving to next phase:', { newPhase, newPhaseIndex })
+      set({
+        phase: newPhase,
+        phaseIndex: newPhaseIndex,
+        phaseTime: 0,
+      })
+    },
+
     update: (gameTime: number) => {
       const state = get()
 
@@ -185,7 +201,7 @@ const createLevelStore = ({ questions }: { questions: Question[] }) => {
 
         const isCompleted = phaseIndex >= state.phases.length
         if (isCompleted) {
-          console.warn('[World] Completed all phases')
+          console.warn('[LevelProvider] Completed all phases')
           return
         }
 
@@ -255,7 +271,6 @@ const createLevelStore = ({ questions }: { questions: Question[] }) => {
         question: state.question,
       }
     },
-
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
     setPhaseDurations: (phaseDurations: Record<Phase, number>) => set({ phaseDurations }),
     setSlowMoDuration: (slowMoDuration: number) => set({ slowMoDuration }),

@@ -5,12 +5,14 @@ import { Canvas } from '@react-three/fiber'
 import { type FC, useRef } from 'react'
 import React from 'react'
 import { color, Fn } from 'three/src/nodes/TSL.js'
-import { type WebGPURendererParameters } from 'three/src/renderers/webgpu/WebGPURenderer.js'
-// import * as THREE from 'three/webgpu'
 
+// import { type WebGPURendererParameters } from 'three/src/renderers/webgpu/WebGPURenderer.js'
+// import * as THREE from 'three/webgpu'
 import LevelScene from '@/components/game/level/LevelScene'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { CAMERA_FAR } from '@/stores/GameProvider'
+
+// WEBGPU RENDERER IS NOT WORKING WITH RAPIER AT THE MOMENT
 
 // declare module '@react-three/fiber' {
 //   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -53,15 +55,15 @@ const backgroundNode = Fn(() => {
 })()
 
 const SHAKE_CONFIG: CameraShakeProps = {
-  maxYaw: 0.08, // Max amount camera can yaw in either direction
-  maxPitch: 0.08, // Max amount camera can pitch in either direction
-  maxRoll: 0.08, // Max amount camera can roll in either direction
-  yawFrequency: 0.1, // Frequency of the yaw rotation
-  pitchFrequency: 0.1, // Frequency of the pitch rotation
-  rollFrequency: 0.1, // Frequency of the roll rotation
-  intensity: 1, // initial intensity of the shake
-  decay: false, // should the intensity decay over time
-  decayRate: 0.65, // if decay = true this is the rate at which intensity will reduce at
+  maxYaw: 0.08,
+  maxPitch: 0.08,
+  maxRoll: 0.08,
+  yawFrequency: 0.1,
+  pitchFrequency: 0.1,
+  rollFrequency: 0.1,
+  intensity: 1,
+  decay: false,
+  decayRate: 0.65,
 }
 
 const CameraMovement: FC = () => {
