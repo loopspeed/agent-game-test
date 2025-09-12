@@ -7,6 +7,7 @@ export enum RigidBodyType {
 
 export type ObstacleUserData = {
   type: RigidBodyType.OBSTACLE
+  obstacleId: string
 }
 
 export type ObstacleZoneUserData = {

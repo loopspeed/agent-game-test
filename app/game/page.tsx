@@ -32,7 +32,7 @@ const GameContent: FC = () => {
       <GameUI />
       <DebugDisplay />
       <DeveloperControls />
-      <Leva theme={LEVA_CONTROLS_THEME} />
+      <Leva theme={LEVA_CONTROLS_THEME} collapsed={true} />
     </main>
   )
 }

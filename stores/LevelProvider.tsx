@@ -4,8 +4,7 @@ import { createContext, type FC, type PropsWithChildren, useContext, useRef } fr
 import { createStore, type StoreApi, useStore } from 'zustand'
 
 import type { Answer, Question } from '@/model/content'
-
-import { useGameStore } from './GameProvider'
+import { useGameStore } from '@/stores/GameProvider'
 
 type DebugInfo = {
   gameTime: number
@@ -27,23 +26,23 @@ export enum Phase {
 
 const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
   INTRO: 1, // For entry animation
-  REST: 1, // Short rest before obstacles start
-  OBSTACLES: 1,
+  REST: 1, // Short rest before obstacles and after question
+  OBSTACLES: 6,
   QUESTION: 10000, // Effectively infinite until question is answered and the gate is killed - when phase is advanced manually
   OUTRO: 5, // For showing "level complete"
   FINISHED: 10000, // For showing level complete screen
 } as const
 
-const SLOW_MO_DURATION = 2.0
-const OBSTACLE_SPAWN_INTERVAL = 1
-const DEFAULT_OBSTACLE_SPEED = 15
-const DEFAULT_ANSWER_SPEED = 7
+// Cycle of phases for each question
 const QUESTIONS_PHASE_CYCLE = [Phase.REST, Phase.OBSTACLES, Phase.QUESTION] as const
 
-// Obstacle event types
+const SLOW_MO_DURATION = 2.0 // Default duration for slow-mo effect when answer gate is approached
+const OBSTACLE_SPAWN_INTERVAL = 1 // How often to spawn obstacles during obstacles phase
+const DEFAULT_OBSTACLE_SPEED = 15 // Base speed for obstacles
+const DEFAULT_ANSWER_SPEED = 7 // Base speed for answer gates
+
 export enum ObstacleType {
-  SINGLE = 'SINGLE', // Forces player to move by blocking current lane
-  CLUSTER = 'CLUSTER', // Blocks all lanes except one safe lane
+  SPHERE = 'SPHERE',
 }
 
 export type ObstacleSpawnData = {
@@ -446,7 +445,7 @@ const generateObstacleSequence = ({
     // Use phase index to ensure unique IDs across different phases
     const obstacle: ObstacleSpawnData = {
       id: `obstacle-phase-${Math.floor(phaseStartTime)}-${i}-${spawnTime.toFixed(2)}`,
-      type: ObstacleType.CLUSTER,
+      type: ObstacleType.SPHERE,
       lanes: occupiedLanes,
       safeLanes,
       spawnTime,

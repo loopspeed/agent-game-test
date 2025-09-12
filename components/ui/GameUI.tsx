@@ -35,9 +35,9 @@ const GameUI: FC = () => {
 export default GameUI
 
 const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
-  const container = useRef<HTMLDivElement>(null)
-
+  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
   const { handleStart } = useGameControls()
+  const container = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -46,11 +46,12 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
+    if (!isPlaying) window.addEventListener('keydown', handleKeyDown)
+
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [handleStart])
+  }, [isPlaying, handleStart])
 
   useGSAP(
     () => {

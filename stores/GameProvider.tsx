@@ -1,7 +1,7 @@
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
-import type { AnswerGateUserData } from '@/model/game'
+import type { AnswerGateUserData, ObstacleUserData, ObstacleZoneUserData } from '@/model/game'
 import { SAMPLE_COURSE, SAMPLE_QUESTIONS } from '@/resources/course'
 import { type ChapterRun, useHistoryStore } from '@/stores/useHistoryStore'
 
@@ -21,7 +21,8 @@ export type AnswerHit = {
 }
 
 export type ScoreEvent = {
-  type: 'obstacle_hit' | 'obstacle_avoided' | 'answer_correct' | 'answer_incorrect'
+  type: 'hit' | 'avoided'
+  obstacleId: string
   points: number
   timestamp: number
 }
@@ -42,8 +43,8 @@ type GameState = {
   answersHit: AnswerHit[]
 
   // Game events
-  onObstacleHit: () => void
-  onObstacleAvoided: () => void
+  onObstacleHit: (data: ObstacleUserData) => void
+  onObstacleAvoided: (data: ObstacleZoneUserData) => void
   onAnswerHit: (data: AnswerGateUserData) => void
   onCompleted: () => void
 }
@@ -98,51 +99,68 @@ const createGameStore = ({
       // Sets it to ready to begin again.
       set({ ...INITIAL_STATE })
     },
-    onObstacleHit: () => {
+    onObstacleHit: (data: ObstacleUserData) => {
       const scoreEvent: ScoreEvent = {
-        type: 'obstacle_hit',
+        type: 'hit',
+        obstacleId: data.obstacleId,
         points: POINTS_OBSTACLE_HIT,
         timestamp: Date.now(),
       }
+      console.warn('Obstacle hit!', { scoreEvent })
       set((state) => ({
         points: state.points + POINTS_OBSTACLE_HIT,
         scoreEvents: [...state.scoreEvents, scoreEvent],
         streak: 0, // Reset streak on obstacle hit
       }))
     },
-    onObstacleAvoided: () => {
+    onObstacleAvoided: (data: ObstacleZoneUserData) => {
+      const scoreEvents = get().scoreEvents
+      // If this obstacle has been hit, don't reward avoidance
+      const hasHitThisObstacle = scoreEvents.some((e) => e.type === 'hit' && e.obstacleId === data.obstacleId)
+      if (hasHitThisObstacle) {
+        console.warn('Obstacle already hit, no avoidance points', { data })
+        return
+      }
       const scoreEvent: ScoreEvent = {
-        type: 'obstacle_avoided',
+        type: 'avoided',
+        obstacleId: data.obstacleId,
         points: POINTS_OBSTACLE_AVOIDED,
         timestamp: Date.now(),
       }
+      console.warn('Obstacle avoided!', { scoreEvent })
       set((state) => ({
         points: state.points + POINTS_OBSTACLE_AVOIDED,
         scoreEvents: [...state.scoreEvents, scoreEvent],
       }))
     },
     onAnswerHit: (data: AnswerGateUserData) => {
-      // Record the answer hit - we'll need to get the current question from WorldProvider
+      // Record the answer hit
       const answerHit: AnswerHit = {
         ...data,
         timestamp: Date.now(),
       }
+      console.warn('Answer hit!', { answerHit })
 
       if (data.isCorrect) {
         set((s) => {
           const newCurrentStreak = s.streak + 1
           const newMaxStreak = Math.max(s.maxStreak, newCurrentStreak)
+          // Remove any previous answers for this question in case of multiple hits
+          const newAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
           return {
             streak: newCurrentStreak,
             maxStreak: newMaxStreak,
-            answersHit: [...s.answersHit, answerHit],
+            answersHit: newAnswersHit,
           }
         })
       } else {
-        set((s) => ({
-          streak: 0,
-          answersHit: [...s.answersHit, answerHit],
-        }))
+        set((s) => {
+          const newAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
+          return {
+            streak: 0,
+            answersHit: newAnswersHit,
+          }
+        })
       }
     },
     onCompleted: () => {

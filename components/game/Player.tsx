@@ -4,14 +4,13 @@ import { useGSAP } from '@gsap/react'
 import { useFrame } from '@react-three/fiber'
 import { type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
 import { gsap } from 'gsap'
-import { type FC, useEffect, useRef } from 'react'
+import { type FC, useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
-import ThunderbirdFour from '@/components/models/ThunderbirdFour'
 import { RigidBodyType, type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
-import { useInputStore } from '@/stores/useInputStore'
+import { type InputState, useInputStore } from '@/stores/useInputStore'
 
 gsap.registerPlugin(useGSAP)
 
@@ -21,7 +20,6 @@ const Player: FC = () => {
   const onObstacleHit = useGameStore((s) => s.onObstacleHit)
   const onObstacleAvoided = useGameStore((s) => s.onObstacleAvoided)
   const onAnswerHit = useGameStore((s) => s.onAnswerHit)
-
   const updatePlayerPosition = useLevelStore((s) => s.updatePlayerPosition)
 
   const laneXIndex = useRef(1)
@@ -31,109 +29,51 @@ const Player: FC = () => {
   const currentY = useRef(LANES_Y[laneYIndex.current])
 
   const bodyRef = useRef<RapierRigidBody>(null)
-  const materialRef = useRef<THREE.MeshBasicMaterial>(null)
-  const modelRef = useRef<THREE.Group | null>(null)
-
-  useEffect(() => {
-    if (!modelRef.current) return
-    // find first mesh in the group
-    const firstMesh = modelRef.current.getObjectByProperty('type', 'Mesh') as THREE.Mesh | undefined
-    if (firstMesh && (firstMesh.material as any)?.color) {
-      materialRef.current = firstMesh.material as THREE.MeshBasicMaterial
-    }
-  }, [])
-
-  // remember previous input to detect key presses
-  const prevInput = useRef({
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-  })
-
-  const { contextSafe } = useGSAP({})
 
   // Intersection handler for sensor collisions
-  const onIntersectionEnter: IntersectionEnterHandler = contextSafe((e) => {
-    const { other } = e
-    const otherRB = other.rigidBody
-    if (!otherRB?.userData) throw new Error('No userData on other rigid body')
+  const onIntersectionEnter: IntersectionEnterHandler = useCallback(
+    (e) => {
+      const { other } = e
+      const otherRB = other.rigidBody
+      if (!otherRB?.userData) throw new Error('No userData on other rigid body')
 
-    const userData = otherRB.userData as RigidBodyUserData
-    const isObstacle = userData.type === RigidBodyType.OBSTACLE
-    const isObstacleAvoided = userData.type === RigidBodyType.OBSTACLE_AVOIDED
-    const isAnswerGate = userData.type === RigidBodyType.ANSWER_GATE
+      const userData = otherRB.userData as RigidBodyUserData
+      const isObstacle = userData.type === RigidBodyType.OBSTACLE
+      const isObstacleAvoided = userData.type === RigidBodyType.OBSTACLE_AVOIDED
+      const isAnswerGate = userData.type === RigidBodyType.ANSWER_GATE
 
-    const defaultColor = new THREE.Color('#fff')
-
-    const handleBadHit = () => {
-      const badColor = new THREE.Color('#f00')
-      gsap.to(materialRef.current!.color, {
-        r: badColor.r,
-        g: badColor.g,
-        b: badColor.b,
-        duration: 0.2,
-        onComplete: () => {
-          gsap.to(materialRef.current!.color, {
-            r: defaultColor.r,
-            g: defaultColor.g,
-            b: defaultColor.b,
-            duration: 0.2,
-            delay: 0.3,
-          })
-        },
-      })
-    }
-
-    const handleGoodHit = () => {
-      const goodColor = new THREE.Color('#4ade80')
-      gsap.to(materialRef.current!.color, {
-        r: goodColor.r,
-        g: goodColor.g,
-        b: goodColor.b,
-        duration: 0.2,
-        onComplete: () => {
-          gsap.to(materialRef.current!.color, {
-            r: defaultColor.r,
-            g: defaultColor.g,
-            b: defaultColor.b,
-            duration: 0.2,
-            delay: 0.3,
-          })
-        },
-      })
-    }
-
-    if (isObstacle) {
-      console.warn('Player HIT obstacle', userData)
-      onObstacleHit()
-      handleBadHit()
-    }
-
-    if (isObstacleAvoided) {
-      console.warn('Player AVOIDED obstacle', userData)
-      onObstacleAvoided()
-      handleGoodHit()
-    }
-
-    if (isAnswerGate) {
-      console.warn('Player HIT ANSWER gate', userData)
-      const isCorrect = userData.isCorrect
-      const answerId = userData.answerId
-      onAnswerHit(userData)
-      if (!answerId || !isCorrect) {
-        handleBadHit()
-      } else {
-        handleGoodHit()
+      if (isObstacle) {
+        onObstacleHit(userData)
+        return
       }
-    }
-  })
+
+      if (isObstacleAvoided) {
+        onObstacleAvoided(userData)
+        return
+      }
+
+      if (isAnswerGate) {
+        onAnswerHit(userData)
+        return
+      }
+    },
+    [onAnswerHit, onObstacleAvoided, onObstacleHit],
+  )
 
   // set the initial position once when the body is created
   useEffect(() => {
     if (!bodyRef.current) return
     bodyRef.current.setTranslation({ x: currentX.current, y: currentY.current, z: 0 }, true)
   }, [])
+
+  // Track previous input to detect key presses
+  // TODO: this should be tracked inside the STORE instead to be more deterministic
+  const prevInput = useRef<InputState>({
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  })
 
   useFrame((_, delta) => {
     if (!bodyRef.current) return
@@ -151,6 +91,7 @@ const Player: FC = () => {
     if (input.down && !prevInput.current.down && laneYIndex.current > 0) {
       laneYIndex.current--
     }
+
     prevInput.current = { ...input }
 
     // target lane centre
@@ -178,7 +119,7 @@ const Player: FC = () => {
     <RigidBody
       ref={bodyRef}
       type="kinematicPosition"
-      colliders="cuboid"
+      colliders="ball"
       gravityScale={0}
       sensor={true}
       canSleep={false}
@@ -186,13 +127,74 @@ const Player: FC = () => {
       userData={{
         type: 'player',
       }}>
-      <ThunderbirdFour ref={modelRef} rotation={[0, Math.PI, 0]} scale={1.8} position={[0, -0.05, 0]} />
-      {/* <mesh>
-        <boxGeometry args={[0.6, 0.3, 0.6]} />
-        <meshBasicMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={1} />
-      </mesh> */}
+      <PlayerModel />
     </RigidBody>
   )
 }
 
 export default Player
+
+const PlayerModel: FC = () => {
+  const scoreEvents = useGameStore((s) => s.scoreEvents)
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null)
+
+  useEffect(() => {
+    // Handle the most recent score event
+    if (!materialRef.current) return
+    if (scoreEvents.length === 0) return
+    const latestEvent = scoreEvents[scoreEvents.length - 1]
+
+    const defaultColor = new THREE.Color('#ffffff')
+    const goodColor = new THREE.Color('#4ade80')
+    const badColor = new THREE.Color('#f00')
+
+    const handleBadHit = () => {
+      gsap.to(materialRef.current!.color, {
+        r: badColor.r,
+        g: badColor.g,
+        b: badColor.b,
+        duration: 0.2,
+        onComplete: () => {
+          gsap.to(materialRef.current!.color, {
+            r: defaultColor.r,
+            g: defaultColor.g,
+            b: defaultColor.b,
+            duration: 0.2,
+            delay: 0.3,
+          })
+        },
+      })
+    }
+
+    const handleGoodHit = () => {
+      gsap.to(materialRef.current!.color, {
+        r: goodColor.r,
+        g: goodColor.g,
+        b: goodColor.b,
+        duration: 0.2,
+        onComplete: () => {
+          gsap.to(materialRef.current!.color, {
+            r: defaultColor.r,
+            g: defaultColor.g,
+            b: defaultColor.b,
+            duration: 0.2,
+            delay: 0.3,
+          })
+        },
+      })
+    }
+
+    if (latestEvent.type === 'hit') {
+      handleBadHit()
+    } else if (latestEvent.type === 'avoided') {
+      handleGoodHit()
+    }
+  }, [scoreEvents])
+
+  return (
+    <mesh>
+      <sphereGeometry args={[0.24, 32, 32]} />
+      <meshStandardMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={1} />
+    </mesh>
+  )
+}

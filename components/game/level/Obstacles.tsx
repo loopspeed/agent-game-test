@@ -23,6 +23,7 @@ type ObstacleInstance = {
   z: number
   isAlive: boolean
   speed: number // Store speed from rhythm data
+  obstacleId: string // Reference to the obstacle group this instance belongs to
 }
 
 type ObstacleZoneInstance = {
@@ -59,22 +60,25 @@ const Obstacles: FC = () => {
 
       console.warn('🏗️ Setting up obstacle instances:')
 
-      // Setup obstacle instances
-      const instances: InstancedRigidBodyProps[] = []
-      const data: ObstacleInstance[] = []
-      const initialData: ObstacleInstance = {
+      const initialData = {
         id: '',
         x: 0,
         y: 0,
-        z: -40, // Start far behind spawn
+        z: -40, // Start far behind the player (out of view)
         isAlive: false,
-        speed: 0, // Will be set when spawned
+        speed: 0,
+        obstacleId: '',
       }
+
+      // Setup obstacle instances
+      const instances: InstancedRigidBodyProps[] = []
+      const data: ObstacleInstance[] = []
 
       for (let i = 0; i < INSTANCES_COUNT; i++) {
         data.push({ ...initialData, id: `obstacle-${i}` })
         const userData: ObstacleUserData = {
           type: RigidBodyType.OBSTACLE,
+          obstacleId: '', // Will be assigned on spawn
         }
         instances.push({
           key: `obstacle-${i}`,
@@ -86,25 +90,16 @@ const Obstacles: FC = () => {
       // Setup detection zone instances
       const zoneInstancesArray: InstancedRigidBodyProps[] = []
       const zoneDataArray: ObstacleZoneInstance[] = []
-      const initialZoneData: ObstacleZoneInstance = {
-        id: '',
-        x: 0,
-        y: 0,
-        z: -40,
-        isAlive: false,
-        speed: 0,
-        obstacleId: '',
-      }
 
       for (let i = 0; i < ZONE_INSTANCES_COUNT; i++) {
-        zoneDataArray.push({ ...initialZoneData, id: `zone-${i}` })
+        zoneDataArray.push({ ...initialData, id: `zone-${i}` })
         const userData: ObstacleZoneUserData = {
           type: RigidBodyType.OBSTACLE_AVOIDED,
           obstacleId: '',
         }
         zoneInstancesArray.push({
           key: `zone-${i}`,
-          position: [initialZoneData.x, initialZoneData.y, initialZoneData.z],
+          position: [initialData.x, initialData.y, initialData.z],
           userData,
         })
       }
@@ -150,7 +145,7 @@ const Obstacles: FC = () => {
       // Determine spawn positions based on rhythm data
       const spawnPositions = getObstacleSpawnPositions(spawnData)
 
-      // For cluster actions, spawn obstacles at all specified positions
+      // Spawn obstacles at all specified positions
       spawnPositions.forEach((spawnPos, index) => {
         const deadObstacleIndex = obstaclesData.current.findIndex((o) => !o.isAlive)
         if (deadObstacleIndex !== -1) {
@@ -163,8 +158,9 @@ const Obstacles: FC = () => {
               z: SPAWN_OBSTACLE_Z,
               isAlive: true,
               speed: spawnData.speed,
+              obstacleId: spawnData.id,
             }
-            // Position and start moving the obstacle
+            body.userData = { type: RigidBodyType.OBSTACLE, obstacleId: spawnData.id } as ObstacleUserData
             body.setTranslation({ x: newData.x, y: newData.y, z: newData.z }, true)
             body.setLinvel({ x: 0, y: 0, z: newData.speed }, true)
             obstaclesData.current[deadObstacleIndex] = newData
@@ -183,7 +179,7 @@ const Obstacles: FC = () => {
             id: `${spawnData.id}_zone`,
             x: 0, // Center of the grid
             y: LANES_Y[1], // Center Y position
-            z: SPAWN_OBSTACLE_Z - 2, // Slightly ahead of obstacles to detect approach
+            z: SPAWN_OBSTACLE_Z, // Slightly ahead of obstacles to detect approach
             isAlive: true,
             speed: spawnData.speed,
             obstacleId: spawnData.id,
@@ -195,6 +191,7 @@ const Obstacles: FC = () => {
           })
 
           // Position and start moving the detection zone
+          zoneBody.userData = { type: RigidBodyType.OBSTACLE_AVOIDED, obstacleId: spawnData.id } as ObstacleZoneUserData
           zoneBody.setTranslation({ x: newZoneData.x, y: newZoneData.y, z: newZoneData.z }, true)
           zoneBody.setLinvel({ x: 0, y: 0, z: newZoneData.speed }, true)
           obstacleZonesData.current[deadZoneIndex] = newZoneData
@@ -206,6 +203,7 @@ const Obstacles: FC = () => {
   }
 
   function cleanUpObstacles() {
+    // TODO: this is currently killing every obstacle, but a group of obstacles travel together...
     // Clean up obstacles that are out of bounds
     obstaclesData.current.forEach((obstacle, i) => {
       if (!obstacle.isAlive) return
@@ -247,44 +245,41 @@ const Obstacles: FC = () => {
 
   return (
     <>
-      {/* Visible obstacles */}
-      <InstancedRigidBodies
-        ref={rigidBodies}
-        instances={obstacleInstances}
-        gravityScale={0}
-        canSleep={false}
-        sensor={true}
-        colliders="ball">
-        <instancedMesh args={[undefined, undefined, obstacleInstances.length]} count={obstacleInstances.length}>
-          <sphereGeometry args={[0.25, 24, 24]} />
-          <meshBasicMaterial color="#ff6b6b" />
-        </instancedMesh>
-      </InstancedRigidBodies>
-
       {/* Invisible detection zones for obstacle avoidance */}
       {zoneInstances.length > 0 && (
         <InstancedRigidBodies
           ref={zoneRigidBodies}
           instances={zoneInstances}
-          gravityScale={0}
           canSleep={false}
           sensor={true}
-          colliders="cuboid">
+          colliders="cuboid"
+          userData={{ type: RigidBodyType.OBSTACLE_AVOIDED } as ObstacleZoneUserData}>
           <instancedMesh args={[undefined, undefined, zoneInstances.length]} count={zoneInstances.length}>
-            {/* Large invisible box covering the entire grid area */}
+            {/* Large invisible plane covering the entire grid area */}
             <boxGeometry args={[GRID_SQUARE_SIZE_M * 3, GRID_SQUARE_SIZE_M * 3, 0.2]} />
             <meshBasicMaterial color="#00ff00" transparent opacity={0} />
           </instancedMesh>
         </InstancedRigidBodies>
       )}
+
+      {/* Visible obstacles */}
+      <InstancedRigidBodies
+        ref={rigidBodies}
+        instances={obstacleInstances}
+        canSleep={false}
+        sensor={true}
+        colliders="ball"
+        userData={{ type: RigidBodyType.OBSTACLE } as ObstacleUserData}>
+        <instancedMesh args={[undefined, undefined, obstacleInstances.length]} count={obstacleInstances.length}>
+          <sphereGeometry args={[0.25, 24, 24]} />
+          <meshBasicMaterial color="#ff6b6b" />
+        </instancedMesh>
+      </InstancedRigidBodies>
     </>
   )
 }
 
-/**
- * Converts rhythm obstacle lane indices to world positions
- */
-function getObstacleSpawnPositions(data: ObstacleSpawnData): Array<{ x: number; y: number; laneIndex: number }> {
+function getObstacleSpawnPositions(data: ObstacleSpawnData): { x: number; y: number; laneIndex: number }[] {
   return data.lanes.map((laneIndex) => {
     // Convert lane index to grid coordinates
     const gridY = Math.floor(laneIndex / LANES_X.length)
