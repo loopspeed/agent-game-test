@@ -16,10 +16,11 @@ export enum GameStage {
 export type AnswerHit = {
   questionId: string
   answerId: string | null // null for misses
-  isCorrect: boolean
+  isCorrect: boolean // True if correct, false if incorrect or missed
   timestamp: number
 }
 
+// Currently score events only track obstacle hits/avoids, not answers
 export type ScoreEvent = {
   type: 'hit' | 'avoided'
   obstacleId: string
@@ -146,19 +147,19 @@ const createGameStore = ({
           const newCurrentStreak = s.streak + 1
           const newMaxStreak = Math.max(s.maxStreak, newCurrentStreak)
           // Remove any previous answers for this question in case of multiple hits
-          const newAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
+          const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
           return {
             streak: newCurrentStreak,
             maxStreak: newMaxStreak,
-            answersHit: newAnswersHit,
+            answersHit: [...cleanAnswersHit, answerHit],
           }
         })
       } else {
         set((s) => {
-          const newAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
+          const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
           return {
             streak: 0,
-            answersHit: newAnswersHit,
+            answersHit: [...cleanAnswersHit, answerHit],
           }
         })
       }

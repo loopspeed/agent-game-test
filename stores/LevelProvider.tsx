@@ -27,7 +27,7 @@ export enum Phase {
 const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
   INTRO: 1, // For entry animation
   REST: 1, // Short rest before obstacles and after question
-  OBSTACLES: 6,
+  OBSTACLES: 1,
   QUESTION: 10000, // Effectively infinite until question is answered and the gate is killed - when phase is advanced manually
   OUTRO: 5, // For showing "level complete"
   FINISHED: 10000, // For showing level complete screen
@@ -36,7 +36,7 @@ const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
 // Cycle of phases for each question
 const QUESTIONS_PHASE_CYCLE = [Phase.REST, Phase.OBSTACLES, Phase.QUESTION] as const
 
-const SLOW_MO_DURATION = 2.0 // Default duration for slow-mo effect when answer gate is approached
+const ANSWER_SLOW_MO_DURATION = 4.0 // Default duration for slow-mo effect when answer gate is approached
 const OBSTACLE_SPAWN_INTERVAL = 1 // How often to spawn obstacles during obstacles phase
 const DEFAULT_OBSTACLE_SPEED = 15 // Base speed for obstacles
 const DEFAULT_ANSWER_SPEED = 7 // Base speed for answer gates
@@ -137,7 +137,7 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
-  const slowMoTimeRemainingTarget = { value: SLOW_MO_DURATION }
+  const slowMoTimeRemainingTarget = { value: ANSWER_SLOW_MO_DURATION }
 
   return createStore<LevelState>()((set, get) => ({
     // Configurable parameters set on load with default values
@@ -145,7 +145,7 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
     obstacleSpeed: DEFAULT_OBSTACLE_SPEED,
     answerSpeed: DEFAULT_ANSWER_SPEED,
     phaseDurations: DEFAULT_PHASE_DURATIONS,
-    slowMoDuration: SLOW_MO_DURATION,
+    slowMoDuration: ANSWER_SLOW_MO_DURATION,
     obstacleSpawnInterval: OBSTACLE_SPAWN_INTERVAL,
     questions,
     question: questions[0],
@@ -266,9 +266,8 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
 
     goSlowMo: () => {
       if (get().isSlowMo) return
-      console.warn('🎵 SLOW-MO TRIGGERED')
       set({ isSlowMo: true })
-      gsap.set('#slow-mo-bar', { scaleX: 1, opacity: 1 })
+      gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 1 })
 
       const slowMoDuration = get().slowMoDuration
       slowMoTimeRemainingTarget.value = slowMoDuration
@@ -277,8 +276,8 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
       speedTimeline = gsap
         .timeline({
           onComplete: () => {
-            gsap.set('#slow-mo-bar', { scaleX: 1, opacity: 0 })
             set({ isSlowMo: false, slowMoTimeRemaining: slowMoDuration })
+            gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 0 })
           },
         })
         // Slow time down as the answer gate approaches
@@ -291,7 +290,7 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
           },
         })
         .to('#slow-mo-bar', {
-          scaleX: 0,
+          scaleX: 1,
           duration: slowMoDuration,
           ease: 'none',
           onUpdate: () => {
@@ -302,7 +301,7 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
         .to(
           timeTweenTarget,
           {
-            duration: 0.4,
+            duration: 0.5,
             ease: 'power1.in',
             value: 1.0,
             onUpdate: () => {

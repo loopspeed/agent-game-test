@@ -45,8 +45,8 @@ const Points: FC = () => {
   }
 
   return (
-    <div className="absolute bottom-6 left-6">
-      <div className={`text-4xl font-bold ${getPointsColor()}`}>
+    <div className="absolute bottom-8 left-8">
+      <div className={`text-5xl font-bold ${getPointsColor()}`}>
         {points > 0 ? '+' : ''}
         {points}
       </div>
@@ -69,51 +69,59 @@ const Streak: FC = () => {
 
 const Question: FC = () => {
   const isQuestionPhase = useLevelStore((s) => s.phase === Phase.QUESTION)
+  const questions = useLevelStore((s) => s.questions)
   const questionIndex = useLevelStore((s) => s.questionIndex)
   const currentQuestion = useLevelStore((s) => s.question)
-  const questions = useLevelStore((s) => s.questions)
-
   const answersHit = useGameStore((s) => s.answersHit)
+
+  console.log({ answersHit })
 
   const container = useRef<HTMLDivElement>(null)
 
-  const switchKey = isQuestionPhase ? `question-${questionIndex}` : 'no-question'
+  const switchKey = isQuestionPhase ? `question` : 'indicators'
 
   // TODO: add onEnter and onExit transitions (simple for now.)
+  const onEnter = () => {}
+  const onExit = () => {}
 
   return (
     <SwitchTransition>
-      <Transition key={switchKey} timeout={{ enter: 300, exit: 400 }} nodeRef={container}>
+      <Transition key={switchKey} timeout={{ enter: 0, exit: 500 }} nodeRef={container}>
         {() =>
+          // Display indicators when not in the question phase (e.g rest, obstacles)
           !isQuestionPhase ? (
-            <div ref={container} className="absolute top-8 flex items-center gap-4">
+            <div ref={container} className="absolute top-8 flex items-center gap-3">
               {/* TODO: Indicators need work */}
               {questions.map((question, index) => {
-                const isUpcoming = index > questionIndex
-
                 const getIndicatorClass = (): string => {
-                  if (isUpcoming) return 'bg-white/40'
-
-                  // Find the answer hit for this specific question
                   const answerHit = answersHit.find((hit) => hit.questionId === question.id)
-                  if (answerHit?.isCorrect) return 'bg-green-400'
-                  if (answerHit?.isCorrect === false) return 'bg-red-400'
-                  return 'bg-red-400/40'
+                  console.log(index, { answerHit })
+                  if (!answerHit) return 'bg-white/20'
+                  if (answerHit.isCorrect) return 'bg-green-400/40'
+                  if (!answerHit.isCorrect) return 'bg-red-400/40'
+                  return 'bg-white/20'
                 }
-                return <div key={question.id} className={twJoin('size-5 rounded-full', getIndicatorClass())}></div>
+                return (
+                  <div
+                    key={question.id}
+                    className={twJoin(
+                      'flex size-8 items-center justify-center rounded-full text-center font-bold text-white',
+                      getIndicatorClass(),
+                    )}>
+                    {index + 1}
+                  </div>
+                )
               })}
             </div>
           ) : (
-            <section
-              ref={container}
-              className="absolute top-0 flex max-w-2xl flex-col bg-black/70 text-center text-3xl leading-relaxed font-bold">
-              <p className="px-2 py-5">
-                {questionIndex + 1}. {currentQuestion.question}
-              </p>
-
-              <div className="relative h-2 w-full overflow-hidden bg-white/20">
+            // Display the current question when in the question phase
+            <section ref={container} className="absolute top-0 right-0 left-0 flex w-full flex-col items-center">
+              <div className="relative h-2 w-full overflow-hidden bg-blue-500/10">
                 <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
               </div>
+              <p className="max-w-4xl px-4 py-8 text-center text-5xl leading-relaxed font-semibold">
+                <span className="opacity-40">{questionIndex + 1}.</span> {currentQuestion.question}
+              </p>
             </section>
           )
         }
