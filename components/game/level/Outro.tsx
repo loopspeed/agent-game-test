@@ -56,7 +56,7 @@ const Outro: FC = () => {
   })
 
   return (
-    <RigidBody ref={body} colliders={false} position={[0, LANES_Y[1], SPAWN_OBSTACLE_Z]}>
+    <RigidBody ref={body} colliders={false} position={[0, LANES_Y[1], 5]}>
       <Text
         position={[0, 0, 0]}
         fontSize={1.4}

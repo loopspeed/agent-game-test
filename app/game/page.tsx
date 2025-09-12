@@ -14,7 +14,7 @@ import { useLevelStore } from '@/stores/LevelProvider'
 import { useInputStore } from '@/stores/useInputStore'
 
 const GameContent: FC = () => {
-  const resetGame = useGameStore((s) => s.resetStore)
+  const resetGame = useGameStore((s) => s.reset)
   const resetLevel = useLevelStore((s) => s.reset)
 
   useEffect(() => {

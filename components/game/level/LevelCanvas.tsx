@@ -1,5 +1,5 @@
 'use client'
-import { CameraShake, type CameraShakeProps, type ShakeController, Stats } from '@react-three/drei'
+import { CameraShake, type CameraShakeProps, Environment, type ShakeController, Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
 // import { extend, type ThreeToJSXElements } from '@react-three/fiber'
 import { type FC, useRef } from 'react'
