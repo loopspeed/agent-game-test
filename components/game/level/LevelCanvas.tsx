@@ -29,7 +29,7 @@ const LevelCanvas: FC = () => {
       scene={{ backgroundNode: backgroundNode }}
       gl={{
         antialias: false,
-        powerPreference: 'low-power',
+        // powerPreference: 'low-power',
         alpha: false,
       }}
       // gl={async (props) => {

@@ -149,7 +149,7 @@ export const SAMPLE_COURSE: Course = {
       id: 'ai-bootcamp-1',
       title: 'The Dawn of AI',
       description: 'Explore the early milestones in artificial intelligence from the 1950s to the 1980s.',
-      questions: SAMPLE_QUESTIONS.slice(0, 2),
+      questions: SAMPLE_QUESTIONS,
     },
   ],
 }

@@ -40,6 +40,12 @@ const Outro: FC = () => {
     body.current.setLinvel({ x: 0, y: 0, z: speed }, true)
   }
 
+  function resetOutro() {
+    if (!body.current) return
+    body.current.setLinvel({ x: 0, y: 0, z: 0 }, true)
+    isLive.current = false
+  }
+
   useFrame(() => {
     if (!body.current) return
     if (!isOutroPhase) return
@@ -50,9 +56,9 @@ const Outro: FC = () => {
       return
     }
 
-    // const translationZ = body.current.translation().z
-    // const shouldSlowDown = Math.round(translationZ) === -4 && !isSlowMo
-    // if (shouldSlowDown) goSlowMo()
+    const translationZ = body.current.translation().z
+    const shouldReset = Math.round(translationZ) === 5
+    if (shouldReset) resetOutro()
   })
 
   return (
