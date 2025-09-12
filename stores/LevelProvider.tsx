@@ -26,11 +26,11 @@ export enum Phase {
 
 const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
   INTRO: 1, // For entry animation
-  REST: 1, // Short rest before obstacles and after question
-  OBSTACLES: 1,
-  QUESTION: 10000, // Effectively infinite until question is answered and the gate is killed - when phase is advanced manually
-  OUTRO: 5, // For showing "level complete"
-  FINISHED: 10000, // For showing level complete screen
+  REST: 1, // Short rest before obstacles
+  OBSTACLES: 6,
+  QUESTION: 10000, // Effectively infinite until question is answered and the gate is killed - then phase is advanced manually
+  OUTRO: 5, // For showing "level complete" and other end of level stuff
+  FINISHED: 10000, // For showing level complete screen - does not advance from here
 } as const
 
 // Cycle of phases for each question

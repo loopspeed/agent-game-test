@@ -42,17 +42,17 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ positio
     const { type } = e.other.rigidBody.userData as RigidBodyUserData
 
     if (type === RigidBodyType.PLAYER) {
-      // Enhanced visual feedback for rhythm-based gates
-      gsap.to(material.current, {
-        opacity: 1.0,
-        duration: 0.16,
-        onComplete: () => {
-          gsap.to(material.current, {
-            opacity: 0.4,
-            duration: 0.12,
-          })
-        },
-      })
+      // // Enhanced visual feedback for rhythm-based gates
+      // gsap.to(material.current, {
+      //   opacity: 1.0,
+      //   duration: 0.16,
+      //   onComplete: () => {
+      //     gsap.to(material.current, {
+      //       opacity: 0.4,
+      //       duration: 0.12,
+      //     })
+      //   },
+      // })
       console.warn('🎵 ANSWER GATE HIT:', {
         answerId: answer?.id,
         isCorrect: answer?.isCorrect,
@@ -82,16 +82,17 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ positio
             <boxGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M, 0.1]} />
             <meshStandardMaterial
               ref={material}
-              color={answer.isCorrect ? '#4ade80' : '#f87171'}
+              // color={answer.isCorrect ? '#4ade80' : '#f87171'}
+              color={'#fff'}
               transparent={true}
-              opacity={0.6} // Rhythm gates are slightly more opaque
+              opacity={0.75}
             />
           </mesh>
           <Text
-            position={[0, 0, 0.1]}
+            position={[0, 0, 0.12]}
             fontSize={0.2}
             font={FONTS.Philosopher}
-            color="white"
+            color="#000"
             anchorX="center"
             anchorY="middle"
             maxWidth={1.8}
