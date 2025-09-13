@@ -114,7 +114,7 @@ export const useHistoryStore = create<HistoryState>()(
       },
     }),
     {
-      name: 'course-history-storage',
+      name: 'history',
     },
   ),
 )

@@ -4,42 +4,24 @@ import { createContext, type FC, type PropsWithChildren, useContext, useRef } fr
 import { createStore, type StoreApi, useStore } from 'zustand'
 
 import type { Answer, Question } from '@/model/content'
+import { LevelPhase } from '@/model/game'
 import { useGameStore } from '@/stores/GameProvider'
+import { type LevelConfig, useConfigStore } from '@/stores/useConfigStore'
 
 type DebugInfo = {
   gameTime: number
-  phase: Phase
+  phase: LevelPhase
   phaseTime: number
-  nextPhase: Phase | null
+  nextPhase: LevelPhase | null
   questionIndex: number
   question: Question
 }
 
-export enum Phase {
-  INTRO = 'INTRO',
-  REST = 'REST',
-  OBSTACLES = 'OBSTACLES',
-  QUESTION = 'QUESTION',
-  OUTRO = 'OUTRO',
-  FINISHED = 'FINISHED',
-}
-
-const DEFAULT_PHASE_DURATIONS: Record<Phase, number> = {
-  INTRO: 1, // For entry animation
-  REST: 1, // Short rest before obstacles
-  OBSTACLES: 6,
-  QUESTION: 10000, // Effectively infinite until question is answered and the gate is killed - then phase is advanced manually
-  OUTRO: 5, // For showing "level complete" and other end of level stuff
-  FINISHED: 10000, // For showing level complete screen - does not advance from here
-} as const
-
 // Cycle of phases for each question
-const QUESTIONS_PHASE_CYCLE = [Phase.REST, Phase.OBSTACLES, Phase.QUESTION] as const
+const OBSTACLE_QUESTION_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.OBSTACLES, LevelPhase.QUESTION] as const
+const QUESTION_ONLY_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.QUESTION] as const
 
 const ANSWER_SLOW_MO_DURATION = 4.0 // Default duration for slow-mo effect when answer gate is approached
-const OBSTACLE_SPAWN_INTERVAL = 1 // How often to spawn obstacles during obstacles phase
-const DEFAULT_OBSTACLE_SPEED = 15 // Base speed for obstacles
-const DEFAULT_ANSWER_SPEED = 7 // Base speed for answer gates
 
 export enum ObstacleType {
   SPHERE = 'SPHERE',
@@ -55,19 +37,8 @@ export type ObstacleSpawnData = {
 }
 
 type LevelState = {
-  // Phase state
-  phases: Phase[]
-  phaseIndex: number
-  phase: Phase
-  phaseTime: number
-  obstacleSpeed: number
-  answerSpeed: number
-  onQuestionPhaseCompleted: () => void // Manually trigger transition to next phase rather than time based because questions could need dynamic time to answer.
-
-  // Player state
-  playerPosition: Vector3Tuple
-  currentPlayerLane: number // 0-8 index for 3x3 grid
-  updatePlayerPosition: ({ pos, lanes }: { pos: Vector3Tuple; lanes: [xIndex: number, yIndex: number] }) => void
+  // Config - passed in from config store when the level starts
+  config: LevelConfig
 
   // Time control state
   gameTime: number
@@ -77,27 +48,29 @@ type LevelState = {
   isSlowMo: boolean
   goSlowMo: () => void
 
-  // Question state
+  // Phase state
+  phases: LevelPhase[]
+  phaseIndex: number
+  phase: LevelPhase
+  phaseTime: number
+  onQuestionPhaseCompleted: () => void // Manually trigger transition to next phase rather than time based because questions could need dynamic time to answer.
+
+  // Player
+  playerPosition: Vector3Tuple
+  currentPlayerLane: number // 0-8 index for 3x3 grid
+  updatePlayerPosition: ({ pos, lanes }: { pos: Vector3Tuple; lanes: [xIndex: number, yIndex: number] }) => void
+
+  // Questions
   questions: Question[]
   question: Question
   questionIndex: number
   answersMapping: (Answer | null)[]
 
-  // Obstacle state
+  // Obstacles
   obstacles: ObstacleSpawnData[]
 
-  // Configurable parameters
-  phaseDurations: Record<Phase, number>
-  slowMoDuration: number
-  obstacleSpawnInterval: number
-  setPhaseDurations: (durations: Record<Phase, number>) => void
-  setSlowMoDuration: (duration: number) => void
-  setObstacleSpawnInterval: (interval: number) => void
-  setObstacleSpeed: (speed: number) => void
-  setAnswerSpeed: (speed: number) => void
-
   // Event system methods
-  start: () => void
+  start: (config: LevelConfig) => void
   reset: () => void
   update: (gameTime: number) => void
   getDebugInfo: () => DebugInfo
@@ -122,7 +95,7 @@ const INITIAL_STATE: Pick<
 > = {
   gameTime: 0,
   phaseIndex: 0,
-  phase: Phase.INTRO,
+  phase: LevelPhase.INTRO,
   phaseTime: 0,
   isSlowMo: false,
   timeMultiplier: 1,
@@ -133,7 +106,15 @@ const INITIAL_STATE: Pick<
   obstacles: [],
 }
 
-const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; onCompleted: () => void }) => {
+const createLevelStore = ({
+  config,
+  questions,
+  onCompleted,
+}: {
+  config: LevelConfig
+  questions: Question[]
+  onCompleted: () => void
+}) => {
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
@@ -142,25 +123,26 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
   return createStore<LevelState>()((set, get) => ({
     // Configurable parameters set on load with default values
     ...INITIAL_STATE,
-    obstacleSpeed: DEFAULT_OBSTACLE_SPEED,
-    answerSpeed: DEFAULT_ANSWER_SPEED,
-    phaseDurations: DEFAULT_PHASE_DURATIONS,
-    slowMoDuration: ANSWER_SLOW_MO_DURATION,
-    obstacleSpawnInterval: OBSTACLE_SPAWN_INTERVAL,
+    config,
     questions,
     question: questions[0],
-    phases: generatePhasesFromQuestions(questions),
+    phases: generatePhasesFromQuestions({ questions, withObstacles: config.phaseDurations.OBSTACLES > 0 }),
     answersMapping: generateAnswerMapping(questions[0].answers),
 
-    start: () => {
-      set(INITIAL_STATE)
+    start: (config: LevelConfig) => {
+      const phases = generatePhasesFromQuestions({ questions, withObstacles: config.phaseDurations.OBSTACLES > 0 })
+      console.warn('[LevelProvider] Starting level with config:', { config, phases })
+      set({
+        ...INITIAL_STATE,
+        config,
+        phases,
+        answersMapping: generateAnswerMapping(questions[0].answers),
+      })
     },
     reset: () => {
       set({
         ...INITIAL_STATE,
         question: questions[0],
-        phases: generatePhasesFromQuestions(questions),
-        answersMapping: generateAnswerMapping(questions[0].answers),
       })
     },
 
@@ -168,7 +150,7 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
       const state = get()
       const newPhaseIndex = state.phaseIndex + 1
       const newPhase = state.phases[newPhaseIndex]
-      console.warn('[LevelProvider] Question phase completed, moving to next phase:', { newPhase, newPhaseIndex })
+      console.warn('[LevelProvider] Question phase completed, moving to next phase:', { newPhase })
       const newQuestionIndex = state.questionIndex + 1
 
       const hasMoreQuestions = newQuestionIndex < questions.length
@@ -196,9 +178,10 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
       let phase = state.phase
       let phaseTime = state.phaseTime + (gameTime - state.gameTime)
 
-      if (phase === Phase.FINISHED) return // No updates once in the finished phase (this is in the background of the level complete screen)
+      if (phase === LevelPhase.FINISHED) return // No updates once in the finished phase (this is in the background of the level complete screen)
 
-      const shouldMoveToNextPhase = phaseTime >= state.phaseDurations[phase]
+      const { phaseDurations } = state.config
+      const shouldMoveToNextPhase = phaseTime >= phaseDurations[phase]
 
       // Handle phase transitions
       if (shouldMoveToNextPhase) {
@@ -206,19 +189,19 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
         phaseTime = 0
         phase = state.phases[phaseIndex]
 
-        if (phase === Phase.REST) {
+        if (phase === LevelPhase.REST) {
           console.warn('[LevelProvider] Transitioning to REST phase')
         }
-        if (phase === Phase.QUESTION) {
+        if (phase === LevelPhase.QUESTION) {
           console.warn('[LevelProvider] Transitioning to new QUESTION phase')
         }
-        if (phase === Phase.OBSTACLES) {
+        if (phase === LevelPhase.OBSTACLES) {
           // Generate complete obstacle sequence for this phase
           const obstacleSequence = generateObstacleSequence({
             phaseStartTime: gameTime,
-            gameSpeed: state.obstacleSpeed,
-            phaseDurations: state.phaseDurations,
-            obstacleSpawnInterval: state.obstacleSpawnInterval,
+            speed: state.config.obstacleSpeed,
+            phaseDurations: phaseDurations,
+            obstacleSpawnInterval: state.config.obstacleSpawnInterval,
           })
           console.warn('[LevelProvider] Transitioning to new OBSTACLES phase', { obstacleSequence })
           set({
@@ -226,7 +209,7 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
           })
         }
 
-        if (phase === Phase.FINISHED) {
+        if (phase === LevelPhase.FINISHED) {
           console.warn('[LevelProvider] Reached FINISHED phase, triggering game over')
           onCompleted()
         }
@@ -251,25 +234,20 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
       return {
         gameTime: state.gameTime,
         phaseTime: state.phaseTime,
-        phase: state.phases[state.phaseIndex] || Phase.OUTRO,
+        phase: state.phases[state.phaseIndex] || LevelPhase.OUTRO,
         nextPhase: state.phases?.[state.phaseIndex + 1] ?? null,
         questionIndex: state.questionIndex,
         question: state.question,
       }
     },
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
-    setPhaseDurations: (phaseDurations: Record<Phase, number>) => set({ phaseDurations }),
-    setSlowMoDuration: (slowMoDuration: number) => set({ slowMoDuration }),
-    setObstacleSpawnInterval: (obstacleSpawnInterval: number) => set({ obstacleSpawnInterval }),
-    setObstacleSpeed: (obstacleSpeed: number) => set({ obstacleSpeed }),
-    setAnswerSpeed: (answerSpeed: number) => set({ answerSpeed }),
 
     goSlowMo: () => {
       if (get().isSlowMo) return
       set({ isSlowMo: true })
       gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 1 })
 
-      const slowMoDuration = get().slowMoDuration
+      const slowMoDuration = get().config.slowMoDuration
       slowMoTimeRemainingTarget.value = slowMoDuration
 
       speedTimeline?.kill()
@@ -325,8 +303,11 @@ const createLevelStore = ({ questions, onCompleted }: { questions: Question[]; o
 type Props = PropsWithChildren<{ questions: Question[] }>
 
 export const LevelProvider: FC<Props> = ({ children, questions }) => {
+  const getLevelConfig = useConfigStore((s) => s.getLevelConfig)
   const onCompleted = useGameStore((s) => s.onCompleted)
-  const store = useRef<LevelStore>(createLevelStore({ questions, onCompleted }))
+
+  const store = useRef<LevelStore>(createLevelStore({ config: getLevelConfig(), questions, onCompleted }))
+
   return <LevelContext.Provider value={store.current}>{children}</LevelContext.Provider>
 }
 
@@ -343,9 +324,17 @@ export function useLevelStoreAPI(): LevelStore {
 }
 
 // Produces complete phase sequence based on number of questions
-const generatePhasesFromQuestions = (questions: Question[]): Phase[] => {
-  const questionPhases = questions.flatMap(() => QUESTIONS_PHASE_CYCLE)
-  return [Phase.INTRO, ...questionPhases, Phase.OUTRO, Phase.FINISHED]
+const generatePhasesFromQuestions = ({
+  withObstacles,
+  questions,
+}: {
+  withObstacles: boolean
+  questions: Question[]
+}): LevelPhase[] => {
+  const questionPhases = questions.flatMap(() =>
+    withObstacles ? OBSTACLE_QUESTION_PHASE_CYCLE : QUESTION_ONLY_PHASE_CYCLE,
+  )
+  return [LevelPhase.INTRO, ...questionPhases, LevelPhase.OUTRO, LevelPhase.FINISHED]
 }
 
 // Generate random answer mapping for 3x3 grid
@@ -372,17 +361,17 @@ const generateAnswerMapping = (answers: Answer[]): (Answer | null)[] => {
 // Generate complete obstacle sequence for obstacles phase
 const generateObstacleSequence = ({
   phaseStartTime,
-  gameSpeed,
+  speed,
   phaseDurations,
   obstacleSpawnInterval,
 }: {
   phaseStartTime: number
-  gameSpeed: number
-  phaseDurations: Record<Phase, number>
+  speed: number
+  phaseDurations: Record<LevelPhase, number>
   obstacleSpawnInterval: number
 }): ObstacleSpawnData[] => {
   const obstacles: ObstacleSpawnData[] = []
-  const phaseDuration = phaseDurations[Phase.OBSTACLES]
+  const phaseDuration = phaseDurations[LevelPhase.OBSTACLES]
   const obstacleCount = Math.floor(phaseDuration / obstacleSpawnInterval)
 
   // Add a small delay to the first obstacle to ensure proper spacing
@@ -408,7 +397,7 @@ const generateObstacleSequence = ({
   for (let i = 0; i < obstacleCount; i++) {
     const spawnTime = phaseStartTime + INITIAL_DELAY + i * obstacleSpawnInterval
     const speedVariation = (Math.random() - 0.5) * 2 // Random between -1 and +1
-    const obstacleSpeed = Math.max(1, gameSpeed + speedVariation)
+    const obstacleSpeed = Math.max(1, speed + speedVariation)
 
     // Alternate between different strategic patterns
     let occupiedLanes: number[]

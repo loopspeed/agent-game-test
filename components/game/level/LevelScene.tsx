@@ -2,7 +2,6 @@
 import { Environment, useTexture } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
-import { useControls } from 'leva'
 import { type FC, Suspense } from 'react'
 
 import Player from '@/components/game/Player'
@@ -20,14 +19,6 @@ const LevelScene: FC = () => {
 
   // const envMap = useTexture('/environments/venice_sunset_1k.hdr')
 
-  // Physics debug controls
-  const { physicsDebug } = useControls('Physics Debug', {
-    physicsDebug: {
-      label: 'Show Physics Debug',
-      value: false,
-    },
-  })
-
   useFrame((_, delta) => {
     const newTime = gameTime.current + delta * timeMultiplier.current
     update(newTime)
@@ -40,7 +31,7 @@ const LevelScene: FC = () => {
         <ambientLight intensity={2} />
         <fog attach="fog" args={['#000000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} />
         {/* Physics world with zero gravity (kinematic bodies only) */}
-        <Physics gravity={[0, 0, 0]} debug={physicsDebug}>
+        <Physics gravity={[0, 0, 0]} debug={true}>
           <Obstacles />
           <AnswerGates />
           <Outro />

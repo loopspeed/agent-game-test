@@ -2,8 +2,10 @@ import { useCallback } from 'react'
 
 import { useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
+import { useConfigStore } from '@/stores/useConfigStore'
 
 function useGameControls() {
+  const getLevelConfig = useConfigStore((s) => s.getLevelConfig)
   const startGame = useGameStore((s) => s.start)
   const resetGame = useGameStore((s) => s.reset)
 
@@ -12,8 +14,8 @@ function useGameControls() {
 
   const handleStart = useCallback(() => {
     startGame()
-    startLevel()
-  }, [startGame, startLevel])
+    startLevel(getLevelConfig())
+  }, [startGame, startLevel, getLevelConfig])
 
   const handleReplay = useCallback(() => {
     resetGame()

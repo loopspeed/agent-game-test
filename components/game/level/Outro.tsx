@@ -5,16 +5,17 @@ import { RapierRigidBody, RigidBody } from '@react-three/rapier'
 import React, { type FC, useRef } from 'react'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
+import { LevelPhase } from '@/model/game'
 import { FONTS } from '@/resources/fonts'
 import { LANES_Y, SPAWN_OBSTACLE_Z } from '@/stores/GameProvider'
-import { Phase, useLevelStore } from '@/stores/LevelProvider'
+import { useLevelStore } from '@/stores/LevelProvider'
 
 const LEVEL_COMPLETE_SPEED = 12
 
 const Outro: FC = () => {
   // const goSlowMo = useLevelStore((s) => s.goSlowMo)
   // const isSlowMo = useLevelStore((s) => s.isSlowMo)
-  const isOutroPhase = useLevelStore((s) => s.phase === Phase.OUTRO)
+  const isOutroPhase = useLevelStore((s) => s.phase === LevelPhase.OUTRO)
 
   const body = useRef<RapierRigidBody>(null)
   const isLive = useRef(false) // True when the outro sequence has started
@@ -27,9 +28,8 @@ const Outro: FC = () => {
   // })
 
   function spawnOutroBanner() {
-    if (!body.current) return
     const speed = LEVEL_COMPLETE_SPEED
-    body.current.setTranslation(
+    body.current!.setTranslation(
       {
         x: 0,
         y: LANES_Y[1],
@@ -37,12 +37,11 @@ const Outro: FC = () => {
       },
       true,
     )
-    body.current.setLinvel({ x: 0, y: 0, z: speed }, true)
+    body.current!.setLinvel({ x: 0, y: 0, z: speed }, true)
   }
 
   function resetOutro() {
-    if (!body.current) return
-    body.current.setLinvel({ x: 0, y: 0, z: 0 }, true)
+    body.current!.setLinvel({ x: 0, y: 0, z: 0 }, true)
     isLive.current = false
   }
 

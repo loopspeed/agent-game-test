@@ -3,8 +3,8 @@ import { useFrame } from '@react-three/fiber'
 import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBody } from '@react-three/rapier'
 import { type FC, useLayoutEffect, useRef, useState } from 'react'
 
-import { useObstaclesSpawning } from '@/hooks/useObstaclesToSpawn'
-import { type ObstacleUserData, type ObstacleZoneUserData, RigidBodyType } from '@/model/game'
+import { useObstaclesSpawning } from '@/hooks/useObstaclesSpawning'
+import { LevelPhase, type ObstacleUserData, type ObstacleZoneUserData, RigidBodyType } from '@/model/game'
 import {
   GameStage,
   GRID_SQUARE_SIZE_M,
@@ -14,7 +14,7 @@ import {
   SPAWN_OBSTACLE_Z,
   useGameStore,
 } from '@/stores/GameProvider'
-import { type ObstacleSpawnData, Phase, useLevelStore } from '@/stores/LevelProvider'
+import { type ObstacleSpawnData, useLevelStore } from '@/stores/LevelProvider'
 
 type ObstacleInstance = {
   id: string
@@ -41,7 +41,7 @@ const ZONE_INSTANCES_COUNT = 8
 
 const Obstacles: FC = () => {
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
-  const isObstaclesPhase = useLevelStore((s) => s.phase === Phase.OBSTACLES)
+  const isObstaclesPhase = useLevelStore((s) => s.phase === LevelPhase.OBSTACLES)
 
   const obstaclesData = useRef<ObstacleInstance[]>([])
   const obstacleZonesData = useRef<ObstacleZoneInstance[]>([])

@@ -2,12 +2,11 @@
 import { Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { CuboidCollider, type IntersectionEnterPayload, RapierRigidBody, RigidBody } from '@react-three/rapier'
-import gsap from 'gsap'
 import React, { type FC, useRef } from 'react'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import type { Answer } from '@/model/content'
-import { type AnswerGateUserData, RigidBodyType, type RigidBodyUserData } from '@/model/game'
+import { type AnswerGateUserData, LevelPhase, RigidBodyType, type RigidBodyUserData } from '@/model/game'
 import { FONTS } from '@/resources/fonts'
 import {
   GameStage,
@@ -18,7 +17,7 @@ import {
   SPAWN_OBSTACLE_Z,
   useGameStore,
 } from '@/stores/GameProvider'
-import { Phase, useLevelStore } from '@/stores/LevelProvider'
+import { useLevelStore } from '@/stores/LevelProvider'
 
 type AnswerGateProps = {
   position: [number, number, number]
@@ -111,8 +110,8 @@ const AnswerGates: FC = () => {
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
   const goSlowMo = useLevelStore((s) => s.goSlowMo)
   const isSlowMo = useLevelStore((s) => s.isSlowMo)
-  const isQuestionPhase = useLevelStore((s) => s.phase === Phase.QUESTION)
-  const answerSpeed = useLevelStore((s) => s.answerSpeed)
+  const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
+  const answerSpeed = useLevelStore((s) => s.config.answerSpeed)
   const questionIndex = useLevelStore((s) => s.questionIndex)
   const answersMapping = useLevelStore((s) => s.answersMapping)
   const onQuestionPhaseCompleted = useLevelStore((s) => s.onQuestionPhaseCompleted)

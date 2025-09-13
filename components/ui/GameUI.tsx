@@ -2,11 +2,14 @@
 
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
+import { Leva, useControls } from 'leva'
 import { type FC, useEffect, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
 import useGameControls from '@/hooks/useGameControls'
+import { LEVA_CONTROLS_THEME } from '@/resources/leva'
 import { GameStage, useGameStore } from '@/stores/GameProvider'
+import { useConfigStore } from '@/stores/useConfigStore'
 
 import GameOverUI from './GameOver'
 import PlayingUI from './PlayingUI'
@@ -39,6 +42,56 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
   const { handleStart } = useGameControls()
   const container = useRef<HTMLDivElement>(null)
 
+  // Configuration...
+  const obstacleSpeed = useConfigStore((s) => s.obstacleSpeed)
+  const setObstacleSpeed = useConfigStore((s) => s.setObstacleSpeed)
+
+  const obstacleSpawnInterval = useConfigStore((s) => s.obstacleSpawnInterval)
+  const setObstacleSpawnInterval = useConfigStore((s) => s.setObstacleSpawnInterval)
+
+  const slowMoDuration = useConfigStore((s) => s.slowMoDuration)
+  const setSlowMoDuration = useConfigStore((s) => s.setSlowMoDuration)
+
+  const phaseDurations = useConfigStore((s) => s.phaseDurations)
+  const setPhaseDurations = useConfigStore((s) => s.setPhaseDurations)
+
+  const [, setControls] = useControls('Level', () => {
+    return {
+      slowMoDuration: {
+        label: 'Question Answer Time (seconds)',
+        min: 1,
+        step: 0.5,
+        max: 20,
+        value: slowMoDuration,
+        onChange: (value) => setSlowMoDuration(value),
+      },
+      obstacleSpawnInterval: {
+        label: 'Obstacle Spawn Interval (seconds)',
+        min: 0.5,
+        step: 0.25,
+        max: 3,
+        value: obstacleSpawnInterval,
+        onChange: (value) => setObstacleSpawnInterval(value),
+      },
+      obstacleSpeed: {
+        label: 'Obstacle Speed',
+        min: 5,
+        step: 0.5,
+        max: 30,
+        value: obstacleSpeed,
+        onChange: (value) => setObstacleSpeed(value),
+      },
+      obstaclesDuration: {
+        label: 'Obstacles Duration',
+        min: 0,
+        step: 1,
+        max: 30,
+        value: phaseDurations.OBSTACLES,
+        onChange: (value) => setPhaseDurations({ ...phaseDurations, OBSTACLES: value }),
+      },
+    }
+  })
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Enter') {
@@ -66,8 +119,12 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
   )
 
   return (
-    <div ref={container} className="absolute inset-0 flex items-center justify-center">
-      <span className="text-5xl font-black text-white">PRESS ENTER</span>
+    <div ref={container} className="absolute inset-0 flex flex-col items-center justify-center gap-12">
+      <div className="pointer-events-auto h-80 w-150">
+        <Leva theme={LEVA_CONTROLS_THEME} fill={true} collapsed={false} />
+      </div>
+
+      <span className="text-3xl font-black text-white">TAP ENTER TO BEGIN</span>
     </div>
   )
 }

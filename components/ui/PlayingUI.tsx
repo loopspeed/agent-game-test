@@ -5,8 +5,9 @@ import { type FC, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 import { twJoin } from 'tailwind-merge'
 
+import { LevelPhase } from '@/model/game'
 import { useGameStore } from '@/stores/GameProvider'
-import { Phase, useLevelStore } from '@/stores/LevelProvider'
+import { useLevelStore } from '@/stores/LevelProvider'
 
 const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
   const container = useRef<HTMLDivElement>(null)
@@ -68,16 +69,13 @@ const Streak: FC = () => {
 }
 
 const Question: FC = () => {
-  const isQuestionPhase = useLevelStore((s) => s.phase === Phase.QUESTION)
+  const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
   const questions = useLevelStore((s) => s.questions)
   const questionIndex = useLevelStore((s) => s.questionIndex)
   const currentQuestion = useLevelStore((s) => s.question)
   const answersHit = useGameStore((s) => s.answersHit)
 
-  console.log({ answersHit })
-
   const container = useRef<HTMLDivElement>(null)
-
   const switchKey = isQuestionPhase ? `question` : 'indicators'
 
   // TODO: add onEnter and onExit transitions (simple for now.)
@@ -95,11 +93,10 @@ const Question: FC = () => {
               {questions.map((question, index) => {
                 const getIndicatorClass = (): string => {
                   const answerHit = answersHit.find((hit) => hit.questionId === question.id)
-                  console.log(index, { answerHit })
-                  if (!answerHit) return 'bg-white/20'
-                  if (answerHit.isCorrect) return 'bg-green-400/40'
-                  if (!answerHit.isCorrect) return 'bg-red-400/40'
-                  return 'bg-white/20'
+                  if (!answerHit) return 'bg-white/10'
+                  if (answerHit.isCorrect) return 'bg-green-400'
+                  if (!answerHit.isCorrect) return 'bg-red-400'
+                  return 'bg-white/10'
                 }
                 return (
                   <div

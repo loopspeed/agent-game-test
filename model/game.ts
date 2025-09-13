@@ -1,3 +1,12 @@
+export enum LevelPhase {
+  INTRO = 'INTRO',
+  REST = 'REST',
+  OBSTACLES = 'OBSTACLES',
+  QUESTION = 'QUESTION',
+  OUTRO = 'OUTRO',
+  FINISHED = 'FINISHED',
+}
+
 export enum RigidBodyType {
   OBSTACLE = 'obstacle',
   OBSTACLE_AVOIDED = 'obstacleAvoided',
