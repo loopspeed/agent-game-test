@@ -178,7 +178,7 @@ const AnswerGates: FC = () => {
     if (gatesNeedKilling) return killAnswerGates()
 
     // Slow-mo timing logic (adjust for rhythm-based timing)
-    const shouldSlowDown = Math.round(firstGateTranslationZ) === -4 && !isSlowMo
+    const shouldSlowDown = Math.round(firstGateTranslationZ) === -5 && !isSlowMo
     if (shouldSlowDown) goSlowMo()
   })
 

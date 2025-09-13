@@ -12,14 +12,6 @@ const DEFAULT_PHASE_DURATIONS: Record<LevelPhase, number> = {
   FINISHED: 10000, // READONLY For showing level complete screen - does not advance from here
 } as const
 
-export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
-  phaseDurations: DEFAULT_PHASE_DURATIONS,
-  slowMoDuration: 4.0,
-  obstacleSpawnInterval: 1.0, // Seconds between obstacles
-  obstacleSpeed: 14, // Base speed for obstacles
-  answerSpeed: 10, // Base speed for answer gates
-}
-
 export const OBSTACLE_PRESETS: Record<string, Pick<LevelConfig, 'obstacleSpeed' | 'obstacleSpawnInterval'>> = {
   Chilled: {
     obstacleSpeed: 10,
@@ -37,6 +29,13 @@ export const OBSTACLE_PRESETS: Record<string, Pick<LevelConfig, 'obstacleSpeed' 
     obstacleSpeed: 24,
     obstacleSpawnInterval: 0.5,
   },
+}
+
+export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
+  phaseDurations: DEFAULT_PHASE_DURATIONS,
+  slowMoDuration: 4.0,
+  ...OBSTACLE_PRESETS['Normal'],
+  answerSpeed: 10, // Base speed for answer gates
 }
 
 export type LevelConfig = {

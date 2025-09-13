@@ -91,6 +91,7 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
 
       preset: {
         label: 'Preset',
+        value: 'Normal',
         options: Object.keys(OBSTACLE_PRESETS),
         transient: false,
         onChange: (value) => {
