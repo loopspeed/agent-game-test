@@ -2,11 +2,11 @@
 
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
-import { folder, Leva, useControls } from 'leva'
+import { Leva, useControls } from 'leva'
 import { type FC, useEffect, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
-import GameOverUI from '@/components/ui/GameOver'
+import CompletedUI from '@/components/ui/GameOver'
 import PlayingUI from '@/components/ui/PlayingUI'
 import useGameControls from '@/hooks/useGameControls'
 import { LEVA_CONTROLS_THEME } from '@/resources/leva'
@@ -19,14 +19,14 @@ const GameUI: FC = () => {
 
   return (
     <SwitchTransition>
-      <Transition key={stage} timeout={{ enter: 300, exit: 400 }} nodeRef={container} appear>
+      <Transition key={stage} timeout={{ enter: 0, exit: 400 }} nodeRef={container} appear>
         {(status) => (
           <div
-            className="pointer-events-none fixed top-0 z-100 flex !h-svh w-full items-center justify-center"
+            className="pointer-events-none fixed top-0 left-0 z-100 flex !h-svh w-full items-center justify-center"
             ref={container}>
             {stage === GameStage.READY && <ReadyUI transitionStatus={status} />}
             {stage === GameStage.PLAYING && <PlayingUI transitionStatus={status} />}
-            {stage === GameStage.COMPLETED && <GameOverUI transitionStatus={status} />}
+            {stage === GameStage.COMPLETED && <CompletedUI transitionStatus={status} />}
           </div>
         )}
       </Transition>
@@ -42,6 +42,9 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
   const container = useRef<HTMLDivElement>(null)
 
   // Configuration...
+  const showOnboarding = useConfigStore((s) => s.showOnboarding)
+  const setShowOnboarding = useConfigStore((s) => s.setShowOnboarding)
+
   const obstacleSpeed = useConfigStore((s) => s.obstacleSpeed)
   const setObstacleSpeed = useConfigStore((s) => s.setObstacleSpeed)
 
@@ -56,6 +59,14 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
 
   const [{ preset }, setControls] = useControls(() => {
     return {
+      showOnboarding: {
+        label: 'Show Onboarding',
+        value: showOnboarding,
+        onChange: (value) => {
+          setShowOnboarding(value)
+        },
+      },
+
       slowMoDuration: {
         label: 'Question Answer Time (seconds)',
         min: 1,

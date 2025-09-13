@@ -11,6 +11,7 @@ import { useLevelStore } from '@/stores/LevelProvider'
 
 import AnswerGates from './AnswerGates'
 import Obstacles from './Obstacles'
+import Onboarding from './Onboarding'
 import Outro from './Outro'
 
 const LevelScene: FC = () => {
@@ -34,6 +35,7 @@ const LevelScene: FC = () => {
         <Physics gravity={[0, 0, 0]} debug={true}>
           <Obstacles />
           <AnswerGates />
+          <Onboarding />
           <Outro />
           <Player />
         </Physics>

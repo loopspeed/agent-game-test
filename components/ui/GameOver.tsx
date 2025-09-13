@@ -11,7 +11,7 @@ import type { Question } from '@/model/content'
 import { SAMPLE_QUESTIONS } from '@/resources/course'
 import { formatAccuracy, formatDate, formatTime } from '@/utils/formatting'
 
-const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
+const CompletedUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
   const { handleReplay } = useGameControls()
 
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current')
@@ -32,9 +32,9 @@ const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStat
   return (
     <section
       ref={container}
-      className="pointer-events-auto grid size-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-5 bg-black/80 px-24 py-12">
+      className="pointer-events-auto grid size-full grid-cols-1 grid-rows-[auto_1fr_auto] gap-5 bg-black/50 px-24 py-12 backdrop-blur-lg">
       <header>
-        <h2 className="text-center text-2xl font-bold">Course Over</h2>
+        <h2 className="text-center text-2xl font-bold">Level Complete!</h2>
         {/* Tab Navigation */}
         <div className="flex">
           <button
@@ -77,7 +77,7 @@ const GameOverUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStat
   )
 }
 
-export default GameOverUI
+export default CompletedUI
 
 const CurrentRun: FC = () => {
   const { lastRun } = useGameOverData()

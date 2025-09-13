@@ -1,5 +1,6 @@
 export enum LevelPhase {
   INTRO = 'INTRO',
+  ONBOARDING = 'ONBOARDING',
   REST = 'REST',
   OBSTACLES = 'OBSTACLES',
   QUESTION = 'QUESTION',
@@ -12,6 +13,7 @@ export enum RigidBodyType {
   OBSTACLE_AVOIDED = 'obstacleAvoided',
   ANSWER_GATE = 'answerGate',
   PLAYER = 'player',
+  ONBOARDING_TARGET = 'onboardingTarget',
 }
 
 export type ObstacleUserData = {
@@ -35,4 +37,15 @@ export type PlayerUserData = {
   type: RigidBodyType.PLAYER
 }
 
-export type RigidBodyUserData = ObstacleUserData | ObstacleZoneUserData | AnswerGateUserData | PlayerUserData
+export type OnboardingTargetUserData = {
+  type: RigidBodyType.ONBOARDING_TARGET
+  cubeId: string
+  laneIndex: number
+}
+
+export type RigidBodyUserData =
+  | ObstacleUserData
+  | ObstacleZoneUserData
+  | AnswerGateUserData
+  | PlayerUserData
+  | OnboardingTargetUserData

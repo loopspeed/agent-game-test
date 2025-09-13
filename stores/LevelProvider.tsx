@@ -54,6 +54,7 @@ type LevelState = {
   phase: LevelPhase
   phaseTime: number
   onQuestionPhaseCompleted: () => void // Manually trigger transition to next phase rather than time based because questions could need dynamic time to answer.
+  onOnboardingPhaseCompleted: () => void // Manually trigger transition from onboarding to next phase
 
   // Player
   playerPosition: Vector3Tuple
@@ -126,11 +127,19 @@ const createLevelStore = ({
     config,
     questions,
     question: questions[0],
-    phases: generatePhasesFromQuestions({ questions, withObstacles: config.phaseDurations.OBSTACLES > 0 }),
+    phases: generatePhasesFromQuestions({
+      questions,
+      showOnboarding: config.showOnboarding,
+      withObstacles: config.phaseDurations.OBSTACLES > 0,
+    }),
     answersMapping: generateAnswerMapping(questions[0].answers),
 
     start: (config: LevelConfig) => {
-      const phases = generatePhasesFromQuestions({ questions, withObstacles: config.phaseDurations.OBSTACLES > 0 })
+      const phases = generatePhasesFromQuestions({
+        questions,
+        showOnboarding: config.showOnboarding,
+        withObstacles: config.phaseDurations.OBSTACLES > 0,
+      })
       console.warn('[LevelProvider] Starting level with config:', { config, phases })
       set({
         ...INITIAL_STATE,
@@ -145,7 +154,6 @@ const createLevelStore = ({
         question: questions[0],
       })
     },
-
     onQuestionPhaseCompleted: () => {
       const state = get()
       const newPhaseIndex = state.phaseIndex + 1
@@ -171,7 +179,18 @@ const createLevelStore = ({
         phaseTime: 0,
       })
     },
+    onOnboardingPhaseCompleted: () => {
+      const state = get()
+      const newPhaseIndex = state.phaseIndex + 1
+      const newPhase = state.phases[newPhaseIndex]
+      console.warn('[LevelProvider] Onboarding phase completed, moving to next phase:', { newPhase })
 
+      set({
+        phase: newPhase,
+        phaseIndex: newPhaseIndex,
+        phaseTime: 0,
+      })
+    },
     update: (gameTime: number) => {
       const state = get()
       let phaseIndex = state.phaseIndex
@@ -228,7 +247,6 @@ const createLevelStore = ({
         phaseTime,
       })
     },
-
     getDebugInfo: (): DebugInfo => {
       const state = get()
       return {
@@ -262,7 +280,7 @@ const createLevelStore = ({
         .to(timeTweenTarget, {
           duration: 0.5,
           ease: 'power2.out',
-          value: 0.1,
+          value: 0.04,
           onUpdate: () => {
             set({ timeMultiplier: timeTweenTarget.value })
           },
@@ -325,16 +343,29 @@ export function useLevelStoreAPI(): LevelStore {
 
 // Produces complete phase sequence based on number of questions
 const generatePhasesFromQuestions = ({
+  showOnboarding,
   withObstacles,
   questions,
 }: {
+  showOnboarding: boolean
   withObstacles: boolean
   questions: Question[]
 }): LevelPhase[] => {
+  const phases = [LevelPhase.INTRO]
+
+  if (showOnboarding) {
+    phases.push(LevelPhase.ONBOARDING)
+  }
+
   const questionPhases = questions.flatMap(() =>
     withObstacles ? OBSTACLE_QUESTION_PHASE_CYCLE : QUESTION_ONLY_PHASE_CYCLE,
   )
-  return [LevelPhase.INTRO, ...questionPhases, LevelPhase.OUTRO, LevelPhase.FINISHED]
+
+  phases.push(...questionPhases)
+
+  phases.push(LevelPhase.OUTRO, LevelPhase.FINISHED)
+
+  return phases
 }
 
 // Generate random answer mapping for 3x3 grid

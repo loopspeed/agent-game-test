@@ -4,7 +4,8 @@ import { persist } from 'zustand/middleware'
 import { LevelPhase } from '@/model/game'
 
 const DEFAULT_PHASE_DURATIONS: Record<LevelPhase, number> = {
-  INTRO: 1, // READONLY For entry animation
+  INTRO: 1, // READONLY For entry animation and get-ready
+  ONBOARDING: 10000, // READONLY Effectively infinite until player completels onboarding - then phase is advanced manually
   REST: 1, // READONLY Short rest before obstacles
   OBSTACLES: 6, // EDITABLE Duration for obstacles phase (0 = No obstacles)
   QUESTION: 10000, // READONLY Effectively infinite until question is answered and the gate is killed - then phase is advanced manually
@@ -32,6 +33,7 @@ export const OBSTACLE_PRESETS: Record<string, Pick<LevelConfig, 'obstacleSpeed' 
 }
 
 export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
+  showOnboarding: true,
   phaseDurations: DEFAULT_PHASE_DURATIONS,
   slowMoDuration: 4.0,
   ...OBSTACLE_PRESETS['Normal'],
@@ -40,6 +42,7 @@ export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
 
 export type LevelConfig = {
   // Configurable parameters
+  showOnboarding: boolean
   phaseDurations: Record<LevelPhase, number>
   slowMoDuration: number
   obstacleSpawnInterval: number
@@ -48,12 +51,12 @@ export type LevelConfig = {
 }
 
 type StoreState = LevelConfig & {
+  setShowOnboarding: (show: boolean) => void
   setPhaseDurations: (durations: Record<LevelPhase, number>) => void
   setSlowMoDuration: (duration: number) => void
   setObstacleSpawnInterval: (interval: number) => void
   setObstacleSpeed: (speed: number) => void
   setAnswerSpeed: (speed: number) => void
-
   getLevelConfig: () => LevelConfig
 }
 
@@ -61,13 +64,14 @@ export const useConfigStore = create<StoreState>()(
   persist(
     (set, get) => ({
       ...DEFAULT_LEVEL_CONFIG,
+      setShowOnboarding: (showOnboarding) => set({ showOnboarding }),
       setPhaseDurations: (durations) => set({ phaseDurations: durations }),
       setSlowMoDuration: (duration) => set({ slowMoDuration: duration }),
       setObstacleSpawnInterval: (interval) => set({ obstacleSpawnInterval: interval }),
       setObstacleSpeed: (speed) => set({ obstacleSpeed: speed }),
       setAnswerSpeed: (speed) => set({ answerSpeed: speed }),
-
       getLevelConfig: () => ({
+        showOnboarding: get().showOnboarding,
         phaseDurations: get().phaseDurations,
         slowMoDuration: get().slowMoDuration,
         obstacleSpawnInterval: get().obstacleSpawnInterval,

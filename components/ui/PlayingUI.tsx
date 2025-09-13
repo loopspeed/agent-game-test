@@ -26,6 +26,7 @@ const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatu
 
   return (
     <section ref={container} className="contents">
+      <Onboarding />
       <Question />
       <Points />
       <Streak />
@@ -34,6 +35,22 @@ const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatu
 }
 
 export default PlayingUI
+
+const Onboarding: FC = () => {
+  const isOnboardingPhase = useLevelStore((s) => s.phase === LevelPhase.ONBOARDING)
+
+  if (!isOnboardingPhase) return null
+
+  return (
+    <section className="absolute top-20 right-0 left-0 flex w-full flex-col items-center">
+      <p className="max-w-xl px-4 py-8 text-center text-2xl leading-relaxed font-semibold">
+        Use the [Arrow Keys] to move your player.
+        <br />
+        Follow the highlighted path around the lanes!
+      </p>
+    </section>
+  )
+}
 
 const Points: FC = () => {
   const points = useGameStore((s) => s.points)
