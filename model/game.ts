@@ -21,7 +21,7 @@ export type ObstacleUserData = {
   obstacleId: string
 }
 
-export type ObstacleZoneUserData = {
+export type ObstacleAvoidedUserData = {
   type: RigidBodyType.OBSTACLE_AVOIDED
   obstacleId: string
 }
@@ -45,7 +45,7 @@ export type OnboardingTargetUserData = {
 
 export type RigidBodyUserData =
   | ObstacleUserData
-  | ObstacleZoneUserData
+  | ObstacleAvoidedUserData
   | AnswerGateUserData
   | PlayerUserData
   | OnboardingTargetUserData

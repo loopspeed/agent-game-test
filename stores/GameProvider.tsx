@@ -1,7 +1,7 @@
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
-import type { AnswerGateUserData, ObstacleUserData, ObstacleZoneUserData } from '@/model/game'
+import type { AnswerGateUserData, ObstacleUserData, ObstacleAvoidedUserData } from '@/model/game'
 import { SAMPLE_COURSE, SAMPLE_QUESTIONS } from '@/resources/course'
 import { type ChapterRun, useHistoryStore } from '@/stores/useHistoryStore'
 
@@ -45,7 +45,7 @@ type GameState = {
 
   // Game events
   onObstacleHit: (data: ObstacleUserData) => void
-  onObstacleAvoided: (data: ObstacleZoneUserData) => void
+  onObstacleAvoided: (data: ObstacleAvoidedUserData) => void
   onAnswerHit: (data: AnswerGateUserData) => void
   onCompleted: () => void
 }
@@ -114,7 +114,7 @@ const createGameStore = ({
         streak: 0, // Reset streak on obstacle hit
       }))
     },
-    onObstacleAvoided: (data: ObstacleZoneUserData) => {
+    onObstacleAvoided: (data: ObstacleAvoidedUserData) => {
       const scoreEvents = get().scoreEvents
       // If this obstacle has been hit, don't reward avoidance
       const hasHitThisObstacle = scoreEvents.some((e) => e.type === 'hit' && e.obstacleId === data.obstacleId)

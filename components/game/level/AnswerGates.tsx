@@ -204,7 +204,7 @@ const generateGatePositions = (): [number, number, number][] => {
   const positions: [number, number, number][] = []
   for (let y = 0; y < LANES_Y.length; y++) {
     for (let x = 0; x < LANES_X.length; x++) {
-      positions.push([LANES_X[x], LANES_Y[y], SPAWN_OBSTACLE_Z])
+      positions.push([LANES_X[x], LANES_Y[y], SPAWN_OBSTACLE_Z - 10])
     }
   }
   return positions

@@ -1,7 +1,7 @@
 'use client'
 import { Text } from '@react-three/drei'
 import { CuboidCollider, type IntersectionEnterHandler, RapierRigidBody, RigidBody } from '@react-three/rapier'
-import React, { type FC, useRef, useState } from 'react'
+import React, { type FC, useState } from 'react'
 
 import { LevelPhase, type OnboardingTargetUserData, RigidBodyType, type RigidBodyUserData } from '@/model/game'
 import { FONTS } from '@/resources/fonts'
@@ -13,12 +13,12 @@ type TargetProps = {
   laneIndex: number
   opacity: number
   isCompleted: boolean
-  showGoText: boolean
+  textLabel: string
   onIntersectionEnter: IntersectionEnterHandler
 }
 
 const OnboardingTarget = React.forwardRef<RapierRigidBody, TargetProps>(
-  ({ position, laneIndex, opacity = 0, isCompleted = false, showGoText = false, onIntersectionEnter }, ref) => {
+  ({ position, laneIndex, opacity = 0, isCompleted = false, textLabel = '', onIntersectionEnter }, ref) => {
     const userData: OnboardingTargetUserData = {
       type: RigidBodyType.ONBOARDING_TARGET,
       cubeId: `onboarding-target-${laneIndex}`,
@@ -34,35 +34,28 @@ const OnboardingTarget = React.forwardRef<RapierRigidBody, TargetProps>(
         type="dynamic"
         gravityScale={0}
         canSleep={false}
-        colliders={false}
+        colliders="cuboid"
         position={position}
-        userData={userData}>
-        <CuboidCollider
-          args={[GRID_SQUARE_SIZE_M / 2, GRID_SQUARE_SIZE_M / 2, 0.05]}
-          sensor={true}
-          onIntersectionEnter={onIntersectionEnter}
-        />
-
-        {/* Visual cube */}
+        userData={userData}
+        sensor={true}
+        onIntersectionEnter={onIntersectionEnter}>
         <mesh>
-          <boxGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M, 0.1]} />
+          <boxGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M, 0.02]} />
           <meshStandardMaterial color={color} transparent={true} opacity={opacity} />
         </mesh>
         {/* Not well optimised, should be a different component */}
-        {showGoText && (
-          <Text
-            position={[0, 0, 0.12]}
-            fontSize={0.4}
-            font={FONTS['Roboto']}
-            fontWeight={'black'}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-            maxWidth={1.8}
-            textAlign="center">
-            GO!
-          </Text>
-        )}
+        <Text
+          position={[0, 0, 0.12]}
+          fontSize={0.4}
+          font={FONTS['Roboto']}
+          fontWeight={'black'}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+          maxWidth={1.8}
+          textAlign="center">
+          {textLabel}
+        </Text>
       </RigidBody>
     )
   },
@@ -118,8 +111,9 @@ const Onboarding: FC = () => {
       {cubePositions.map((position, index) => {
         const isCurrentTarget = index === currentTargetLane
         const isNextTarget = index === ONBOARDING_SEQUENCE?.[currentTargetIndex + 1] || false
+        const isNextNextTarget = index === ONBOARDING_SEQUENCE?.[currentTargetIndex + 2] || false
         const isCompleted = completedLanes.has(index)
-        const opacity = isCurrentTarget ? 1 : isNextTarget ? 0.16 : isCompleted ? 1 : 0
+        const opacity = isCurrentTarget ? 1 : isNextTarget ? 0.3 : isNextNextTarget ? 0.15 : isCompleted ? 1 : 0
 
         return (
           <OnboardingTarget
@@ -128,7 +122,7 @@ const Onboarding: FC = () => {
             laneIndex={index}
             opacity={opacity}
             isCompleted={isCompleted}
-            showGoText={isCurrentTarget && index === 4}
+            textLabel={isCurrentTarget && index === 4 ? 'GO!' : ''}
             onIntersectionEnter={onIntersectionEnter}
           />
         )

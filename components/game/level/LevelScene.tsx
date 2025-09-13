@@ -30,9 +30,9 @@ const LevelScene: FC = () => {
       <Suspense fallback={null}>
         {/* <Environment files={['/environment/rosendal_park_sunset_puresky_2k.hdr']} background={true} /> */}
         <ambientLight intensity={2} />
-        <fog attach="fog" args={['#000000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} />
+        <fog attach="fog" args={['#000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} />
         {/* Physics world with zero gravity (kinematic bodies only) */}
-        <Physics gravity={[0, 0, 0]} debug={true}>
+        <Physics gravity={[0, 0, 0]} debug={false}>
           <Obstacles />
           <AnswerGates />
           <Onboarding />

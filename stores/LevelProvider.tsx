@@ -53,8 +53,8 @@ type LevelState = {
   phaseIndex: number
   phase: LevelPhase
   phaseTime: number
-  onQuestionPhaseCompleted: () => void // Manually trigger transition to next phase rather than time based because questions could need dynamic time to answer.
   onOnboardingPhaseCompleted: () => void // Manually trigger transition from onboarding to next phase
+  onQuestionPhaseCompleted: () => void // Manually trigger transition to next phase rather than time based because questions could need dynamic time to answer.
 
   // Player
   playerPosition: Vector3Tuple
@@ -127,11 +127,7 @@ const createLevelStore = ({
     config,
     questions,
     question: questions[0],
-    phases: generatePhasesFromQuestions({
-      questions,
-      showOnboarding: config.showOnboarding,
-      withObstacles: config.phaseDurations.OBSTACLES > 0,
-    }),
+    phases: [],
     answersMapping: generateAnswerMapping(questions[0].answers),
 
     start: (config: LevelConfig) => {
@@ -341,7 +337,7 @@ export function useLevelStoreAPI(): LevelStore {
   return levelStore
 }
 
-// Produces complete phase sequence based on number of questions
+// Produces complete phase sequence based on number of questions and config options
 const generatePhasesFromQuestions = ({
   showOnboarding,
   withObstacles,
@@ -353,18 +349,14 @@ const generatePhasesFromQuestions = ({
 }): LevelPhase[] => {
   const phases = [LevelPhase.INTRO]
 
-  if (showOnboarding) {
-    phases.push(LevelPhase.ONBOARDING)
-  }
+  if (showOnboarding) phases.push(LevelPhase.ONBOARDING)
 
   const questionPhases = questions.flatMap(() =>
     withObstacles ? OBSTACLE_QUESTION_PHASE_CYCLE : QUESTION_ONLY_PHASE_CYCLE,
   )
 
   phases.push(...questionPhases)
-
   phases.push(LevelPhase.OUTRO, LevelPhase.FINISHED)
-
   return phases
 }
 
@@ -409,21 +401,14 @@ const generateObstacleSequence = ({
   const INITIAL_DELAY = 0.5 // Half second delay before first obstacle
 
   // Define lane groups for strategic coverage
-  const leftLanes = [0, 3, 6] // Left column
-  const centerLanes = [1, 4, 7] // Center column
-  const rightLanes = [2, 5, 8] // Right column
-  const topLanes = [0, 1, 2] // Top row
-  const middleLanes = [3, 4, 5] // Middle row
-  const bottomLanes = [6, 7, 8] // Bottom row
+  const middleLane = [4]
+  const leftColumn = [0, 3, 6]
+  const centerColumn = [1, 4, 7]
+  const rightColumn = [2, 5, 8]
+  const topRow = [0, 1, 2]
+  const middleRow = [3, 4, 5]
+  const bottomRow = [6, 7, 8]
   const outerLanes = [0, 1, 2, 3, 5, 6, 7, 8]
-
-  console.warn(`🎯 GENERATING NEW OBSTACLE SEQUENCE:`, {
-    phaseStartTime: phaseStartTime.toFixed(2),
-    phaseDuration,
-    obstacleCount,
-    interval: obstacleSpawnInterval,
-    initialDelay: INITIAL_DELAY,
-  })
 
   for (let i = 0; i < obstacleCount; i++) {
     const spawnTime = phaseStartTime + INITIAL_DELAY + i * obstacleSpawnInterval
@@ -434,31 +419,36 @@ const generateObstacleSequence = ({
     let occupiedLanes: number[]
     let safeLanes: number[]
 
-    const patternIndex = i % 5 // Updated to include 5 patterns
+    const patternIndex = i % 6
+
     switch (patternIndex) {
       case 0: // Force player left - block center and right
-        occupiedLanes = [...centerLanes, ...rightLanes]
-        safeLanes = leftLanes
+        occupiedLanes = [...centerColumn, ...rightColumn]
+        safeLanes = leftColumn
         break
       case 1: // Force player right - block left and center
-        occupiedLanes = [...leftLanes, ...centerLanes]
-        safeLanes = rightLanes
+        occupiedLanes = [...leftColumn, ...centerColumn]
+        safeLanes = rightColumn
         break
       case 2: // Force player down - block top and middle
-        occupiedLanes = [...topLanes, ...middleLanes]
-        safeLanes = bottomLanes
+        occupiedLanes = [...topRow, ...middleRow]
+        safeLanes = bottomRow
         break
       case 3: // Force player up - block middle and bottom
-        occupiedLanes = [...middleLanes, ...bottomLanes]
-        safeLanes = topLanes
+        occupiedLanes = [...middleRow, ...bottomRow]
+        safeLanes = topRow
         break
-      case 4: // Force player to center - block all outer lanes
+      case 4: // Force player to middle - block outer lanes
         occupiedLanes = outerLanes
-        safeLanes = [4] // Only center lane is safe
+        safeLanes = middleLane
+        break
+      case 5: // Force player to outer lanes - block center lane
+        occupiedLanes = middleLane
+        safeLanes = outerLanes
         break
       default:
-        occupiedLanes = [...centerLanes, ...rightLanes]
-        safeLanes = leftLanes
+        occupiedLanes = [...centerColumn, ...rightColumn]
+        safeLanes = leftColumn
     }
 
     // Use phase index to ensure unique IDs across different phases
