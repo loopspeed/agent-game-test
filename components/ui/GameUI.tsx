@@ -2,17 +2,16 @@
 
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
-import { Leva, useControls } from 'leva'
+import { folder, Leva, useControls } from 'leva'
 import { type FC, useEffect, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
+import GameOverUI from '@/components/ui/GameOver'
+import PlayingUI from '@/components/ui/PlayingUI'
 import useGameControls from '@/hooks/useGameControls'
 import { LEVA_CONTROLS_THEME } from '@/resources/leva'
 import { GameStage, useGameStore } from '@/stores/GameProvider'
 import { useConfigStore } from '@/stores/useConfigStore'
-
-import GameOverUI from './GameOver'
-import PlayingUI from './PlayingUI'
 
 const GameUI: FC = () => {
   const stage = useGameStore((s) => s.stage)
@@ -55,7 +54,7 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
   const phaseDurations = useConfigStore((s) => s.phaseDurations)
   const setPhaseDurations = useConfigStore((s) => s.setPhaseDurations)
 
-  const [, setControls] = useControls('Level', () => {
+  useControls(() => {
     return {
       slowMoDuration: {
         label: 'Question Answer Time (seconds)',
@@ -65,30 +64,50 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
         value: slowMoDuration,
         onChange: (value) => setSlowMoDuration(value),
       },
-      obstacleSpawnInterval: {
-        label: 'Obstacle Spawn Interval (seconds)',
-        min: 0.5,
-        step: 0.25,
-        max: 3,
-        value: obstacleSpawnInterval,
-        onChange: (value) => setObstacleSpawnInterval(value),
+
+      includeObstacles: {
+        label: 'Include obstacles',
+        value: true,
+        onChange: (value) => {
+          if (!value) {
+            setPhaseDurations({ ...phaseDurations, OBSTACLES: 0 })
+          } else {
+            setPhaseDurations({ ...phaseDurations, OBSTACLES: 6 })
+          }
+        },
       },
-      obstacleSpeed: {
-        label: 'Obstacle Speed',
-        min: 5,
-        step: 0.5,
-        max: 30,
-        value: obstacleSpeed,
-        onChange: (value) => setObstacleSpeed(value),
-      },
-      obstaclesDuration: {
-        label: 'Obstacles Duration',
-        min: 0,
-        step: 1,
-        max: 30,
-        value: phaseDurations.OBSTACLES,
-        onChange: (value) => setPhaseDurations({ ...phaseDurations, OBSTACLES: value }),
-      },
+
+      Obstacles: folder(
+        {
+          phaseDuration: {
+            label: 'Phase Duration',
+            min: 1,
+            step: 1,
+            max: 30,
+            value: phaseDurations.OBSTACLES,
+            onChange: (value) => {
+              setPhaseDurations({ ...phaseDurations, OBSTACLES: value })
+            },
+          },
+          spawnInterval: {
+            label: 'Spawn Interval (seconds)',
+            min: 0.5,
+            step: 0.25,
+            max: 3,
+            value: obstacleSpawnInterval,
+            onChange: (value) => setObstacleSpawnInterval(value),
+          },
+          speed: {
+            label: 'Speed',
+            min: 5,
+            step: 0.5,
+            max: 30,
+            value: obstacleSpeed,
+            onChange: (value) => setObstacleSpeed(value),
+          },
+        },
+        { render: (get) => get('includeObstacles') === true },
+      ),
     }
   })
 
@@ -128,4 +147,3 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
     </div>
   )
 }
-4
