@@ -20,6 +20,25 @@ export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
   answerSpeed: 10, // Base speed for answer gates
 }
 
+export const OBSTACLE_PRESETS: Record<string, Pick<LevelConfig, 'obstacleSpeed' | 'obstacleSpawnInterval'>> = {
+  Chilled: {
+    obstacleSpeed: 10,
+    obstacleSpawnInterval: 2.0,
+  },
+  Normal: {
+    obstacleSpeed: 14,
+    obstacleSpawnInterval: 1.0,
+  },
+  Fast: {
+    obstacleSpeed: 16,
+    obstacleSpawnInterval: 0.75,
+  },
+  Insane: {
+    obstacleSpeed: 24,
+    obstacleSpawnInterval: 0.5,
+  },
+}
+
 export type LevelConfig = {
   // Configurable parameters
   phaseDurations: Record<LevelPhase, number>
