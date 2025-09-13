@@ -160,7 +160,13 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
   return (
     <div ref={container} className="absolute inset-0 flex flex-col items-center justify-center gap-12">
       <div className="pointer-events-auto h-80 w-150">
-        <Leva theme={LEVA_CONTROLS_THEME} titleBar={{ drag: false, filter: false }} fill={true} collapsed={false} />
+        <Leva
+          theme={LEVA_CONTROLS_THEME}
+          hideCopyButton={true}
+          titleBar={{ drag: false, filter: false }}
+          fill={true}
+          collapsed={false}
+        />
       </div>
 
       <span className="text-3xl font-black text-white">TAP ENTER TO BEGIN</span>
