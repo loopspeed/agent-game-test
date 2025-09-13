@@ -2,7 +2,7 @@
 
 import { useGSAP } from '@gsap/react'
 import { useFrame } from '@react-three/fiber'
-import { type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
+import { BallCollider, type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
 import { gsap } from 'gsap'
 import { type FC, useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
@@ -11,6 +11,8 @@ import { RigidBodyType, type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 import { type InputState, useInputStore } from '@/stores/useInputStore'
+
+import FBOPoints from './player/fboParticles/points/Points'
 
 gsap.registerPlugin(useGSAP)
 
@@ -119,14 +121,11 @@ const Player: FC = () => {
     <RigidBody
       ref={bodyRef}
       type="kinematicPosition"
-      colliders="ball"
       gravityScale={0}
-      sensor={true}
-      canSleep={false}
-      onIntersectionEnter={onIntersectionEnter}
       userData={{
         type: 'player',
       }}>
+      <BallCollider args={[0.25]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
       <PlayerModel />
     </RigidBody>
   )
@@ -191,10 +190,16 @@ const PlayerModel: FC = () => {
     }
   }, [scoreEvents])
 
+  // TODO: MF: create a particle emitter system in which particles emit in a tail behind the player
+  // TODO: Adjust the particles when a good or bad hit occurs (e.g., change color, increase emission rate, etc.)
+
+  // TODO: Move the player tail when the player moves left/right/up/down
+
   return (
-    <mesh>
-      <sphereGeometry args={[0.24, 32, 32]} />
-      <meshStandardMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={1} />
-    </mesh>
+    <FBOPoints isMobile={false} />
+    // <mesh>
+    //   <sphereGeometry args={[0.24, 32, 32]} />
+    //   <meshStandardMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={0} />
+    // </mesh>
   )
 }
