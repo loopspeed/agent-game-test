@@ -1,13 +1,9 @@
 'use client'
 import { CameraShake, type CameraShakeProps, type ShakeController, Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-// import { extend, type ThreeToJSXElements } from '@react-three/fiber'
 import { type FC, useRef } from 'react'
 import React from 'react'
-import { color, Fn } from 'three/src/nodes/TSL.js'
 
-// import { type WebGPURendererParameters } from 'three/src/renderers/webgpu/WebGPURenderer.js'
-// import * as THREE from 'three/webgpu'
 import LevelScene from '@/components/game/level/LevelScene'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { CAMERA_FAR } from '@/stores/GameProvider'
@@ -26,20 +22,10 @@ const LevelCanvas: FC = () => {
     <Canvas
       className="!fixed inset-0 !h-lvh"
       performance={{ min: 0.2, debounce: 300 }}
-      scene={{ backgroundNode: backgroundNode }}
       gl={{
         antialias: false,
-        // powerPreference: 'low-power',
         alpha: false,
       }}
-      // gl={async (props) => {
-      //   const renderer = new THREE.WebGPURenderer({
-      //     ...(props as WebGPURendererParameters),
-      //     alpha: false,
-      //   })
-      //   await renderer.init()
-      //   return renderer
-      // }}
       camera={{ position: [0, 0.2, 4], fov: 75, far: CAMERA_FAR }}>
       <CameraMovement />
       <Stats />
@@ -49,10 +35,6 @@ const LevelCanvas: FC = () => {
 }
 
 export default LevelCanvas
-
-const backgroundNode = Fn(() => {
-  return color('#000000')
-})()
 
 const SHAKE_CONFIG: CameraShakeProps = {
   maxYaw: 0.08,

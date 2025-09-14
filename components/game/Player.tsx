@@ -12,7 +12,7 @@ import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 import { type InputState, useInputStore } from '@/stores/useInputStore'
 
-import FBOPoints from './player/fboParticles/points/Points'
+import PlayerParticles from './player/particles/PlayerParticles'
 
 gsap.registerPlugin(useGSAP)
 
@@ -29,6 +29,11 @@ const Player: FC = () => {
   // current interpolated position
   const currentX = useRef(LANES_X[laneXIndex.current])
   const currentY = useRef(LANES_Y[laneYIndex.current])
+
+  // Track player velocity for particle tail effects
+  const playerVelocity = useRef(new THREE.Vector2(0, 0))
+  const prevPosition = useRef(new THREE.Vector2(currentX.current, currentY.current))
+  const currentPosition = useRef(new THREE.Vector2(currentX.current, currentY.current))
 
   const bodyRef = useRef<RapierRigidBody>(null)
 
@@ -104,6 +109,11 @@ const Player: FC = () => {
     currentX.current = THREE.MathUtils.damp(currentX.current, targetX, 5, delta)
     currentY.current = THREE.MathUtils.damp(currentY.current, targetY, 5, delta)
 
+    // Calculate player velocity for particle tail effects
+    currentPosition.current.set(currentX.current, currentY.current)
+    playerVelocity.current.copy(currentPosition.current).sub(prevPosition.current).divideScalar(delta)
+    prevPosition.current.copy(currentPosition.current)
+
     // update the kinematic body’s translation
     bodyRef.current.setNextKinematicTranslation({
       x: currentX.current,
@@ -125,81 +135,12 @@ const Player: FC = () => {
       userData={{
         type: 'player',
       }}>
-      <BallCollider args={[0.25]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
-      <PlayerModel />
+      <BallCollider args={[0.3]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
+      <PlayerParticles isMobile={false} playerVelocity={playerVelocity.current} />
     </RigidBody>
   )
 }
 
 export default Player
 
-const PlayerModel: FC = () => {
-  const scoreEvents = useGameStore((s) => s.scoreEvents)
-  const materialRef = useRef<THREE.MeshBasicMaterial>(null)
-
-  useEffect(() => {
-    // Handle the most recent score event
-    if (!materialRef.current) return
-    if (scoreEvents.length === 0) return
-    const latestEvent = scoreEvents[scoreEvents.length - 1]
-
-    const defaultColor = new THREE.Color('#ffffff')
-    const goodColor = new THREE.Color('#4ade80')
-    const badColor = new THREE.Color('#f00')
-
-    const handleBadHit = () => {
-      gsap.to(materialRef.current!.color, {
-        r: badColor.r,
-        g: badColor.g,
-        b: badColor.b,
-        duration: 0.2,
-        onComplete: () => {
-          gsap.to(materialRef.current!.color, {
-            r: defaultColor.r,
-            g: defaultColor.g,
-            b: defaultColor.b,
-            duration: 0.2,
-            delay: 0.3,
-          })
-        },
-      })
-    }
-
-    const handleGoodHit = () => {
-      gsap.to(materialRef.current!.color, {
-        r: goodColor.r,
-        g: goodColor.g,
-        b: goodColor.b,
-        duration: 0.2,
-        onComplete: () => {
-          gsap.to(materialRef.current!.color, {
-            r: defaultColor.r,
-            g: defaultColor.g,
-            b: defaultColor.b,
-            duration: 0.2,
-            delay: 0.3,
-          })
-        },
-      })
-    }
-
-    if (latestEvent.type === 'hit') {
-      handleBadHit()
-    } else if (latestEvent.type === 'avoided') {
-      handleGoodHit()
-    }
-  }, [scoreEvents])
-
-  // TODO: MF: create a particle emitter system in which particles emit in a tail behind the player
-  // TODO: Adjust the particles when a good or bad hit occurs (e.g., change color, increase emission rate, etc.)
-
-  // TODO: Move the player tail when the player moves left/right/up/down
-
-  return (
-    <FBOPoints isMobile={false} />
-    // <mesh>
-    //   <sphereGeometry args={[0.24, 32, 32]} />
-    //   <meshStandardMaterial ref={materialRef} color={'#fff'} transparent={true} opacity={0} />
-    // </mesh>
-  )
-}
+// TODO: Move the player tail when the player moves left/right/up/down

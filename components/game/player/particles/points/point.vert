@@ -3,15 +3,17 @@ attribute float seed;
 attribute vec3 color;
 
 uniform sampler2D uPositions;
+uniform sampler2D uVelocities;
 uniform float uTime;
 uniform float uDpr;
 
 varying float vSeed;
 varying vec3 vColor;
+varying float vLife;
 
 const float MIN_PT_SIZE = 12.0;
-const float LG_PT_SIZE = 24.0;
-const float XL_PT_SIZE = 48.0;
+const float LG_PT_SIZE = 16.0;
+const float XL_PT_SIZE = 24.0;
 
 void main() {
   // DPR adjusted point sizes (ensuring uniformity across devices)
@@ -23,6 +25,10 @@ void main() {
   vec4 simulationData = texture2D(uPositions, uv);
   vec3 pos = simulationData.xyz;
   
+  // Sample the velocity data to get the life value (stored in .w)
+  vec4 velocityData = texture2D(uVelocities, uv);
+  float life = velocityData.w;
+  
   // Transform the position into world space.
   vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
   // Transform to view and clip space.
@@ -30,7 +36,7 @@ void main() {
   vec4 projectedPosition = projectionMatrix * viewPosition;
   
   // Dynamic point size based on seed and distance from camera
-  float stepSeed = step(0.95, seed); // Some of the points will be XL size
+  float stepSeed = step(0.9, 1.0 - seed); // Some of the points will be XL size
   float size = mix(mix(minPtSize, lgPtSize, seed), xlPtSize, stepSeed); // Random size based on seed
 
   float attenuationFactor = 1.0 / -viewPosition.z; // Size attenuation (get smaller as distance increases)
@@ -38,6 +44,7 @@ void main() {
 
   vSeed = seed;
   vColor = color;
+  vLife = life;
 
   gl_PointSize = pointSize;
   gl_Position = projectedPosition;
