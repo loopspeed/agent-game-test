@@ -12,7 +12,7 @@ import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 import { type InputState, useInputStore } from '@/stores/useInputStore'
 
-import PlayerParticles from './player/particles/PlayerParticles'
+import PlayerParticles, { ORB_RADIUS } from './player/particles/PlayerParticles'
 
 gsap.registerPlugin(useGSAP)
 
@@ -131,11 +131,10 @@ const Player: FC = () => {
     <RigidBody
       ref={bodyRef}
       type="kinematicPosition"
-      gravityScale={0}
       userData={{
         type: 'player',
       }}>
-      <BallCollider args={[0.3]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
+      <BallCollider args={[ORB_RADIUS]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
       <PlayerParticles isMobile={false} playerVelocity={playerVelocity.current} />
     </RigidBody>
   )

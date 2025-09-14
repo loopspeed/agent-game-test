@@ -10,7 +10,7 @@ uniform float uTimeMultiplier;
 
 varying vec2 vUv;
 
-const vec3 flyingForce = vec3(0.0, 0.0, 1.4); // Fast movement toward camera
+const vec3 flyingForce = vec3(0.0, 0.0, 1.6); // Fast movement toward camera
 
 // Function to generate a random value from UV coordinates and time
 float random(vec2 uv, float seed) {
@@ -28,10 +28,9 @@ void main() {
   float life = tmpVel.w;
   
   // Sample the seed for this particle
-  vec4 seedData = texture2D(uSeedTexture, uv);
-  float seed = seedData.r;
+  float seed = texture2D(uSeedTexture, uv).r;
 
-  float speedMultiplier = smoothstep(1.0, 2.0, seed * 2.0); // Range from 0.0 (stationary) to 1.0 (full speed)
+  float speedMultiplier = smoothstep(0.3, 1.0, seed); // 30% of particles are not moving, rest scale up to full speed
 
   // Use seed to vary life decay rate - some particles live longer than others
   // Time multiplier affects decay rate - slower when in slow motion
@@ -51,14 +50,12 @@ void main() {
     
     // Note: Position will be reset in the position shader when it detects life was reset
   } else {    
-    // When damaged, add explosive force and increase overall movement
-    float damageForceMultiplier = 1.0 + uDamageAmount * 3.0; // 1x to 4x force when damaged
-
     // Strong movement toward camera (positive Z) - scaled by speed multiplier and time
     vec3 scaledFlyingForce = flyingForce * speedMultiplier * uTimeMultiplier;
 
-    // Damage creates explosive radial force
-    vec3 damageExplosion = normalize(pos) * uDamageAmount * 8.0 * speedMultiplier;
+    // When damaged, add explosive force and increase overall movement
+    float damageForceMultiplier = uDamageAmount * 2.5 * speedMultiplier;
+    vec3 damageExplosion = normalize(pos) * damageForceMultiplier;
     
     // Subtle noise influence for natural movement - also scaled and more chaotic when damaged
     // Use time multiplier for consistent slow motion effect
@@ -67,23 +64,26 @@ void main() {
       noise(pos * 1.5 + timeScaled * 0.2),
       noise(pos * 1.5 + timeScaled * 0.2 + 100.0),
       noise(pos * 0.8 + timeScaled * 0.2 + 200.0)
-    ) * 0.5 * (1.0 + uDamageAmount * 2.0); // More chaotic noise when damaged
-    
+    );
+
+    float noiseMultiplier = 0.5 * (1.0 + uDamageAmount * 2.0);
+    noiseForce *= noiseMultiplier;
+
     // Slight radial expansion from sphere center - also scaled
-    vec3 radialForce = normalize(pos) * 1.5 * speedMultiplier;
+    vec3 radialForce = normalize(pos) * 1.4 * speedMultiplier;
     
     // Player movement influence - creates "wave" effect in the particle tail
     // Older particles (lower life) get more influence from player movement - creates tail wave
-    float playerInfluence = (1.0 - life) * 6.0;
+    float playerInfluence = (1.0 - life) * 4.0;
     vec3 playerForce = vec3(-uPlayerVelocity.x, -uPlayerVelocity.y, 0.0) * playerInfluence * speedMultiplier;
     
     // Combine forces - all scaled by the particle's speed multiplier and damage effects
-    vec3 force = scaledFlyingForce + noiseForce + radialForce + damageExplosion + playerForce;
+    vec3 force = scaledFlyingForce + radialForce + noiseForce + damageExplosion + playerForce;
     
     // Update velocity with damping that varies based on speed
     // Slower particles get more damping, faster particles get less
     // When damaged, reduce damping for more energetic movement
-    float dampingFactor = mix(0.8, 0.97, speedMultiplier);
+    float dampingFactor = mix(0.5, 0.98, seed);
     vel += force * delta;
     vel *= dampingFactor;
   }

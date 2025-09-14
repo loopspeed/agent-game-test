@@ -1,6 +1,6 @@
 // #pragma glslify: rotation3dX = require(glsl-rotate/rotation-3d-x)
-// #pragma glslify: rotation3dY = require(glsl-rotate/rotation-3d-y)
-// #pragma glslify: rotation3dZ = require(glsl-rotate/rotation-3d-z)
+#pragma glslify: rotation3dY = require(glsl-rotate/rotation-3d-y)
+#pragma glslify: rotation3dZ = require(glsl-rotate/rotation-3d-z)
 
 #define delta (1.0 / 60.0)
 
@@ -11,15 +11,15 @@ uniform float uTimeMultiplier;
 varying vec2 vUv;
 
 // Function to generate a random value from UV coordinates and time
-float random(vec2 uv, float seed) {
+float random(in vec2 uv, in float seed) {
   return fract(sin(dot(uv.xy + seed, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 // Function to generate sphere position
-vec3 randomSpherePosition(vec2 uv, float seed) {
+vec3 randomSpherePosition(in vec2 uv, in float seed) {
   float u = random(uv, seed) * 2.0 - 1.0; // random value in [-1, 1]
   float phi = random(uv, seed + 1.0) * 2.0 * 3.14159; // random angle in [0, 2π]
-  float radius = 0.3;
+  float radius = 0.25; // const ORB_RADIUS = 0.25 as const
   
   // Convert spherical coordinates to Cartesian coordinates
   float sqrtOneMinusU2 = sqrt(1.0 - u * u);
@@ -48,6 +48,9 @@ void main() {
   } else {
     // Normal position update with velocity, scaled by time multiplier for slow motion
     pos += vel * delta * uTimeMultiplier;
+    // Apply rotation around Z axis for swirling effect, scaled by time multiplier
+    // Z rotation
+    pos *= rotation3dZ(0.02 * uTimeMultiplier);
   }
 
   gl_FragColor = vec4(pos, 1.0);

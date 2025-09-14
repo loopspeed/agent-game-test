@@ -53,12 +53,14 @@ type Props = {
   playerVelocity: Vector2 // player movement velocity for particle tail effects
 }
 
+export const ORB_RADIUS = 0.25 as const
+
 const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
   const dpr = useThree((s) => s.viewport.dpr)
   const performance = useThree((s) => s.performance).current
   const renderer = useThree((s) => s.gl)
 
-  const particlesCount = useMemo(() => Math.pow(isMobile ? 32 : 64 * performance, 2), [isMobile, performance])
+  const particlesCount = useMemo(() => Math.pow(isMobile ? 40 : 64 * performance, 2), [isMobile, performance])
   const points = useRef<Points>(null)
   const pointsShaderMaterial = useRef<typeof FBOPointsShaderMaterial & PointsShaderUniforms>(null)
   const textureSize = useMemo(() => Math.sqrt(particlesCount), [particlesCount])
@@ -83,13 +85,13 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
     if (latestEvent.type === 'hit') {
       gsap.to(damageAmount.current, {
         value: 1,
-        duration: 0.4,
-        ease: 'power2.out',
+        duration: 0.24,
+        ease: 'power1.out',
         onComplete: () => {
           gsap.to(damageAmount.current, {
             value: 0,
-            duration: 0.24,
-            delay: 0.5,
+            duration: 0.1,
+            delay: 0.3,
           })
         },
       })
@@ -288,7 +290,7 @@ const fillTextures = ({
     // Generate random position on sphere (radius 0.3, similar to player size)
     const u = Math.random() * 2 - 1 // random value in [-1, 1]
     const phi = Math.random() * 2 * Math.PI // random angle in [0, 2π]
-    const radius = 0.3
+    const radius = ORB_RADIUS
 
     // Convert spherical coordinates to Cartesian coordinates
     const sqrtOneMinusU2 = Math.sqrt(1 - u * u)

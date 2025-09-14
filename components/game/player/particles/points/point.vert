@@ -12,8 +12,8 @@ varying vec3 vColor;
 varying float vLife;
 
 const float MIN_PT_SIZE = 12.0;
-const float LG_PT_SIZE = 16.0;
-const float XL_PT_SIZE = 24.0;
+const float LG_PT_SIZE = 24.0;
+const float XL_PT_SIZE = 40.0;
 
 void main() {
   // DPR adjusted point sizes (ensuring uniformity across devices)
@@ -36,8 +36,10 @@ void main() {
   vec4 projectedPosition = projectionMatrix * viewPosition;
   
   // Dynamic point size based on seed and distance from camera
-  float stepSeed = step(0.9, 1.0 - seed); // Some of the points will be XL size
-  float size = mix(mix(minPtSize, lgPtSize, seed), xlPtSize, stepSeed); // Random size based on seed
+  // Use modulated seed to distribute XL particles throughout the range
+  float modulatedSeed = fract(seed * 10.0); // Multiply and modulate to spread distribution
+  float stepSeed = step(0.9, modulatedSeed); // Some of the points will be XL size
+  float size = mix(mix(minPtSize, lgPtSize, modulatedSeed), xlPtSize, stepSeed); // Random size based on seed
 
   float attenuationFactor = 1.0 / -viewPosition.z; // Size attenuation (get smaller as distance increases)
   float pointSize = size * attenuationFactor;
