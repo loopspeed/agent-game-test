@@ -13,6 +13,7 @@ import AnswerGates from './AnswerGates'
 import Obstacles from './Obstacles'
 import Onboarding from './Onboarding'
 import Outro from './Outro'
+import Tunnel from './tunnel/Tunnel'
 
 const LevelScene: FC = () => {
   const update = useLevelStore((s) => s.update)
@@ -31,6 +32,7 @@ const LevelScene: FC = () => {
         {/* <Environment files={['/environment/rosendal_park_sunset_puresky_2k.hdr']} background={true} /> */}
         <ambientLight intensity={2} />
         <fog attach="fog" args={['#000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} />
+        <Tunnel />
         {/* Physics world with zero gravity (kinematic bodies only) */}
         <Physics gravity={[0, 0, 0]} debug={false}>
           <Obstacles />

@@ -50,7 +50,7 @@ void main() {
     pos += vel * delta * uTimeMultiplier;
     // Apply rotation around Z axis for swirling effect, scaled by time multiplier
     // Z rotation
-    pos *= rotation3dZ(0.02 * uTimeMultiplier);
+    pos *= rotation3dZ(0.016 * uTimeMultiplier);
   }
 
   gl_FragColor = vec4(pos, 1.0);

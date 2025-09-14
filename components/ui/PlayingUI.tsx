@@ -133,7 +133,7 @@ const Question: FC = () => {
               <div className="relative h-2 w-full overflow-hidden bg-blue-500/10">
                 <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
               </div>
-              <p className="max-w-4xl px-4 py-8 text-center text-5xl leading-relaxed font-semibold">
+              <p className="max-w-4xl px-4 py-8 text-center text-5xl leading-snug font-semibold">
                 <span className="opacity-40">{questionIndex + 1}.</span> {currentQuestion.question}
               </p>
             </section>

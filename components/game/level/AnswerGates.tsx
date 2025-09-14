@@ -77,7 +77,7 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ positio
       {/* Visual elements */}
       {!!answer && (
         <group>
-          <mesh>
+          {/* <mesh>
             <boxGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M, 0.1]} />
             <meshStandardMaterial
               ref={material}
@@ -86,15 +86,16 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ positio
               transparent={true}
               opacity={0.75}
             />
-          </mesh>
+          </mesh> */}
           <Text
-            position={[0, 0, 0.12]}
-            fontSize={0.2}
-            font={FONTS.Philosopher}
-            color="#000"
+            position={[0, 0, 0.1]}
+            fontSize={0.25}
+            font={FONTS.Roboto}
+            fontStyle="normal"
+            color="#fff"
             anchorX="center"
             anchorY="middle"
-            maxWidth={1.8}
+            maxWidth={GRID_SQUARE_SIZE_M}
             textAlign="center">
             {answer.label}
           </Text>

@@ -54,7 +54,7 @@ void main() {
     vec3 scaledFlyingForce = flyingForce * speedMultiplier * uTimeMultiplier;
 
     // When damaged, add explosive force and increase overall movement
-    float damageForceMultiplier = uDamageAmount * 2.5 * speedMultiplier;
+    float damageForceMultiplier = uDamageAmount * 3.0 * speedMultiplier;
     vec3 damageExplosion = normalize(pos) * damageForceMultiplier;
     
     // Subtle noise influence for natural movement - also scaled and more chaotic when damaged
@@ -74,7 +74,7 @@ void main() {
     
     // Player movement influence - creates "wave" effect in the particle tail
     // Older particles (lower life) get more influence from player movement - creates tail wave
-    float playerInfluence = (1.0 - life) * 4.0;
+    float playerInfluence = (1.0 - life) * 6.0;
     vec3 playerForce = vec3(-uPlayerVelocity.x, -uPlayerVelocity.y, 0.0) * playerInfluence * speedMultiplier;
     
     // Combine forces - all scaled by the particle's speed multiplier and damage effects
