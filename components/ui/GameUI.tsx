@@ -77,7 +77,7 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
       },
 
       includeObstacles: {
-        label: 'Include obstacles',
+        label: 'Include Obstacles',
         value: true,
         onChange: (value) => {
           if (!value) {
@@ -89,7 +89,7 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
       },
 
       phaseDuration: {
-        label: 'Phase Duration',
+        label: 'Obstacles Duration',
         min: 1,
         step: 1,
         max: 30,
@@ -101,7 +101,7 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
       },
 
       preset: {
-        label: 'Preset',
+        label: 'Difficulty Preset',
         value: 'Normal',
         options: Object.keys(OBSTACLE_PRESETS),
         transient: false,

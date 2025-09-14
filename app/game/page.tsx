@@ -27,7 +27,7 @@ const GameContent: FC = () => {
     <main className="h-lvh w-full overflow-hidden">
       <LevelCanvas />
       <GameUI />
-      <DebugDisplay />
+      {/* <DebugDisplay /> */}
     </main>
   )
 }
