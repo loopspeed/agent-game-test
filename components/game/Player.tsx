@@ -142,5 +142,3 @@ const Player: FC = () => {
 }
 
 export default Player
-
-// TODO: Move the player tail when the player moves left/right/up/down
