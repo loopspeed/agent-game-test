@@ -1,6 +1,7 @@
 import { shaderMaterial } from '@react-three/drei'
 import { extend, useFrame } from '@react-three/fiber'
 import React, { type FC, useEffect, useRef } from 'react'
+import { Color } from 'three'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { CAMERA_FAR, GRID_SQUARE_SIZE_M } from '@/stores/GameProvider'
@@ -11,21 +12,21 @@ import tunnelVertex from './tunnel.vert'
 const MAX_RAYS = 12 // NOTE IF CHANGE: update Fragment shader uniforms
 const RAY_SPAWN_INTERVAL = 1.0 // seconds between spawns
 
-// Array of different ray colors for variety
+// Array of different ray colors for variety - blue, cyan, green range
 const RAY_COLORS = [
-  [0.2, 0.8, 1.0], // Cyan
-  [1.0, 0.3, 0.8], // Pink/Magenta
-  [0.3, 1.0, 0.4], // Green
-  [1.0, 0.6, 0.2], // Orange
-  [0.6, 0.3, 1.0], // Purple
-  [1.0, 1.0, 0.3], // Yellow
-  [0.3, 0.8, 1.0], // Light Blue
-  [1.0, 0.4, 0.6], // Red-Pink
-  [0.5, 1.0, 0.6], // Light Green
-  [1.0, 0.8, 0.4], // Warm Orange
-  [0.4, 0.6, 1.0], // Blue
-  [0.8, 0.5, 1.0], // Lavender
-]
+  new Color(0x00ffff), // Cyan
+  new Color(0x0080ff), // Bright Blue
+  new Color(0x00ff80), // Spring Green
+  new Color(0x40e0d0), // Turquoise
+  new Color(0x0066cc), // Deep Blue
+  new Color(0x00cc66), // Emerald Green
+  new Color(0x80e0ff), // Light Cyan
+  new Color(0x4040ff), // Electric Blue
+  new Color(0x66ff66), // Bright Green
+  new Color(0x20b2aa), // Light Sea Green
+  new Color(0x0099ff), // Azure
+  new Color(0x00ffaa), // Mint Green
+].map((color) => [color.r, color.g, color.b]) // Convert to RGB arrays
 
 type RayData = {
   startX: number
