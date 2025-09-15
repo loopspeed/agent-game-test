@@ -9,7 +9,7 @@ const DEFAULT_PHASE_DURATIONS: Record<LevelPhase, number> = {
   REST: 1, // READONLY Short rest before obstacles
   OBSTACLES: 6, // EDITABLE Duration for obstacles phase (0 = No obstacles)
   QUESTION: 10000, // READONLY Effectively infinite until question is answered and the gate is killed - then phase is advanced manually
-  OUTRO: 5, // READONLY For showing "level complete" and other end of level stuff
+  OUTRO: 10000, // READONLY For showing "level complete" and other end of level stuff
   FINISHED: 10000, // READONLY For showing level complete screen - does not advance from here
 } as const
 

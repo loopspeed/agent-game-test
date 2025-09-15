@@ -55,6 +55,7 @@ type LevelState = {
   phaseTime: number
   onOnboardingPhaseCompleted: () => void // Manually trigger transition from onboarding to next phase
   onQuestionPhaseCompleted: () => void // Manually trigger transition to next phase rather than time based because questions could need dynamic time to answer.
+  onOutroPhaseCompleted: () => void // Manually trigger transition from outro to finished phase
 
   // Player
   playerPosition: Vector3Tuple
@@ -187,6 +188,21 @@ const createLevelStore = ({
         phaseTime: 0,
       })
     },
+    onOutroPhaseCompleted: () => {
+      const state = get()
+      const newPhaseIndex = state.phaseIndex + 1
+      const newPhase = state.phases[newPhaseIndex]
+      console.warn('[LevelProvider] Outro phase completed, moving to next phase:', { newPhase })
+      set({
+        phase: newPhase,
+        phaseIndex: newPhaseIndex,
+        phaseTime: 0,
+      })
+      if (newPhase === LevelPhase.FINISHED) {
+        console.warn('[LevelProvider] Reached FINISHED phase, triggering game over')
+        onCompleted()
+      }
+    },
     update: (gameTime: number) => {
       const state = get()
       let phaseIndex = state.phaseIndex
@@ -222,11 +238,6 @@ const createLevelStore = ({
           set({
             obstacles: obstacleSequence,
           })
-        }
-
-        if (phase === LevelPhase.FINISHED) {
-          console.warn('[LevelProvider] Reached FINISHED phase, triggering game over')
-          onCompleted()
         }
 
         set({

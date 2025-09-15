@@ -37,28 +37,28 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
       questionId: questionId ?? '',
     }
 
-    const onIntersectionEnter = (e: IntersectionEnterPayload) => {
-      if (!e.other?.rigidBody?.userData) throw new Error('Invalid userData')
-      const { type } = e.other.rigidBody.userData as RigidBodyUserData
+    // const onIntersectionEnter = (e: IntersectionEnterPayload) => {
+    //   if (!e.other?.rigidBody?.userData) throw new Error('Invalid userData')
+    //   const { type } = e.other.rigidBody.userData as RigidBodyUserData
 
-      if (type === RigidBodyType.PLAYER) {
-        // // Enhanced visual feedback for rhythm-based gates
-        // gsap.to(material.current, {
-        //   opacity: 1.0,
-        //   duration: 0.16,
-        //   onComplete: () => {
-        //     gsap.to(material.current, {
-        //       opacity: 0.4,
-        //       duration: 0.12,
-        //     })
-        //   },
-        // })
-        console.warn('🎵 ANSWER GATE HIT:', {
-          answerId: answer?.id,
-          isCorrect: answer?.isCorrect,
-        })
-      }
-    }
+    //   if (type === RigidBodyType.PLAYER) {
+    //     // // Enhanced visual feedback for rhythm-based gates
+    //     // gsap.to(material.current, {
+    //     //   opacity: 1.0,
+    //     //   duration: 0.16,
+    //     //   onComplete: () => {
+    //     //     gsap.to(material.current, {
+    //     //       opacity: 0.4,
+    //     //       duration: 0.12,
+    //     //     })
+    //     //   },
+    //     // })
+    //     console.warn('🎵 ANSWER GATE HIT:', {
+    //       answerId: answer?.id,
+    //       isCorrect: answer?.isCorrect,
+    //     })
+    //   }
+    // }
 
     return (
       <RigidBody
@@ -72,7 +72,7 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
         <CuboidCollider
           args={[GRID_SQUARE_SIZE_M / 2, GRID_SQUARE_SIZE_M / 2, 0.05]}
           sensor={true}
-          onIntersectionEnter={onIntersectionEnter}
+          // onIntersectionEnter={onIntersectionEnter}
         />
 
         {/* Visual elements */}

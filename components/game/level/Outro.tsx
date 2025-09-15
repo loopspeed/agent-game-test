@@ -4,30 +4,22 @@ import { useFrame } from '@react-three/fiber'
 import { RapierRigidBody, RigidBody } from '@react-three/rapier'
 import React, { type FC, useRef } from 'react'
 
-import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { LevelPhase } from '@/model/game'
 import { FONTS } from '@/resources/fonts'
-import { LANES_Y, SPAWN_OBSTACLE_Z } from '@/stores/GameProvider'
+import { KILL_OBSTACLE_Z, LANES_Y, SPAWN_OBSTACLE_Z } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 
 const LEVEL_COMPLETE_SPEED = 12
 
 const Outro: FC = () => {
-  // const goSlowMo = useLevelStore((s) => s.goSlowMo)
-  // const isSlowMo = useLevelStore((s) => s.isSlowMo)
   const isOutroPhase = useLevelStore((s) => s.phase === LevelPhase.OUTRO)
+  const onOutroPhaseCompleted = useLevelStore((s) => s.onOutroPhaseCompleted)
 
   const body = useRef<RapierRigidBody>(null)
-  const isLive = useRef(false) // True when the outro sequence has started
-
-  // const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
-  //   if (!isOutroPhase) return
-  //   if (!body.current) return
-  //   const speed = LEVEL_COMPLETE_SPEED * timeMultiplier
-  //   body.current.setLinvel({ x: 0, y: 0, z: speed }, true)
-  // })
+  const isLive = useRef(false)
 
   function spawnOutroBanner() {
+    isLive.current = true
     const speed = LEVEL_COMPLETE_SPEED
     body.current!.setTranslation(
       {
@@ -40,9 +32,10 @@ const Outro: FC = () => {
     body.current!.setLinvel({ x: 0, y: 0, z: speed }, true)
   }
 
-  function resetOutro() {
-    body.current!.setLinvel({ x: 0, y: 0, z: 0 }, true)
+  function endOutro() {
+    onOutroPhaseCompleted()
     isLive.current = false
+    body.current!.setLinvel({ x: 0, y: 0, z: 0 }, true)
   }
 
   useFrame(() => {
@@ -50,14 +43,13 @@ const Outro: FC = () => {
     if (!isOutroPhase) return
 
     if (!isLive.current) {
-      isLive.current = true
       spawnOutroBanner()
       return
     }
 
     const translationZ = body.current.translation().z
-    const shouldReset = Math.round(translationZ) === 5
-    if (shouldReset) resetOutro()
+    const hasEnded = Math.round(translationZ) === KILL_OBSTACLE_Z
+    if (hasEnded) endOutro()
   })
 
   return (
@@ -65,7 +57,7 @@ const Outro: FC = () => {
       <Text
         position={[0, 0, 0]}
         fontSize={1.4}
-        font={FONTS.Philosopher}
+        font={FONTS.Roboto}
         color="white"
         anchorX="center"
         anchorY="middle"
