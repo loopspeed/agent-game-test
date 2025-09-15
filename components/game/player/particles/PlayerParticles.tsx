@@ -8,7 +8,7 @@ import { AdditiveBlending, Color, DataTexture, Points, Texture, Vector2 } from '
 import { GPUComputationRenderer, type Variable } from 'three/addons/misc/GPUComputationRenderer.js'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { useGameStore } from '@/stores/GameProvider'
+import { GameStage, useGameStore } from '@/stores/GameProvider'
 
 import particleFragment from './points/point.frag'
 import particleVertex from './points/point.vert'
@@ -24,6 +24,7 @@ type PointsShaderUniforms = {
 }
 
 type VelocityShaderUniforms = {
+  uIsIdle: { value: boolean }
   uTime: { value: number }
   uDamageAmount: { value: number }
   uSeedTexture: { value: DataTexture | null }
@@ -32,6 +33,7 @@ type VelocityShaderUniforms = {
 }
 
 type PositionShaderUniforms = {
+  uIsIdle: { value: boolean }
   uTime: { value: number }
   uDamageAmount: { value: number }
   uTimeMultiplier: { value: number }
@@ -75,7 +77,8 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
   // Animation values
   const damageAmount = useRef({ value: 0 })
   const scoreEvents = useGameStore((s) => s.scoreEvents)
-  const { timeMultiplier } = useTimeSubscription()
+  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
+  const { gameTime, timeMultiplier } = useTimeSubscription()
 
   useGSAP(() => {
     // Respond to score events for damage "explosion" effect
@@ -179,6 +182,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
       // Set uniforms
       velocityUniforms.current = velocityVariable.current.material.uniforms as VelocityShaderUniforms
       if (velocityUniforms.current) {
+        velocityUniforms.current.uIsIdle = { value: true }
         velocityUniforms.current.uTime = { value: 0.0 }
         velocityUniforms.current.uDamageAmount = { value: 0.0 }
         velocityUniforms.current.uSeedTexture = { value: dtSeed }
@@ -189,6 +193,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
       const positionUniformsTemp = positionVariable.current.material.uniforms as PositionShaderUniforms
       positionUniforms.current = positionUniformsTemp
       if (positionUniformsTemp) {
+        positionUniformsTemp.uIsIdle = { value: true }
         positionUniformsTemp.uTime = { value: 0.0 }
         positionUniformsTemp.uDamageAmount = { value: 0.0 }
         positionUniformsTemp.uTimeMultiplier = { value: 1.0 }
@@ -213,14 +218,16 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
     )
       return
 
-    const time = clock.elapsedTime
+    const time = gameTime.current
     // Update uniforms
+    velocityUniforms.current.uIsIdle.value = !isPlaying
     velocityUniforms.current.uTime.value = time
     velocityUniforms.current.uDamageAmount.value = damageAmount.current.value
     velocityUniforms.current.uPlayerVelocity.value.copy(playerVelocity)
     velocityUniforms.current.uTimeMultiplier.value = timeMultiplier.current
 
     // Update position uniforms
+    positionUniforms.current.uIsIdle.value = !isPlaying
     positionUniforms.current.uTime.value = time
     positionUniforms.current.uDamageAmount.value = damageAmount.current.value
     positionUniforms.current.uTimeMultiplier.value = timeMultiplier.current

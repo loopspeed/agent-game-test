@@ -4,6 +4,7 @@
 
 #define delta (1.0 / 60.0)
 
+uniform bool uIsIdle;
 uniform float uTime;
 uniform float uDamageAmount;
 uniform float uTimeMultiplier;
@@ -39,6 +40,12 @@ void main() {
   vec4 tmpVel = texture2D(textureVelocity, uv);
   vec3 vel = tmpVel.xyz;
   float life = tmpVel.w;
+
+  if (uIsIdle) {
+    // Return current position without changes
+    gl_FragColor = vec4(pos, 1.0);
+    return;
+  }
   
   // Check if this particle was just respawned (life = 1.0 indicates fresh spawn)
   if (life >= 0.999) {

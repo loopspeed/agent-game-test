@@ -1,5 +1,6 @@
 #pragma glslify: noise = require('glsl-noise/simplex/3d')
 
+uniform bool uIsIdle;
 uniform float uTime;
 uniform float uDamageAmount;
 uniform sampler2D uSeedTexture;
@@ -31,6 +32,13 @@ void main() {
   float seed = texture2D(uSeedTexture, uv).r;
 
   float speedMultiplier = smoothstep(0.3, 1.0, seed); // 30% of particles are not moving, rest scale up to full speed
+
+  if (uIsIdle) {
+    // Return current velocity but apply slight damping to eventually stop
+    vel *= 0.96;
+    gl_FragColor = vec4(vel, life);
+    return;
+  }
 
   // Use seed to vary life decay rate - some particles live longer than others
   // Time multiplier affects decay rate - slower when in slow motion

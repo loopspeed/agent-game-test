@@ -26,8 +26,7 @@ void main() {
   vec3 pos = simulationData.xyz;
   
   // Sample the velocity data to get the life value (stored in .w)
-  vec4 velocityData = texture2D(uVelocities, uv);
-  float life = velocityData.w;
+  float life = texture2D(uVelocities, uv).w;
   
   // Transform the position into world space.
   vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
