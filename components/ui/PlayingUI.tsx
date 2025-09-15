@@ -122,7 +122,7 @@ const Question: FC = () => {
           if (switchKey === 'no-question') return <div ref={container} className="hidden" />
           return (
             <div ref={container} className="absolute top-12 right-0 left-0 flex w-full flex-col items-center opacity-0">
-              <p className="max-w-4xl px-4 py-8 text-center text-5xl leading-snug font-semibold">
+              <p className="max-w-3xl px-4 py-8 text-center text-4xl leading-snug font-semibold">
                 {currentQuestion.question}
               </p>
             </div>
@@ -144,10 +144,10 @@ const QuestionIndicators: FC = () => {
         const getIndicatorClass = (): string => {
           const answerHit = answersHit.find((hit) => hit.questionId === question.id)
           const isCurrent = index === questionIndex
-          if (!answerHit) return isCurrent ? 'bg-white/10 ring-2 ring-white text-white' : 'bg-white/10 text-white/80'
+          if (!answerHit) return isCurrent ? 'bg-white/10 ring-2 ring-white text-white' : 'bg-white/10 text-white/50'
           if (answerHit.isCorrect) return 'bg-green-400 text-black'
           if (!answerHit.isCorrect) return 'bg-red-400 text-black'
-          return 'bg-white/10 text-white'
+          return 'bg-white/10 text-white/50'
         }
         return (
           <div
