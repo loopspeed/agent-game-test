@@ -29,7 +29,7 @@ const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatu
     <section ref={container} className="contents">
       <Onboarding />
       <Question />
-      <QuestionTimerBar />
+      <QuestionTimer />
       <Points />
       <Streak />
     </section>
@@ -143,7 +143,7 @@ const Question: FC = () => {
   )
 }
 
-const QuestionTimerBar: FC = () => {
+const QuestionTimer: FC = () => {
   const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
   const container = useRef<HTMLDivElement>(null)
 
@@ -154,7 +154,7 @@ const QuestionTimerBar: FC = () => {
         <div className="relative h-2 w-72 overflow-hidden rounded-full bg-white/20">
           <div
             id="slow-mo-bar"
-            className="absolute h-full w-full origin-left bg-white bg-linear-0 from-white/20 to-white opacity-0"
+            className="absolute h-full w-full origin-left bg-linear-90 from-white/30 to-white to-60% opacity-0"
           />
         </div>
       </div>
