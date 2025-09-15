@@ -146,12 +146,24 @@ const Question: FC = () => {
 const QuestionTimer: FC = () => {
   const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
   const container = useRef<HTMLDivElement>(null)
+  const { contextSafe } = useGSAP({ scope: container })
 
   return (
-    <Transition in={isQuestionPhase} timeout={{ enter: 0, exit: 300 }} nodeRef={container} mountOnEnter unmountOnExit>
-      <div ref={container} id="timer" className="absolute bottom-12 flex items-center gap-4">
+    <Transition
+      in={isQuestionPhase}
+      timeout={{ enter: 0, exit: 250 }}
+      nodeRef={container}
+      mountOnEnter={true}
+      unmountOnExit={true}
+      onEnter={contextSafe(() => {
+        gsap.fromTo(container.current, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3 })
+      })}
+      onExit={contextSafe(() => {
+        gsap.to(container.current, { opacity: 0, y: 12, duration: 0.2 })
+      })}>
+      <div ref={container} id="timer" className="absolute bottom-12 flex items-center gap-4 opacity-0">
         <TimerIcon size={32} strokeWidth={2} />
-        <div className="relative h-2 w-72 overflow-hidden rounded-full bg-white/20">
+        <div className="relative h-2.5 w-64 overflow-hidden rounded-full bg-white/20">
           <div
             id="slow-mo-bar"
             className="absolute h-full w-full origin-left bg-linear-90 from-white/30 to-white to-60% opacity-0"
