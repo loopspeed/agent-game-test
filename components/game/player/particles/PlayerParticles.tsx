@@ -7,6 +7,7 @@ import React, { type FC, useLayoutEffect, useMemo, useRef } from 'react'
 import { AdditiveBlending, Color, DataTexture, Points, Texture, Vector2 } from 'three'
 import { GPUComputationRenderer, type Variable } from 'three/addons/misc/GPUComputationRenderer.js'
 
+import { useScoreEvents } from '@/hooks/useScoreEvents'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { GameStage, useGameStore } from '@/stores/GameProvider'
 
@@ -76,16 +77,15 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
 
   // Animation values
   const damageAmount = useRef({ value: 0 })
-  const scoreEvents = useGameStore((s) => s.scoreEvents)
+  const { latestScore } = useScoreEvents()
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
   const { gameTime, timeMultiplier } = useTimeSubscription()
 
   useGSAP(() => {
     // Respond to score events for damage "explosion" effect
-    if (scoreEvents.length === 0) return
-    const latestEvent = scoreEvents[scoreEvents.length - 1]
+    if (!latestScore) return
 
-    if (latestEvent.type === 'hit') {
+    if (latestScore.type === 'hit') {
       gsap.to(damageAmount.current, {
         value: 1,
         duration: 0.24,
@@ -99,7 +99,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
         },
       })
     }
-  }, [scoreEvents])
+  }, [latestScore])
 
   // ------------------
   // PARTICLE GEOMETRY SETUP

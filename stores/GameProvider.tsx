@@ -1,7 +1,7 @@
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
-import type { AnswerGateUserData, ObstacleUserData, ObstacleAvoidedUserData } from '@/model/game'
+import type { AnswerGateUserData, ObstacleAvoidedUserData,ObstacleUserData } from '@/model/game'
 import { SAMPLE_COURSE, SAMPLE_QUESTIONS } from '@/resources/course'
 import { type ChapterRun, useHistoryStore } from '@/stores/useHistoryStore'
 
@@ -22,8 +22,11 @@ export type AnswerHit = {
 
 // Currently score events only track obstacle hits/avoids, not answers
 export type ScoreEvent = {
+  id: string
   type: 'hit' | 'avoided'
-  obstacleId: string
+  obstacleId?: string
+  questionId?: string
+  answerId?: string | null
   points: number
   timestamp: number
 }
@@ -102,6 +105,7 @@ const createGameStore = ({
     },
     onObstacleHit: (data: ObstacleUserData) => {
       const scoreEvent: ScoreEvent = {
+        id: `obstacle-hit-${data.obstacleId}-${Date.now()}`,
         type: 'hit',
         obstacleId: data.obstacleId,
         points: POINTS_OBSTACLE_HIT,
@@ -123,6 +127,7 @@ const createGameStore = ({
         return
       }
       const scoreEvent: ScoreEvent = {
+        id: `obstacle-avoided-${data.obstacleId}-${Date.now()}`,
         type: 'avoided',
         obstacleId: data.obstacleId,
         points: POINTS_OBSTACLE_AVOIDED,
@@ -149,6 +154,7 @@ const createGameStore = ({
           // Remove any previous answers for this question in case of multiple hits
           const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
           return {
+            points: s.points + POINTS_ANSWER_CORRECT,
             streak: newCurrentStreak,
             maxStreak: newMaxStreak,
             answersHit: [...cleanAnswersHit, answerHit],
@@ -158,6 +164,7 @@ const createGameStore = ({
         set((s) => {
           const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
           return {
+            points: s.points + POINTS_ANSWER_INCORRECT,
             streak: 0,
             answersHit: [...cleanAnswersHit, answerHit],
           }
