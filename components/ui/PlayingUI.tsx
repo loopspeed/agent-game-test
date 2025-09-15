@@ -1,6 +1,7 @@
 'use client'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
+import { TimerIcon } from 'lucide-react'
 import { type FC, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 import { twJoin } from 'tailwind-merge'
@@ -28,6 +29,7 @@ const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatu
     <section ref={container} className="contents">
       <Onboarding />
       <Question />
+      <QuestionTimerBar />
       <Points />
       <Streak />
     </section>
@@ -130,9 +132,6 @@ const Question: FC = () => {
           ) : (
             // Display the current question when in the question phase
             <section ref={container} className="absolute top-0 right-0 left-0 flex w-full flex-col items-center">
-              <div className="relative h-2 w-full overflow-hidden bg-blue-500/10">
-                <div id="slow-mo-bar" className="absolute h-full w-full origin-left bg-blue-500 opacity-0" />
-              </div>
               <p className="max-w-4xl px-4 py-8 text-center text-5xl leading-snug font-semibold">
                 <span className="opacity-40">{questionIndex + 1}.</span> {currentQuestion.question}
               </p>
@@ -141,5 +140,24 @@ const Question: FC = () => {
         }
       </Transition>
     </SwitchTransition>
+  )
+}
+
+const QuestionTimerBar: FC = () => {
+  const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
+  const container = useRef<HTMLDivElement>(null)
+
+  return (
+    <Transition in={isQuestionPhase} timeout={{ enter: 0, exit: 300 }} nodeRef={container} mountOnEnter unmountOnExit>
+      <div ref={container} id="timer" className="absolute bottom-12 flex items-center gap-4">
+        <TimerIcon size={32} strokeWidth={2} />
+        <div className="relative h-2 w-72 overflow-hidden rounded-full bg-white/20">
+          <div
+            id="slow-mo-bar"
+            className="absolute h-full w-full origin-left bg-white bg-linear-0 from-white/20 to-white opacity-0"
+          />
+        </div>
+      </div>
+    </Transition>
   )
 }
