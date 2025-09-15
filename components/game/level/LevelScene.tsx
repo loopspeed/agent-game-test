@@ -29,7 +29,6 @@ const LevelScene: FC = () => {
   return (
     <>
       <Suspense fallback={null}>
-        {/* <Environment files={['/environment/rosendal_park_sunset_puresky_2k.hdr']} background={true} /> */}
         <ambientLight intensity={2} />
         <fog attach="fog" args={['#000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} />
         <Tunnel />

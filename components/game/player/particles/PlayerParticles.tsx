@@ -83,7 +83,8 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
   useGSAP(() => {
     // Respond to score events for damage "explosion" effect
     if (scoreEvents.length === 0) return
-    const latestEvent = scoreEvents[scoreEvents.length - 1]
+    const latestEvent = scoreEvents.at(-1)
+    if (!latestEvent) return
 
     if (latestEvent.type === 'hit') {
       gsap.to(damageAmount.current, {
