@@ -122,7 +122,7 @@ const Question: FC = () => {
           if (switchKey === 'no-question') return <div ref={container} className="hidden" />
           return (
             <div ref={container} className="absolute top-12 right-0 left-0 flex w-full flex-col items-center opacity-0">
-              <p className="max-w-3xl px-4 py-8 text-center text-4xl leading-snug font-semibold">
+              <p className="max-w-2xl px-4 py-8 text-center text-4xl leading-snug font-semibold">
                 {currentQuestion.question}
               </p>
             </div>

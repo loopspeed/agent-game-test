@@ -120,15 +120,6 @@ const Obstacles: FC = () => {
       // Check if it's time to spawn this obstacle
       if (gameTime.current < spawnData.spawnTime) return // Not yet time to spawn
 
-      console.warn(
-        `⏰ SPAWNING OBSTACLE AT TIME: ${gameTime.current.toFixed(2)} >= SPAWN TIME: ${spawnData.spawnTime.toFixed(2)}`,
-        {
-          obstacleId: spawnData.id,
-          lanesCount: spawnData.lanes.length,
-          safeLanes: spawnData.safeLanes,
-        },
-      )
-
       // Mark this obstacle as spawned first to prevent duplicate spawning
       spawnedIds.current.push(spawnData.id)
 

@@ -3,10 +3,10 @@
 
 uniform float uTime;
 uniform float uAspect;
-uniform float uRayPositions[16]; // MAX_RAYS * 2 (x, y pairs)
-uniform float uRayData[16]; // MAX_RAYS * 2 (spawnTime, isActive pairs)
+uniform float uRayPositions[24]; // MAX_RAYS * 2 (x, y pairs)
+uniform float uRayTimes[36]; // MAX_RAYS * 3 (spawnTime, lifetime, isActive triplets)
+uniform float uRayColors[36]; // MAX_RAYS * 3 (RGB values)
 uniform int uMaxRays;
-uniform float uRayLifetime;
 
 varying vec2 vUv;
 varying vec3 vPosition;
@@ -17,14 +17,14 @@ vec3 palette(in float t, in vec3 a, in vec3 b, in vec3 c, in vec3 d) {
 }
 
 // Function to calculate ray contribution
-float calculateRayContribution(vec3 worldPos, float rayStartX, float rayStartY, float spawnTime, float isActive) {
+float calculateRayContribution(vec3 worldPos, float rayStartX, float rayStartY, float spawnTime, float rayLifetime, float isActive) {
   if (isActive < 0.5) return 0.0;
   
   float rayAge = uTime - spawnTime;
-  if (rayAge < 0.0 || rayAge > uRayLifetime) return 0.0; // Use uniform instead of hardcoded value
+  if (rayAge < 0.0 || rayAge > rayLifetime) return 0.0; // Use individual ray lifetime
   
   // Calculate ray center position as it travels towards the player (positive Z direction)
-  float raySpeed = 12.0; // RAY_SPEED = 8.0
+  float raySpeed = 12.0; // RAY_SPEED = 12.0
   float rayCurrentZ = -40.0 + rayAge * raySpeed; // Start from far back, move towards player
   
   // ========== RAY START POSITION EXPLANATION ==========
@@ -40,7 +40,7 @@ float calculateRayContribution(vec3 worldPos, float rayStartX, float rayStartY, 
   
   // Add noise distortion to make ray wavy along its length
   float zNormalized = (worldPos.z + 40.0) / 80.0; // Normalize Z position along tunnel
-  vec3 noiseInput = vec3(rayStartX * 0.4, rayStartY * 0.4, zNormalized * 16.0 + uTime * 0.24);
+  vec3 noiseInput = vec3(rayStartX * 4.0, rayStartY * 1.8, zNormalized * 8.0 + uTime * 0.24);
   
   // Add multiple octaves of noise for more complex waviness
   vec2 distortion = vec2(
@@ -60,45 +60,58 @@ float calculateRayContribution(vec3 worldPos, float rayStartX, float rayStartY, 
   float distanceToRay = length(fragmentPos - distortedRayPos);
   
   // Make rays much longer along Z - they should span the entire visible tunnel length
-  float rayLength = 30.0; // Length of ray along Z axis
+  float rayLength = 32.0; // Length of ray along Z axis
   float rayFrontZ = rayCurrentZ + rayLength * 0.5;
   float rayBackZ = rayCurrentZ - rayLength * 0.5;
   
   // Check if current fragment Z is within the ray's Z range
   if (worldPos.z < rayBackZ || worldPos.z > rayFrontZ) return 0.0;
   
-  // Create multiple layers of varying softness
+  // Create multiple layers of varying softness with slight positional variations
   float totalIntensity = 0.0;
   
-  // Layer 1: Very soft outer glow
-  float verysoftThickness = 2.4;
-  float verysoftIntensity = 1.0 - smoothstep(0.0, verysoftThickness, distanceToRay);
-  totalIntensity += verysoftIntensity * 0.12;
+  // Layer 1: Very soft outer glow with slight offset
+  float layer1Noise = noise(noiseInput + vec3(10.0, 0.0, 0.0));
+  vec2 layer1Offset = vec2(layer1Noise, layer1Noise * 0.7) * 0.15; // Use same noise, slight variation for Y
+  vec2 layer1RayPos = distortedRayPos + layer1Offset;
+  float layer1Distance = length(fragmentPos - layer1RayPos);
+  float verysoftThickness = 3.0;
+  float verysoftIntensity = 1.0 - smoothstep(0.0, verysoftThickness, layer1Distance);
+  totalIntensity += verysoftIntensity * 0.24;
   
-  // Layer 2: Soft middle layer
-  float softThickness = 1.6;
-  float softIntensity = 1.0 - smoothstep(0.0, softThickness, distanceToRay);
-  totalIntensity += softIntensity * 0.32;
+  // Layer 2: Soft middle layer with different offset
+  float layer2Noise = noise(noiseInput + vec3(20.0, 0.0, 0.0));
+  vec2 layer2Offset = vec2(layer2Noise, layer2Noise * 0.5) * 0.1; // Use same noise, different Y multiplier
+  vec2 layer2RayPos = distortedRayPos + layer2Offset;
+  float layer2Distance = length(fragmentPos - layer2RayPos);
+  float softThickness = 1.4;
+  float softIntensity = 1.0 - smoothstep(0.0, softThickness, layer2Distance);
+  totalIntensity += softIntensity * 0.3;
   
-  // Layer 3: Medium layer
-  float mediumThickness = 0.8;
-  float mediumIntensity = 1.0 - smoothstep(0.0, mediumThickness, distanceToRay);
-  totalIntensity += mediumIntensity * 0.4;
+  // Layer 3: Medium layer with smaller offset
+  float layer3Noise = noise(noiseInput + vec3(30.0, 0.0, 0.0));
+  vec2 layer3Offset = vec2(layer3Noise, layer3Noise * 0.3) * 0.06; // Use same noise, even smaller Y variation
+  vec2 layer3RayPos = distortedRayPos + layer3Offset;
+  float layer3Distance = length(fragmentPos - layer3RayPos);
+  float mediumThickness = 0.6;
+  float mediumIntensity = 1.0 - smoothstep(0.0, mediumThickness, layer3Distance);
+  totalIntensity += mediumIntensity * 0.6;
   
-  // Layer 4: Sharp core
-  float sharpThickness = 0.4;
-  float sharpIntensity = 1.0 - smoothstep(0.0, sharpThickness, distanceToRay);
-  totalIntensity += sharpIntensity * 0.9;
+  // Layer 4: Sharp core (uses original distortedRayPos, no additional offset)
+  float coreDistance = length(fragmentPos - distortedRayPos);
+  float sharpThickness = 0.2;
+  float sharpIntensity = 1.0 - smoothstep(0.0, sharpThickness, coreDistance);
+  totalIntensity += sharpIntensity * 0.8;
   
   // ========== RAY LIFETIME FADE ==========
   // lifeFade controls how the ray fades out as it approaches the end of its lifetime
-  // rayAge ranges from 0 (just spawned) to uRayLifetime (maximum lifetime before despawn)
+  // rayAge ranges from 0 (just spawned) to rayLifetime (individual ray's maximum lifetime)
   // smoothstep creates a smooth transition in the final 1 second of the ray's life
-  // When rayAge < (uRayLifetime - 1.0): smoothstep returns 0, so lifeFade = 1.0 - 0 = 1.0 (full intensity)
-  // When rayAge = (uRayLifetime - 0.5): smoothstep returns 0.5, so lifeFade = 1.0 - 0.5 = 0.5 (half intensity)
-  // When rayAge >= uRayLifetime: smoothstep returns 1, so lifeFade = 1.0 - 1 = 0.0 (completely faded)
+  // When rayAge < (rayLifetime - 1.0): smoothstep returns 0, so lifeFade = 1.0 - 0 = 1.0 (full intensity)
+  // When rayAge = (rayLifetime - 0.5): smoothstep returns 0.5, so lifeFade = 1.0 - 0.5 = 0.5 (half intensity)
+  // When rayAge >= rayLifetime: smoothstep returns 1, so lifeFade = 1.0 - 1 = 0.0 (completely faded)
   // This creates a graceful fade-out in the final second of the ray's life
-  float lifeFade = 1.0 - smoothstep(uRayLifetime - 1.0, uRayLifetime, rayAge);
+  float lifeFade = 1.0 - smoothstep(rayLifetime - 1.0, rayLifetime, rayAge);
   
   // ========== RAY LENGTH FADE ==========
   // zFade controls how the ray fades towards its front and back ends along the Z-axis
@@ -151,9 +164,9 @@ void main() {
   vec3 grainColor = vec3(grain * 0.08); // Subtle white grain
   color += grainColor;
 
-  // Add aura rays
-  float totalRayContribution = 0.0;
-  for (int i = 0; i < 8; i++) { // uMaxRays would be better but causes issues in some WebGL implementations
+  // Add aura rays with individual colors
+  vec3 totalRayColor = vec3(0.0);
+  for (int i = 0; i < MAX_RAYS; i++) { // Now using the define from React component
     if (i >= uMaxRays) break;
     
     // ========== RAY DATA EXTRACTION ==========
@@ -163,20 +176,30 @@ void main() {
     float rayStartX = uRayPositions[i * 2];     // X position on tunnel circumference where ray spawns
     float rayStartY = uRayPositions[i * 2 + 1]; // Y position on tunnel circumference where ray spawns
     
-    // uRayData stores [spawnTime0, isActive0, spawnTime1, isActive1, ...] for each ray
-    float spawnTime = uRayData[i * 2];     // When this ray was created (in game time)
-    float isActive = uRayData[i * 2 + 1];  // Whether this ray slot is currently being used (1.0 = active, 0.0 = inactive)
+    // uRayTimes stores [spawnTime0, lifetime0, isActive0, spawnTime1, lifetime1, isActive1, ...] for each ray
+    float spawnTime = uRayTimes[i * 3];     // When this ray was created (in game time)
+    float rayLifetime = uRayTimes[i * 3 + 1]; // How long this specific ray should live (4-12 seconds)
+    float isActive = uRayTimes[i * 3 + 2];  // Whether this ray slot is currently being used (1.0 = active, 0.0 = inactive)
     
-    totalRayContribution += calculateRayContribution(vPosition, rayStartX, rayStartY, spawnTime, isActive);
+    // Extract ray color from uniform array
+    // uRayColors stores [r0, g0, b0, r1, g1, b1, ...] for each ray
+    vec3 rayColor = vec3(
+      uRayColors[i * 3],     // Red component
+      uRayColors[i * 3 + 1], // Green component
+      uRayColors[i * 3 + 2]  // Blue component
+    );
+    
+    float rayContribution = calculateRayContribution(vPosition, rayStartX, rayStartY, spawnTime, rayLifetime, isActive);
+    totalRayColor += rayColor * rayContribution;
   }
-  // Apply ray glow with cyan/electric color
-  vec3 rayColor = vec3(0.2, 0.8, 1.0); // Cyan-ish color
-  color += rayColor * totalRayContribution;
+  
+  // Apply the colored ray contributions to the base color
+  color += totalRayColor;
 
 
-    // Fade to black as we go further down the tunnel (based on z position)
-  float blackFade = smoothstep(-10.0, -40.0, vPosition.z);
-  color *= (1.0 - blackFade);
+  // Fade to black as we go further down the tunnel (based on z position)
+  float blackFade = 1.0 - smoothstep(-10.0, -40.0, vPosition.z);
+  color *= blackFade;
 
   color *= 0.5; // Darken overall
 
