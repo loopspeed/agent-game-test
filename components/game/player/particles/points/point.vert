@@ -1,4 +1,4 @@
-// Points vertex shader
+// Player Points vertex shader
 attribute float seed;
 attribute vec3 color;
 

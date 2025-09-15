@@ -9,6 +9,7 @@ enum SoundFX {
 }
 
 type SoundState = {
+  isLoading: boolean
   playSound: (fx: SoundFX) => void
 }
 
@@ -18,7 +19,13 @@ const SoundContext = createContext<SoundStore>(undefined!)
 const createSoundStore = () => {
   // Loads sounds here OR in the useEffect of SoundProvider
 
-  return createStore<SoundState>()((set, get) => ({}))
+  return createStore<SoundState>()((set, get) => ({
+    isLoading: true,
+    playSound: (fx: SoundFX) => {
+      console.log('🔊 Playing sound:', fx)
+      // Play sound logic here
+    },
+  }))
 }
 
 export const SoundProvider: FC<PropsWithChildren> = ({ children }) => {

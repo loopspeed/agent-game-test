@@ -1,3 +1,4 @@
+// Player Particle Velocity Simulation Fragment Shader
 #pragma glslify: noise = require('glsl-noise/simplex/3d')
 
 uniform bool uIsIdle;

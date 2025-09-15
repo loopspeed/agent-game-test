@@ -5,7 +5,7 @@ import { useLevelStore } from '@/stores/LevelProvider'
 import { useConfigStore } from '@/stores/useConfigStore'
 
 const DebugDisplay: FC = () => {
-  useLevelStore((s) => s.gameTime) // used to trigger re-renders
+  useLevelStore((s) => s.totalTime) // used to trigger re-renders
   const debugInfo = useLevelStore((s) => s.getDebugInfo)()
   const phaseDurations = useConfigStore((s) => s.phaseDurations)
 

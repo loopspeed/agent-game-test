@@ -41,7 +41,7 @@ type LevelState = {
   config: LevelConfig
 
   // Time control state
-  gameTime: number
+  totalTime: number
   timeMultiplier: number
   setTimeMultiplier: (value: number) => void
   slowMoTimeRemaining: number
@@ -83,7 +83,7 @@ const LevelContext = createContext<LevelStore>(undefined!)
 
 const INITIAL_STATE: Pick<
   LevelState,
-  | 'gameTime'
+  | 'totalTime'
   | 'phaseIndex'
   | 'phase'
   | 'phaseTime'
@@ -95,7 +95,7 @@ const INITIAL_STATE: Pick<
   | 'questionIndex'
   | 'obstacles'
 > = {
-  gameTime: 0,
+  totalTime: 0,
   phaseIndex: 0,
   phase: LevelPhase.INTRO,
   phaseTime: 0,
@@ -207,7 +207,7 @@ const createLevelStore = ({
       const state = get()
       let phaseIndex = state.phaseIndex
       let phase = state.phase
-      let phaseTime = state.phaseTime + (gameTime - state.gameTime)
+      let phaseTime = state.phaseTime + (gameTime - state.totalTime)
 
       if (phase === LevelPhase.FINISHED) return // No updates once in the finished phase (this is in the background of the level complete screen)
 
@@ -241,7 +241,7 @@ const createLevelStore = ({
         }
 
         set({
-          gameTime,
+          totalTime: gameTime,
           phase,
           phaseTime,
           phaseIndex,
@@ -250,14 +250,14 @@ const createLevelStore = ({
       }
 
       set({
-        gameTime,
+        totalTime: gameTime,
         phaseTime,
       })
     },
     getDebugInfo: (): DebugInfo => {
       const state = get()
       return {
-        gameTime: state.gameTime,
+        gameTime: state.totalTime,
         phaseTime: state.phaseTime,
         phase: state.phases[state.phaseIndex] || LevelPhase.OUTRO,
         nextPhase: state.phases?.[state.phaseIndex + 1] ?? null,

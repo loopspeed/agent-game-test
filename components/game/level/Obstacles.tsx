@@ -1,9 +1,10 @@
 'use client'
 import { useFrame } from '@react-three/fiber'
 import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBody } from '@react-three/rapier'
-import { type FC, useLayoutEffect, useRef, useState } from 'react'
+import { type FC, useLayoutEffect as useEffect, useRef, useState } from 'react'
 
 import { useObstaclesSpawning } from '@/hooks/useObstaclesSpawning'
+import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { LevelPhase, type ObstacleAvoidedUserData, type ObstacleUserData, RigidBodyType } from '@/model/game'
 import {
   GameStage,
@@ -41,10 +42,11 @@ const Obstacles: FC = () => {
   const zoneRigidBodies = useRef<RapierRigidBody[]>(null)
   const isSetup = useRef(false)
 
-  const { gameTime, obstaclesToSpawn } = useObstaclesSpawning()
+  const { totalTime } = useTimeSubscription()
+  const { obstaclesToSpawn } = useObstaclesSpawning()
   const spawnedIds = useRef<string[]>([])
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const setupInstances = () => {
       if (isSetup.current) return // Prevent double setup
 
@@ -118,7 +120,7 @@ const Obstacles: FC = () => {
     obstaclesToSpawn.current.forEach((spawnData: ObstacleSpawnData) => {
       if (spawnedIds.current.includes(spawnData.id)) return // Already spawned this one
       // Check if it's time to spawn this obstacle
-      if (gameTime.current < spawnData.spawnTime) return // Not yet time to spawn
+      if (totalTime.current < spawnData.spawnTime) return // Not yet time to spawn
 
       // Mark this obstacle as spawned first to prevent duplicate spawning
       spawnedIds.current.push(spawnData.id)
@@ -230,7 +232,7 @@ const Obstacles: FC = () => {
         colliders="cuboid">
         <instancedMesh args={[undefined, undefined, zoneInstances.length]} count={zoneInstances.length}>
           {/* Large invisible plane covering the entire grid area */}
-          <boxGeometry args={[GRID_SQUARE_SIZE_M * 3, GRID_SQUARE_SIZE_M * 3, 0.1]} />
+          <planeGeometry args={[GRID_SQUARE_SIZE_M * 3, GRID_SQUARE_SIZE_M * 3, 1, 1]} />
           <meshBasicMaterial color="#fff" transparent opacity={0} />
         </instancedMesh>
       </InstancedRigidBodies>

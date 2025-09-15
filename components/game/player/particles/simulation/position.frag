@@ -1,5 +1,5 @@
-// #pragma glslify: rotation3dX = require(glsl-rotate/rotation-3d-x)
-#pragma glslify: rotation3dY = require(glsl-rotate/rotation-3d-y)
+
+// Player Particle Position Simulation Fragment Shader
 #pragma glslify: rotation3dZ = require(glsl-rotate/rotation-3d-z)
 
 #define delta (1.0 / 60.0)

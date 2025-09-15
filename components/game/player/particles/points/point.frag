@@ -1,4 +1,4 @@
-// Player Point fragment shader
+// Player Points fragment shader
 uniform float uTime;
 uniform float uDamageAmount;
 

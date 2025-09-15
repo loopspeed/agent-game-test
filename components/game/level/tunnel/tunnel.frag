@@ -75,7 +75,7 @@ float calculateRayContribution(vec3 worldPos, float rayStartX, float rayStartY, 
   vec2 layer1Offset = vec2(layer1Noise, layer1Noise * 0.7) * 0.15; // Use same noise, slight variation for Y
   vec2 layer1RayPos = distortedRayPos + layer1Offset;
   float layer1Distance = length(fragmentPos - layer1RayPos);
-  float verysoftThickness = 3.0;
+  float verysoftThickness = 4.0;
   float verysoftIntensity = 1.0 - smoothstep(0.0, verysoftThickness, layer1Distance);
   totalIntensity += verysoftIntensity * 0.24;
   
@@ -84,7 +84,7 @@ float calculateRayContribution(vec3 worldPos, float rayStartX, float rayStartY, 
   vec2 layer2Offset = vec2(layer2Noise, layer2Noise * 0.5) * 0.1; // Use same noise, different Y multiplier
   vec2 layer2RayPos = distortedRayPos + layer2Offset;
   float layer2Distance = length(fragmentPos - layer2RayPos);
-  float softThickness = 1.4;
+  float softThickness = 1.5;
   float softIntensity = 1.0 - smoothstep(0.0, softThickness, layer2Distance);
   totalIntensity += softIntensity * 0.3;
   
@@ -93,15 +93,15 @@ float calculateRayContribution(vec3 worldPos, float rayStartX, float rayStartY, 
   vec2 layer3Offset = vec2(layer3Noise, layer3Noise * 0.3) * 0.06; // Use same noise, even smaller Y variation
   vec2 layer3RayPos = distortedRayPos + layer3Offset;
   float layer3Distance = length(fragmentPos - layer3RayPos);
-  float mediumThickness = 0.6;
+  float mediumThickness = 1.0;
   float mediumIntensity = 1.0 - smoothstep(0.0, mediumThickness, layer3Distance);
   totalIntensity += mediumIntensity * 0.6;
   
   // Layer 4: Sharp core (uses original distortedRayPos, no additional offset)
   float coreDistance = length(fragmentPos - distortedRayPos);
-  float sharpThickness = 0.2;
+  float sharpThickness = 0.3;
   float sharpIntensity = 1.0 - smoothstep(0.0, sharpThickness, coreDistance);
-  totalIntensity += sharpIntensity * 0.8;
+  totalIntensity += sharpIntensity * 0.6;
   
   // ========== RAY LIFETIME FADE ==========
   // lifeFade controls how the ray fades out as it approaches the end of its lifetime
@@ -192,16 +192,19 @@ void main() {
     float rayContribution = calculateRayContribution(vPosition, rayStartX, rayStartY, spawnTime, rayLifetime, isActive);
     totalRayColor += rayColor * rayContribution;
   }
+
+
+
   
   // Apply the colored ray contributions to the base color
   color += totalRayColor;
 
+  color *= 0.4; // Darken overall
 
   // Fade to black as we go further down the tunnel (based on z position)
   float blackFade = 1.0 - smoothstep(-10.0, -40.0, vPosition.z);
   color *= blackFade;
 
-  color *= 0.5; // Darken overall
 
 
   gl_FragColor = vec4(color, 1.0);

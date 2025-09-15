@@ -62,7 +62,7 @@ const TUNNEL_SEGMENTS = 32
 
 const Tunnel: FC = () => {
   const shaderMaterial = React.useRef<typeof TunnelShaderMaterial & Uniforms>(null)
-  const { gameTime } = useTimeSubscription()
+  const { totalTime } = useTimeSubscription()
 
   const rays = useRef<RayData[]>(
     Array.from({ length: MAX_RAYS }, () => ({
@@ -132,7 +132,7 @@ const Tunnel: FC = () => {
   useFrame(() => {
     if (!shaderMaterial.current) return
 
-    const currentTime = gameTime.current
+    const currentTime = totalTime.current
     updateRays(currentTime)
 
     shaderMaterial.current.uTime = currentTime

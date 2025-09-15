@@ -144,7 +144,8 @@ const QuestionIndicators: FC = () => {
         const getIndicatorClass = (): string => {
           const answerHit = answersHit.find((hit) => hit.questionId === question.id)
           const isCurrent = index === questionIndex
-          if (!answerHit) return isCurrent ? 'bg-white/10 ring-2 ring-white text-white' : 'bg-white/10 text-white/50'
+          if (!answerHit)
+            return isCurrent ? 'bg-white/10 scale-110 ring-2 ring-white text-white' : 'bg-white/10 text-white/50'
           if (answerHit.isCorrect) return 'bg-green-400 text-black'
           if (!answerHit.isCorrect) return 'bg-red-400 text-black'
           return 'bg-white/10 text-white/50'

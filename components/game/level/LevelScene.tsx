@@ -1,5 +1,4 @@
 'use client'
-import { Environment, useTexture } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { type FC, Suspense } from 'react'
@@ -14,15 +13,14 @@ import Obstacles from './Obstacles'
 import Onboarding from './Onboarding'
 import Outro from './Outro'
 import Tunnel from './tunnel/Tunnel'
+import TunnelParticles from './tunnelParticles/TunnelParticles'
 
 const LevelScene: FC = () => {
   const update = useLevelStore((s) => s.update)
-  const { gameTime, timeMultiplier } = useTimeSubscription()
-
-  // const envMap = useTexture('/environments/venice_sunset_1k.hdr')
+  const { totalTime, timeMultiplier } = useTimeSubscription()
 
   useFrame((_, delta) => {
-    const newTime = gameTime.current + delta * timeMultiplier.current
+    const newTime = totalTime.current + delta * timeMultiplier.current
     update(newTime)
   })
 
@@ -32,6 +30,7 @@ const LevelScene: FC = () => {
         <ambientLight intensity={2} />
         <fog attach="fog" args={['#000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} />
         <Tunnel />
+        <TunnelParticles isMobile={false} />
         {/* Physics world with zero gravity (kinematic bodies only) */}
         <Physics gravity={[0, 0, 0]} debug={false}>
           <Obstacles />

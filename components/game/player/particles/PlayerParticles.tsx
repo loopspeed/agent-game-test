@@ -78,7 +78,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
   const damageAmount = useRef({ value: 0 })
   const scoreEvents = useGameStore((s) => s.scoreEvents)
   const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
-  const { gameTime, timeMultiplier } = useTimeSubscription()
+  const { totalTime: gameTime, timeMultiplier } = useTimeSubscription()
 
   useGSAP(() => {
     // Respond to score events for damage "explosion" effect
