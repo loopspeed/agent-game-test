@@ -19,15 +19,16 @@ const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatu
         gsap.to(container.current, { opacity: 1, duration: 0.3 })
       }
       if (transitionStatus === 'exiting') {
-        gsap.to(container.current, { opacity: 0, duration: 0.4 })
+        gsap.to(container.current, { opacity: 0, duration: 0.3 })
       }
     },
     { scope: container, dependencies: [transitionStatus] },
   )
 
   return (
-    <section ref={container} className="contents">
+    <section ref={container} className="contents opacity-0">
       <Onboarding />
+      <QuestionIndicators />
       <Question />
       <QuestionTimer />
       <Points />
@@ -40,7 +41,6 @@ export default PlayingUI
 
 const Onboarding: FC = () => {
   const isOnboardingPhase = useLevelStore((s) => s.phase === LevelPhase.ONBOARDING)
-
   if (!isOnboardingPhase) return null
 
   return (
@@ -76,7 +76,6 @@ const Points: FC = () => {
 
 const Streak: FC = () => {
   const streak = useGameStore((s) => s.streak)
-
   if (streak <= 0) return null
 
   return (
@@ -89,57 +88,79 @@ const Streak: FC = () => {
 
 const Question: FC = () => {
   const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
-  const questions = useLevelStore((s) => s.questions)
   const questionIndex = useLevelStore((s) => s.questionIndex)
   const currentQuestion = useLevelStore((s) => s.question)
-  const answersHit = useGameStore((s) => s.answersHit)
-
   const container = useRef<HTMLDivElement>(null)
-  const switchKey = isQuestionPhase ? `question` : 'indicators'
 
-  // TODO: add onEnter and onExit transitions (simple for now.)
-  const onEnter = () => {}
-  const onExit = () => {}
+  const { contextSafe } = useGSAP({ scope: container })
+
+  const onEnter = contextSafe(() => {
+    gsap.fromTo(
+      container.current,
+      { opacity: 0, scale: 0.9 },
+      { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' },
+    )
+  })
+
+  const onExit = contextSafe(() => {
+    gsap.to(container.current, { opacity: 0, duration: 0.3 })
+  })
+
+  const switchKey = !isQuestionPhase ? 'no-question' : `question-${questionIndex}`
 
   return (
     <SwitchTransition>
-      <Transition key={switchKey} timeout={{ enter: 0, exit: 500 }} nodeRef={container}>
-        {() =>
-          // Display indicators when not in the question phase (e.g rest, obstacles)
-          !isQuestionPhase ? (
-            <div ref={container} className="absolute top-8 flex items-center gap-3">
-              {/* TODO: Indicators need work */}
-              {questions.map((question, index) => {
-                const getIndicatorClass = (): string => {
-                  const answerHit = answersHit.find((hit) => hit.questionId === question.id)
-                  if (!answerHit) return 'bg-white/10'
-                  if (answerHit.isCorrect) return 'bg-green-400'
-                  if (!answerHit.isCorrect) return 'bg-red-400'
-                  return 'bg-white/10'
-                }
-                return (
-                  <div
-                    key={question.id}
-                    className={twJoin(
-                      'flex size-8 items-center justify-center rounded-full text-center font-bold text-white',
-                      getIndicatorClass(),
-                    )}>
-                    {index + 1}
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            // Display the current question when in the question phase
-            <section ref={container} className="absolute top-0 right-0 left-0 flex w-full flex-col items-center">
+      <Transition
+        key={switchKey}
+        timeout={{ enter: 0, exit: 350 }}
+        mountOnEnter={true}
+        unmountOnExit={true}
+        onEnter={onEnter}
+        onExit={onExit}
+        nodeRef={container}>
+        {() => {
+          if (switchKey === 'no-question') return <div ref={container} className="hidden" />
+          return (
+            <div ref={container} className="absolute top-12 right-0 left-0 flex w-full flex-col items-center opacity-0">
               <p className="max-w-4xl px-4 py-8 text-center text-5xl leading-snug font-semibold">
-                <span className="opacity-40">{questionIndex + 1}.</span> {currentQuestion.question}
+                {currentQuestion.question}
               </p>
-            </section>
+            </div>
           )
-        }
+        }}
       </Transition>
     </SwitchTransition>
+  )
+}
+
+const QuestionIndicators: FC = () => {
+  const questions = useLevelStore((s) => s.questions)
+  const questionIndex = useLevelStore((s) => s.questionIndex)
+  const answersHit = useGameStore((s) => s.answersHit)
+
+  return (
+    <div className="absolute top-6 flex items-center gap-3">
+      {questions.map((question, index) => {
+        const getIndicatorClass = (): string => {
+          const answerHit = answersHit.find((hit) => hit.questionId === question.id)
+          const isCurrent = index === questionIndex
+          if (!answerHit) return isCurrent ? 'bg-white/10 ring-2 ring-white text-white' : 'bg-white/10 text-white/80'
+          if (answerHit.isCorrect) return 'bg-green-400 text-black'
+          if (!answerHit.isCorrect) return 'bg-red-400 text-black'
+          return 'bg-white/10 text-white'
+        }
+        return (
+          <div
+            key={question.id}
+            className={twJoin(
+              'flex size-8 items-center justify-center rounded-full text-center text-[16px] font-bold',
+              getIndicatorClass(),
+            )}>
+            {index + 1}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 

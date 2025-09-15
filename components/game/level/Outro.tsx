@@ -6,10 +6,10 @@ import React, { type FC, useRef } from 'react'
 
 import { LevelPhase } from '@/model/game'
 import { FONTS } from '@/resources/fonts'
-import { KILL_OBSTACLE_Z, LANES_Y, SPAWN_OBSTACLE_Z } from '@/stores/GameProvider'
+import { GRID_SQUARE_SIZE_M, KILL_OBSTACLE_Z, LANES_Y, SPAWN_OBSTACLE_Z } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 
-const LEVEL_COMPLETE_SPEED = 12
+const LEVEL_COMPLETE_SPEED = 15
 
 const Outro: FC = () => {
   const isOutroPhase = useLevelStore((s) => s.phase === LevelPhase.OUTRO)
@@ -61,7 +61,7 @@ const Outro: FC = () => {
         color="white"
         anchorX="center"
         anchorY="middle"
-        maxWidth={4.0}
+        maxWidth={GRID_SQUARE_SIZE_M * 3}
         textAlign="center">
         LEVEL COMPLETE!
       </Text>
