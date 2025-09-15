@@ -1,9 +1,10 @@
 'use client'
-import { Text } from '@react-three/drei'
+import { Image, Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { CuboidCollider, type IntersectionEnterPayload, RapierRigidBody, RigidBody } from '@react-three/rapier'
 import React, { type FC, useRef } from 'react'
 
+import activeGateIndicator from '@/assets/selected-gate-indicator.png'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import type { Answer } from '@/model/content'
 import { type AnswerGateUserData, LevelPhase, RigidBodyType, type RigidBodyUserData } from '@/model/game'
@@ -23,87 +24,81 @@ type AnswerGateProps = {
   position: [number, number, number]
   answer: Answer | null
   questionId: string | null
+  isActive: boolean
 }
 
-const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(({ position, answer, questionId }, ref) => {
-  // Get answer from rhythm data - this is always provided by the rhythm system
-  const userData: AnswerGateUserData = {
-    type: RigidBodyType.ANSWER_GATE,
-    isCorrect: answer?.isCorrect ?? false,
-    answerId: answer?.id ?? '',
-    questionId: questionId ?? '',
-  }
-
-  const material = useRef(null)
-
-  const onIntersectionEnter = (e: IntersectionEnterPayload) => {
-    if (!e.other?.rigidBody?.userData) throw new Error('Invalid userData')
-    const { type } = e.other.rigidBody.userData as RigidBodyUserData
-
-    if (type === RigidBodyType.PLAYER) {
-      // // Enhanced visual feedback for rhythm-based gates
-      // gsap.to(material.current, {
-      //   opacity: 1.0,
-      //   duration: 0.16,
-      //   onComplete: () => {
-      //     gsap.to(material.current, {
-      //       opacity: 0.4,
-      //       duration: 0.12,
-      //     })
-      //   },
-      // })
-      console.warn('🎵 ANSWER GATE HIT:', {
-        answerId: answer?.id,
-        isCorrect: answer?.isCorrect,
-      })
+const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
+  ({ position, answer, questionId, isActive }, ref) => {
+    // Get answer from rhythm data - this is always provided by the rhythm system
+    const userData: AnswerGateUserData = {
+      type: RigidBodyType.ANSWER_GATE,
+      isCorrect: answer?.isCorrect ?? false,
+      answerId: answer?.id ?? '',
+      questionId: questionId ?? '',
     }
-  }
 
-  return (
-    <RigidBody
-      ref={ref}
-      type="dynamic"
-      gravityScale={0}
-      canSleep={false}
-      colliders={false}
-      position={position}
-      userData={userData}>
-      <CuboidCollider
-        args={[GRID_SQUARE_SIZE_M / 2, GRID_SQUARE_SIZE_M / 2, 0.05]}
-        sensor={true}
-        onIntersectionEnter={onIntersectionEnter}
-      />
+    const onIntersectionEnter = (e: IntersectionEnterPayload) => {
+      if (!e.other?.rigidBody?.userData) throw new Error('Invalid userData')
+      const { type } = e.other.rigidBody.userData as RigidBodyUserData
 
-      {/* Visual elements */}
-      {!!answer && (
-        <group>
-          {/* <mesh>
-            <boxGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M, 0.1]} />
-            <meshStandardMaterial
-              ref={material}
-              // color={answer.isCorrect ? '#4ade80' : '#f87171'}
-              color={'#fff'}
-              transparent={true}
-              opacity={0.75}
-            />
-          </mesh> */}
-          <Text
-            position={[0, 0, 0.1]}
-            fontSize={0.25}
-            font={FONTS.Roboto}
-            fontStyle="normal"
-            color="#fff"
-            anchorX="center"
-            anchorY="middle"
-            maxWidth={GRID_SQUARE_SIZE_M}
-            textAlign="center">
-            {answer.label}
-          </Text>
-        </group>
-      )}
-    </RigidBody>
-  )
-})
+      if (type === RigidBodyType.PLAYER) {
+        // // Enhanced visual feedback for rhythm-based gates
+        // gsap.to(material.current, {
+        //   opacity: 1.0,
+        //   duration: 0.16,
+        //   onComplete: () => {
+        //     gsap.to(material.current, {
+        //       opacity: 0.4,
+        //       duration: 0.12,
+        //     })
+        //   },
+        // })
+        console.warn('🎵 ANSWER GATE HIT:', {
+          answerId: answer?.id,
+          isCorrect: answer?.isCorrect,
+        })
+      }
+    }
+
+    return (
+      <RigidBody
+        ref={ref}
+        type="dynamic"
+        gravityScale={0}
+        canSleep={false}
+        colliders={false}
+        position={position}
+        userData={userData}>
+        <CuboidCollider
+          args={[GRID_SQUARE_SIZE_M / 2, GRID_SQUARE_SIZE_M / 2, 0.05]}
+          sensor={true}
+          onIntersectionEnter={onIntersectionEnter}
+        />
+
+        {/* Visual elements */}
+        {!!answer && (
+          <>
+            <Image url={activeGateIndicator.src} transparent={true} opacity={isActive ? 1 : 0}>
+              <planeGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M]} />
+            </Image>
+            <Text
+              position={[0, 0, 0.1]}
+              fontSize={0.25}
+              font={FONTS.Roboto}
+              fontStyle="normal"
+              color="#fff"
+              anchorX="center"
+              anchorY="middle"
+              maxWidth={GRID_SQUARE_SIZE_M}
+              textAlign="center">
+              {answer.label}
+            </Text>
+          </>
+        )}
+      </RigidBody>
+    )
+  },
+)
 
 AnswerGate.displayName = 'AnswerGate'
 
@@ -117,6 +112,7 @@ const AnswerGates: FC = () => {
   const answersMapping = useLevelStore((s) => s.answersMapping)
   const onQuestionPhaseCompleted = useLevelStore((s) => s.onQuestionPhaseCompleted)
   const question = useLevelStore((s) => s.question)
+  const currentPlayerLane = useLevelStore((s) => s.currentPlayerLane) // [xIndex, yIndex]
 
   const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
   const isLive = useRef(false) // True when gates are active and moving
@@ -194,6 +190,7 @@ const AnswerGates: FC = () => {
           position={position}
           answer={answersMapping[index]}
           questionId={question.id}
+          isActive={currentPlayerLane === index}
         />
       ))}
     </>
