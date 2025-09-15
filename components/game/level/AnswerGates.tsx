@@ -1,5 +1,5 @@
 'use client'
-import { Image, Text } from '@react-three/drei'
+import { Html, Image, Text } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { CuboidCollider, type IntersectionEnterPayload, RapierRigidBody, RigidBody } from '@react-three/rapier'
 import React, { type FC, useRef } from 'react'
@@ -81,18 +81,11 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
             <Image url={activeGateIndicator.src} transparent={true} opacity={isActive ? 1 : 0}>
               <planeGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M]} />
             </Image>
-            <Text
-              position={[0, 0, 0.1]}
-              fontSize={0.25}
-              font={FONTS.Roboto}
-              fontStyle="normal"
-              color="#fff"
-              anchorX="center"
-              anchorY="middle"
-              maxWidth={GRID_SQUARE_SIZE_M}
-              textAlign="center">
-              {answer.label}
-            </Text>
+            <Html transform={true}>
+              <div className="flex aspect-square size-16 items-center justify-center p-6">
+                <p className="max-w-full text-center text-[8px] font-semibold text-white">{answer.label}</p>
+              </div>
+            </Html>
           </>
         )}
       </RigidBody>

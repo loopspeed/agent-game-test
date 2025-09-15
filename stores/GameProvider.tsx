@@ -1,7 +1,7 @@
 import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
-import type { AnswerGateUserData, ObstacleUserData, ObstacleAvoidedUserData } from '@/model/game'
+import type { AnswerGateUserData, ObstacleAvoidedUserData, ObstacleUserData } from '@/model/game'
 import { SAMPLE_COURSE, SAMPLE_QUESTIONS } from '@/resources/course'
 import { type ChapterRun, useHistoryStore } from '@/stores/useHistoryStore'
 
@@ -81,6 +81,7 @@ const createGameStore = ({
   courseId,
   chapterId,
   addChapterRunToHistory,
+  // playSoundEffect,
 }: {
   courseId: string
   chapterId: string
@@ -194,6 +195,7 @@ const createGameStore = ({
 }
 
 export const GameProvider: FC<PropsWithChildren> = ({ children }) => {
+  // const playSoundEffect = useSoundStore((s) => s.playSoundEffect)
   const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
   // Create the game store with incoming configuration
   const gameStore = useRef<GameStateStore>(

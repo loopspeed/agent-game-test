@@ -8,6 +8,7 @@ import LevelCanvas from '@/components/game/level/LevelCanvas'
 import GameUI from '@/components/ui/GameUI'
 import { GameProvider, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
+import { SoundProvider } from '@/stores/SoundProvider'
 import { useInputStore } from '@/stores/useInputStore'
 
 const GameContent: FC = () => {
@@ -34,9 +35,11 @@ const GameContent: FC = () => {
 
 export default function GamePage() {
   return (
-    <GameProvider>
-      <GameContent />
-    </GameProvider>
+    <SoundProvider>
+      <GameProvider>
+        <GameContent />
+      </GameProvider>
+    </SoundProvider>
   )
 }
 

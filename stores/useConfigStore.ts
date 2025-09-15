@@ -33,7 +33,7 @@ export const OBSTACLE_PRESETS: Record<string, Pick<LevelConfig, 'obstacleSpeed' 
 }
 
 export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
-  showOnboarding: true,
+  showOnboarding: false,
   phaseDurations: DEFAULT_PHASE_DURATIONS,
   slowMoDuration: 4.0,
   ...OBSTACLE_PRESETS['Normal'],
