@@ -1,7 +1,7 @@
 'use client'
 import { useGSAP } from '@gsap/react'
 import { Cylinder, shaderMaterial } from '@react-three/drei'
-import { extend, type ShaderMaterialProps, useFrame } from '@react-three/fiber'
+import { extend, useFrame } from '@react-three/fiber'
 import gsap from 'gsap'
 import { useControls } from 'leva'
 import React, { type FC, useRef } from 'react'
@@ -42,17 +42,9 @@ const INITIAL_UNIFORMS: Uniforms = {
 
 const EnergyCylinderShaderMaterial = shaderMaterial(INITIAL_UNIFORMS, vertexShader, fragmentShader)
 
-extend({ EnergyCylinderShaderMaterial })
+const EnergyCylinderShaderMaterialExtended = extend(EnergyCylinderShaderMaterial)
 
-declare module '@react-three/fiber' {
-  interface ThreeElements {
-    energyCylinderShaderMaterial: ShaderMaterialProps & Uniforms
-  }
-}
-
-type Props = {}
-
-const EnergyTunnel: FC<Props> = ({}) => {
+const EnergyTunnel: FC = () => {
   const shaderMaterial = useRef<ShaderMaterial & Partial<Uniforms>>(null)
 
   // const { progress } = useControls({
@@ -75,8 +67,8 @@ const EnergyTunnel: FC<Props> = ({}) => {
 
       for (let i = 0; i < NUMBER_OF_LINES; i++) {
         lineParams.current.set(generateRandomLineParams(i), i * 3)
-        let progress = { value: 0 }
-        let tween = gsap.to(progress, {
+        const progress = { value: 0 }
+        const tween = gsap.to(progress, {
           value: 1,
           delay: 'random(0, 1, 0.2)',
           duration: 'random(0.8, 4, 0.2)',
@@ -111,7 +103,7 @@ const EnergyTunnel: FC<Props> = ({}) => {
 
   return (
     <Cylinder args={[TUNNEL_RADIUS, TUNNEL_RADIUS, TUNNEL_LENGTH, 40, 40, true]}>
-      <energyCylinderShaderMaterial
+      <EnergyCylinderShaderMaterialExtended
         ref={shaderMaterial}
         key={EnergyCylinderShaderMaterial.key}
         transparent={true}

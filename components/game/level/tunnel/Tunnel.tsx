@@ -8,11 +8,10 @@ import { CAMERA_FAR, GRID_SQUARE_SIZE_M } from '@/stores/GameProvider'
 import tunnelFragment from './tunnel.frag'
 import tunnelVertex from './tunnel.vert'
 
-// Define uniforms (empty for now, but required for shaderMaterial)
-
 type Uniforms = {
   uTime: number
 }
+
 const TUNNEL_UNIFORMS: Uniforms = {
   uTime: 0,
 }
@@ -27,7 +26,6 @@ const TUNNEL_SEGMENTS = 32
 
 const Tunnel: FC = () => {
   const shaderMaterial = React.useRef<typeof TunnelShaderMaterial & Uniforms>(null)
-
   const { gameTime } = useTimeSubscription()
 
   useFrame(() => {
@@ -47,7 +45,7 @@ const Tunnel: FC = () => {
           true, // openEnded - open at both ends
         ]}
       />
-      <TunnelShaderMaterial key={CustomTunnelShaderMaterial.key} ref={shaderMaterial} side={2} />
+      <TunnelShaderMaterial key={CustomTunnelShaderMaterial.key} ref={shaderMaterial} side={1} />
     </mesh>
   )
 }
