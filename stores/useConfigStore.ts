@@ -32,10 +32,12 @@ export const OBSTACLE_PRESETS: Record<string, Pick<LevelConfig, 'obstacleSpeed' 
   },
 }
 
+const DEFAULT_ANSWER_TIME_DURATION = 4.0 // Seconds to answer each question
+
 export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
   showOnboarding: false,
   phaseDurations: DEFAULT_PHASE_DURATIONS,
-  slowMoDuration: 4.0,
+  answerTimeDuration: DEFAULT_ANSWER_TIME_DURATION,
   ...OBSTACLE_PRESETS['Normal'],
   answerSpeed: 10, // Base speed for answer gates
 }
@@ -44,7 +46,7 @@ export type LevelConfig = {
   // Configurable parameters
   showOnboarding: boolean
   phaseDurations: Record<LevelPhase, number>
-  slowMoDuration: number
+  answerTimeDuration: number
   obstacleSpawnInterval: number
   obstacleSpeed: number
   answerSpeed: number
@@ -53,7 +55,7 @@ export type LevelConfig = {
 type StoreState = LevelConfig & {
   setShowOnboarding: (show: boolean) => void
   setPhaseDurations: (durations: Record<LevelPhase, number>) => void
-  setSlowMoDuration: (duration: number) => void
+  setAnswerTimeDuration: (duration: number) => void
   setObstacleSpawnInterval: (interval: number) => void
   setObstacleSpeed: (speed: number) => void
   setAnswerSpeed: (speed: number) => void
@@ -66,14 +68,14 @@ export const useConfigStore = create<StoreState>()(
       ...DEFAULT_LEVEL_CONFIG,
       setShowOnboarding: (showOnboarding) => set({ showOnboarding }),
       setPhaseDurations: (durations) => set({ phaseDurations: durations }),
-      setSlowMoDuration: (duration) => set({ slowMoDuration: duration }),
+      setAnswerTimeDuration: (duration) => set({ answerTimeDuration: duration }),
       setObstacleSpawnInterval: (interval) => set({ obstacleSpawnInterval: interval }),
       setObstacleSpeed: (speed) => set({ obstacleSpeed: speed }),
       setAnswerSpeed: (speed) => set({ answerSpeed: speed }),
       getLevelConfig: () => ({
         showOnboarding: get().showOnboarding,
         phaseDurations: get().phaseDurations,
-        slowMoDuration: get().slowMoDuration,
+        answerTimeDuration: get().answerTimeDuration,
         obstacleSpawnInterval: get().obstacleSpawnInterval,
         obstacleSpeed: get().obstacleSpeed,
         answerSpeed: get().answerSpeed,

@@ -21,7 +21,11 @@ type DebugInfo = {
 const OBSTACLE_QUESTION_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.OBSTACLES, LevelPhase.QUESTION] as const
 const QUESTION_ONLY_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.QUESTION] as const
 
-const ANSWER_SLOW_MO_DURATION = 4.0 // Default duration for slow-mo effect when answer gate is approached
+// Slow motion constants
+export const SLOW_MO_RAMP_DURATION = 0.5 // Duration in seconds for slowing down to slow-mo speed
+export const SLOW_MO_MULTIPLIER = 0.04 // Time multiplier during slow-mo
+export const SLOW_MO_EXTREME_MULTIPLIER = 0.02 // Extreme slow-mo multiplier for very long answer durations
+export const MAX_SLOW_MO_TRIGGER_DISTANCE = 6 // Maximum distance from player to trigger slow-mo to keep gates readable
 
 export enum ObstacleType {
   SPHERE = 'SPHERE',
@@ -120,7 +124,7 @@ const createLevelStore = ({
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
-  const slowMoTimeRemainingTarget = { value: ANSWER_SLOW_MO_DURATION }
+  let answerTimeRemaining = { value: config.answerTimeDuration }
 
   return createStore<LevelState>()((set, get) => ({
     // Configurable parameters set on load with default values
@@ -137,6 +141,7 @@ const createLevelStore = ({
         showOnboarding: config.showOnboarding,
         withObstacles: config.phaseDurations.OBSTACLES > 0,
       })
+      answerTimeRemaining = { value: config.answerTimeDuration }
       console.warn('[LevelProvider] Starting level with config:', { config, phases })
       set({
         ...INITIAL_STATE,
@@ -272,47 +277,77 @@ const createLevelStore = ({
       set({ isSlowMo: true })
       gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 1 })
 
-      const slowMoDuration = get().config.slowMoDuration
-      slowMoTimeRemainingTarget.value = slowMoDuration
+      const { answerTimeDuration, answerSpeed } = get().config
+      answerTimeRemaining.value = answerTimeDuration
+
+      // Calculate if we need extreme slow-mo to keep gates readable
+      const maxDistanceWithNormalSlowMo =
+        answerSpeed * SLOW_MO_MULTIPLIER * answerTimeDuration + answerSpeed * SLOW_MO_RAMP_DURATION
+      const needsExtremeSlowMo = maxDistanceWithNormalSlowMo > MAX_SLOW_MO_TRIGGER_DISTANCE
+
+      console.warn('[LevelProvider] Slow-mo calculation:', {
+        answerTimeDuration,
+        answerSpeed,
+        maxDistanceWithNormalSlowMo,
+        needsExtremeSlowMo,
+      })
 
       speedTimeline?.kill()
       speedTimeline = gsap
         .timeline({
           onComplete: () => {
-            set({ isSlowMo: false, slowMoTimeRemaining: slowMoDuration })
+            set({ isSlowMo: false, slowMoTimeRemaining: answerTimeDuration })
             gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 0 })
           },
         })
         // Slow time down as the answer gate approaches
         .to(timeTweenTarget, {
-          duration: 0.5,
+          duration: SLOW_MO_RAMP_DURATION,
           ease: 'power2.out',
-          value: 0.04,
+          value: SLOW_MO_MULTIPLIER,
           onUpdate: () => {
             set({ timeMultiplier: timeTweenTarget.value })
           },
         })
-        .to('#slow-mo-bar', {
-          scaleX: 1,
-          duration: slowMoDuration,
-          ease: 'none',
-          onUpdate: () => {
-            set({ slowMoTimeRemaining: slowMoTimeRemainingTarget.value })
-          },
-        })
-        // Speed back up again
-        .to(
+
+      // Slow down even further if needed for very long answer durations
+      if (needsExtremeSlowMo) {
+        speedTimeline.to(
           timeTweenTarget,
           {
-            duration: 0.5,
-            ease: 'power1.in',
-            value: 1.0,
+            duration: SLOW_MO_RAMP_DURATION,
+            ease: 'power3.out',
+            value: SLOW_MO_EXTREME_MULTIPLIER,
             onUpdate: () => {
               set({ timeMultiplier: timeTweenTarget.value })
             },
           },
-          slowMoDuration + 0.6,
+          '+=1.0',
+        ) // Slight overlap to avoid pause between tweens
+      }
+
+      speedTimeline
+        .to(
+          '#slow-mo-bar',
+          {
+            scaleX: 1,
+            duration: answerTimeDuration,
+            ease: 'none',
+            onUpdate: () => {
+              set({ slowMoTimeRemaining: answerTimeRemaining.value })
+            },
+          },
+          SLOW_MO_RAMP_DURATION,
         )
+        // Speed back up again
+        .to(timeTweenTarget, {
+          duration: 0.4,
+          ease: 'power1.out',
+          value: 1.0,
+          onUpdate: () => {
+            set({ timeMultiplier: timeTweenTarget.value })
+          },
+        })
     },
 
     updatePlayerPosition: ({ pos, lanes }) => {

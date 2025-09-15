@@ -51,8 +51,8 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
   const obstacleSpawnInterval = useConfigStore((s) => s.obstacleSpawnInterval)
   const setObstacleSpawnInterval = useConfigStore((s) => s.setObstacleSpawnInterval)
 
-  const slowMoDuration = useConfigStore((s) => s.slowMoDuration)
-  const setSlowMoDuration = useConfigStore((s) => s.setSlowMoDuration)
+  const slowMoDuration = useConfigStore((s) => s.answerTimeDuration)
+  const setSlowMoDuration = useConfigStore((s) => s.setAnswerTimeDuration)
 
   const phaseDurations = useConfigStore((s) => s.phaseDurations)
   const setPhaseDurations = useConfigStore((s) => s.setPhaseDurations)

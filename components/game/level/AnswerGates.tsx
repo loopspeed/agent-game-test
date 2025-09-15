@@ -1,14 +1,15 @@
 /* eslint-disable jsx-a11y/alt-text */
 'use client'
+
 import { Html, Image } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
-import { CuboidCollider, type IntersectionEnterPayload, RapierRigidBody, RigidBody } from '@react-three/rapier'
-import React, { type FC, useRef } from 'react'
+import { CuboidCollider, RapierRigidBody, RigidBody } from '@react-three/rapier'
+import React, { type FC, useMemo, useRef } from 'react'
 
 import activeGateIndicator from '@/assets/selected-gate-indicator.png'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import type { Answer } from '@/model/content'
-import { type AnswerGateUserData, LevelPhase, RigidBodyType, type RigidBodyUserData } from '@/model/game'
+import { type AnswerGateUserData, LevelPhase, RigidBodyType } from '@/model/game'
 import {
   GameStage,
   GRID_SQUARE_SIZE_M,
@@ -18,7 +19,16 @@ import {
   SPAWN_OBSTACLE_Z,
   useGameStore,
 } from '@/stores/GameProvider'
-import { useLevelStore } from '@/stores/LevelProvider'
+import {
+  MAX_SLOW_MO_TRIGGER_DISTANCE,
+  SLOW_MO_EXTREME_MULTIPLIER,
+  SLOW_MO_MULTIPLIER,
+  SLOW_MO_RAMP_DURATION,
+  useLevelStore,
+} from '@/stores/LevelProvider'
+
+// Player Z position (where the player is positioned)
+const PLAYER_Z_POSITION = 0
 
 type AnswerGateProps = {
   position: [number, number, number]
@@ -77,6 +87,7 @@ const AnswerGates: FC = () => {
   const isSlowMo = useLevelStore((s) => s.isSlowMo)
   const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
   const answerSpeed = useLevelStore((s) => s.config.answerSpeed)
+  const answerTimeDuration = useLevelStore((s) => s.config.answerTimeDuration)
   const questionIndex = useLevelStore((s) => s.questionIndex)
   const answersMapping = useLevelStore((s) => s.answersMapping)
   const onQuestionPhaseCompleted = useLevelStore((s) => s.onQuestionPhaseCompleted)
@@ -86,6 +97,30 @@ const AnswerGates: FC = () => {
   const gatesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
   const isLive = useRef(false) // True when gates are active and moving
   const lastSpawnedQuestionIndex = useRef(-1) // Track last spawned question index to prevent duplicate spawns
+
+  // Calculate the Z position where slow-mo should trigger based on answer time duration
+  // This ensures the gate won't pass the player during the slow-mo period
+  const slowMoTriggerZ: number = useMemo(() => {
+    // Distance the gate will travel during the ramp down to slow-mo (at full speed)
+    const distanceDuringRamp = answerSpeed * SLOW_MO_RAMP_DURATION
+
+    // Calculate distance needed with normal slow-mo
+    const distanceDuringNormalSlowMo = answerSpeed * SLOW_MO_MULTIPLIER * answerTimeDuration
+    const totalDistanceWithNormalSlowMo = distanceDuringNormalSlowMo + distanceDuringRamp
+
+    // Use normal slow-mo calculation
+    const triggerZ = PLAYER_Z_POSITION - Math.min(totalDistanceWithNormalSlowMo, MAX_SLOW_MO_TRIGGER_DISTANCE)
+
+    console.warn('[AnswerGates] Calculated slow-mo trigger Z:', {
+      answerSpeed,
+      answerTimeDuration,
+      distanceDuringRamp,
+      distanceDuringNormalSlowMo,
+      totalDistanceWithNormalSlowMo,
+      triggerZ,
+    })
+    return triggerZ
+  }, [answerSpeed, answerTimeDuration])
 
   const { timeMultiplier } = useTimeSubscription((timeMultiplier) => {
     gatesRefs.current.forEach((gate) => {
@@ -144,7 +179,7 @@ const AnswerGates: FC = () => {
     if (gatesNeedKilling) return killAnswerGates()
 
     // Slow-mo timing logic (adjust for rhythm-based timing)
-    const shouldSlowDown = Math.round(firstGateTranslationZ) === -5 && !isSlowMo
+    const shouldSlowDown = Math.round(firstGateTranslationZ) === Math.round(slowMoTriggerZ) && !isSlowMo
     if (shouldSlowDown) goSlowMo()
   })
 
