@@ -24,8 +24,8 @@ const QUESTION_ONLY_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.QUESTION] as cons
 // Slow motion constants
 export const SLOW_MO_RAMP_DURATION = 0.5 // Duration in seconds for slowing down to slow-mo speed
 export const SLOW_MO_MULTIPLIER = 0.04 // Time multiplier during slow-mo
-export const SLOW_MO_EXTREME_MULTIPLIER = 0.02 // Extreme slow-mo multiplier for very long answer durations
-export const MAX_SLOW_MO_TRIGGER_DISTANCE = 6 // Maximum distance from player to trigger slow-mo to keep gates readable
+export const SLOW_MO_EXTREME_MULTIPLIER = 0.015 // Extreme slow-mo multiplier for very long answer durations
+export const MAX_SLOW_MO_TRIGGER_DISTANCE = 5 // Maximum distance from player to trigger slow-mo to keep gates readable
 
 export enum ObstacleType {
   SPHERE = 'SPHERE',

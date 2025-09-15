@@ -69,7 +69,7 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
             </Image>
             <Html transform={true}>
               <div className="flex aspect-square size-16 items-center justify-center overflow-hidden p-1">
-                <p className="text-center text-[7px] font-semibold text-white">{answer.label}</p>
+                <p className="text-center text-[8px] font-semibold text-white">{answer.label}</p>
               </div>
             </Html>
           </>
