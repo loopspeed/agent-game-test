@@ -1,5 +1,6 @@
+/* eslint-disable jsx-a11y/alt-text */
 'use client'
-import { Html, Image, Text } from '@react-three/drei'
+import { Html, Image } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { CuboidCollider, type IntersectionEnterPayload, RapierRigidBody, RigidBody } from '@react-three/rapier'
 import React, { type FC, useRef } from 'react'
@@ -8,7 +9,6 @@ import activeGateIndicator from '@/assets/selected-gate-indicator.png'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import type { Answer } from '@/model/content'
 import { type AnswerGateUserData, LevelPhase, RigidBodyType, type RigidBodyUserData } from '@/model/game'
-import { FONTS } from '@/resources/fonts'
 import {
   GameStage,
   GRID_SQUARE_SIZE_M,
@@ -78,12 +78,15 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
         {/* Visual elements */}
         {!!answer && (
           <>
+            {/* <mesh>
+              <planeGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M]} />
+            </mesh> */}
             <Image url={activeGateIndicator.src} transparent={true} opacity={isActive ? 1 : 0}>
               <planeGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M]} />
             </Image>
             <Html transform={true}>
-              <div className="flex aspect-square size-16 items-center justify-center p-6">
-                <p className="max-w-full text-center text-[8px] font-semibold text-white">{answer.label}</p>
+              <div className="flex aspect-square size-16 items-center justify-center overflow-hidden p-1">
+                <p className="text-center text-[7px] font-semibold text-white">{answer.label}</p>
               </div>
             </Html>
           </>
@@ -140,7 +143,7 @@ const AnswerGates: FC = () => {
     gatesRefs.current.forEach((gate) => {
       if (!gate) return
       gate.setLinvel({ x: 0, y: 0, z: 0 }, false)
-      gate.setTranslation({ x: 0, y: 0, z: 5 }, false)
+      gate.setTranslation({ x: 0, y: 0, z: 10 }, false)
     })
     isLive.current = false // Gates are no longer live, ready for next spawn
     onQuestionPhaseCompleted() // Move to next phase as soon as the gates are killed

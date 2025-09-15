@@ -60,7 +60,7 @@ export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M + LANES_Y_OF
 
 export const CAMERA_FAR = 50
 export const SPAWN_OBSTACLE_Z = -40 as const
-export const KILL_OBSTACLE_Z = 4 as const
+export const KILL_OBSTACLE_Z = 9 as const
 
 // Points system constants
 export const POINTS_OBSTACLE_HIT = -10 as const
