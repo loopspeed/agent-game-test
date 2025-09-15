@@ -42,7 +42,10 @@ void main() {
 
   // Use seed to vary life decay rate - some particles live longer than others
   // Time multiplier affects decay rate - slower when in slow motion
-  float lifeDecayRate = (0.1 + seed * 0.5) * uTimeMultiplier; // Decay rate from 0.1x to 0.6x based on seed, scaled by time
+  float baseLifeDecayRate = (0.1 + seed * 0.5) * uTimeMultiplier; // Decay rate from 0.1x to 0.6x based on seed, scaled by time
+  // When damaged, particles die faster
+  float damageLifeMultiplier = 1.0 + uDamageAmount;
+  float lifeDecayRate = baseLifeDecayRate * damageLifeMultiplier;
   life -= delta * lifeDecayRate;
   
   // Check if particle should respawn
@@ -62,7 +65,7 @@ void main() {
     vec3 scaledFlyingForce = flyingForce * speedMultiplier * uTimeMultiplier;
 
     // When damaged, add explosive force and increase overall movement
-    float damageForceMultiplier = uDamageAmount * 3.0 * speedMultiplier;
+    float damageForceMultiplier = uDamageAmount * 10.0 * speedMultiplier; // Increased from 3.0 to 8.0 for more dramatic explosion
     vec3 damageExplosion = normalize(pos) * damageForceMultiplier;
     
     // Subtle noise influence for natural movement - also scaled and more chaotic when damaged
@@ -74,7 +77,7 @@ void main() {
       noise(pos * 0.8 + timeScaled * 0.2 + 200.0)
     );
 
-    float noiseMultiplier = 0.5 * (1.0 + uDamageAmount * 2.0);
+    float noiseMultiplier = 0.5 * (1.0 + uDamageAmount * 8.0); // Increased chaos when damaged
     noiseForce *= noiseMultiplier;
 
     // Slight radial expansion from sphere center - also scaled
