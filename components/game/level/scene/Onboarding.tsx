@@ -5,7 +5,7 @@ import React, { type FC, useState } from 'react'
 
 import { LevelPhase, type OnboardingTargetUserData, RigidBodyType, type RigidBodyUserData } from '@/model/game'
 import { FONTS } from '@/resources/fonts'
-import { GRID_SQUARE_SIZE_M, LANES_X, LANES_Y } from '@/stores/GameProvider'
+import { GRID_SQUARE_SIZE_M, LANES_X, LANES_Y } from '@/stores/LevelProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 
 type TargetProps = {
@@ -68,7 +68,7 @@ const ONBOARDING_SEQUENCE = [1, 0, 3, 6, 7, 8, 5, 2, 4]
 
 const Onboarding: FC = () => {
   const isOnboardingPhase = useLevelStore((s) => s.phase === LevelPhase.ONBOARDING)
-  const onOnboardingPhaseCompleted = useLevelStore((s) => s.onOnboardingPhaseCompleted)
+  const onOnboardingPhaseCompleted = useLevelStore((s) => s.onOnboardingCompleted)
 
   // const cubesRefs = useRef<(RapierRigidBody | null)[]>(new Array(9).fill(null))
 

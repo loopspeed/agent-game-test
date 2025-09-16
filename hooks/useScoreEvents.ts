@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 
-import { useGameStore } from '@/stores/GameProvider'
-import { type AnswerHit, POINTS_ANSWER_CORRECT, POINTS_ANSWER_INCORRECT, type ScoreEvent } from '@/stores/GameProvider'
+import { type AnswerHit } from '@/model/game'
+import { POINTS_ANSWER_CORRECT, POINTS_ANSWER_INCORRECT, type ScoreEvent, useLevelStore } from '@/stores/LevelProvider'
 
 export type UnifiedScoreEvent = {
   id: string // Unique identifier used for React keys
@@ -14,8 +14,8 @@ export type UnifiedScoreEvent = {
  * The array is kept sorted by timestamp so popups appear in chronological order.
  */
 export const useScoreEvents = () => {
-  const scoreEvents = useGameStore((s) => s.scoreEvents)
-  const answersHit = useGameStore((s) => s.answersHit)
+  const scoreEvents = useLevelStore((s) => s.scoreEvents)
+  const answersHit = useLevelStore((s) => s.answersHit)
 
   const unifiedEvents = useMemo<UnifiedScoreEvent[]>(() => {
     const events: UnifiedScoreEvent[] = []

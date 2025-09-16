@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react'
 
-import { GameStage, useGameStore } from '@/stores/GameProvider'
-import { useLevelStoreAPI } from '@/stores/LevelProvider'
+import { LevelPhase } from '@/model/game'
+import { useLevelStore, useLevelStoreAPI } from '@/stores/LevelProvider'
 
 export function useTimeSubscription(onTimeMultiplierChange?: (time: number) => void) {
-  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
+  const isPlaying = useLevelStore((s) => s.phase !== LevelPhase.CONFIG)
   const levelStoreAPI = useLevelStoreAPI()
 
   // Subscribe to frequently changing state changes

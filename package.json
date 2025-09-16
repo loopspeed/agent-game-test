@@ -8,12 +8,16 @@
     "start": "next start"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.30",
+    "@ai-sdk/react": "^2.0.44",
     "@gsap/react": "^2.1.2",
     "@mantine/hooks": "^8.2.7",
     "@react-three/drei": "latest",
     "@react-three/fiber": "latest",
     "@react-three/rapier": "latest",
     "@types/react-transition-group": "^4.4.12",
+    "ai": "^5.0.44",
+    "date-fns": "^4.1.0",
     "glsl-noise": "^0.0.0",
     "glsl-rotate": "^2.0.1",
     "glslify": "^7.1.1",

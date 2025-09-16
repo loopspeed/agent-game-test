@@ -5,12 +5,13 @@ import { AdditiveBlending, DataTexture, Points, Texture } from 'three'
 import { GPUComputationRenderer, type Variable } from 'three/addons/misc/GPUComputationRenderer.js'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { GameStage, useGameStore } from '@/stores/GameProvider'
 
 import particleFragment from './points/point.frag'
 import particleVertex from './points/point.vert'
 import positionFragmentShader from './simulation/position.frag'
 import velocityFragmentShader from './simulation/velocity.frag'
+import { useLevelStore } from '@/stores/LevelProvider'
+import { LevelPhase } from '@/model/game'
 
 /**
  * TunnelParticles - GPU-computed particle system for tunnel atmosphere
@@ -94,7 +95,7 @@ const TunnelParticles: FC<Props> = ({ isMobile }) => {
   const positionUniforms = useRef<PositionShaderUniforms | null>(null)
   const velocityUniforms = useRef<VelocityShaderUniforms | null>(null)
 
-  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
+  const isPlaying = useLevelStore((s) => s.phase !== LevelPhase.CONFIG)
   const { totalTime: gameTime, timeMultiplier } = useTimeSubscription()
   const lastTime = useRef(0)
 

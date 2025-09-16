@@ -6,39 +6,16 @@ import { Leva, useControls } from 'leva'
 import { type FC, useEffect, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
-import CompletedUI from '@/components/ui/GameOver'
-import PlayingUI from '@/components/ui/PlayingUI'
-import useGameControls from '@/hooks/useGameControls'
 import { LEVA_CONTROLS_THEME } from '@/resources/leva'
-import { GameStage, useGameStore } from '@/stores/GameProvider'
+import { useLevelStore } from '@/stores/LevelProvider'
 import { OBSTACLE_PRESETS, useConfigStore } from '@/stores/useConfigStore'
 
-const GameUI: FC = () => {
-  const stage = useGameStore((s) => s.stage)
-  const container = useRef<HTMLDivElement>(null)
-
-  return (
-    <SwitchTransition>
-      <Transition key={stage} timeout={{ enter: 0, exit: 400 }} nodeRef={container} appear>
-        {(status) => (
-          <div
-            className="pointer-events-none fixed top-0 left-0 z-100 flex !h-svh w-full items-center justify-center"
-            ref={container}>
-            {stage === GameStage.READY && <ReadyUI transitionStatus={status} />}
-            {stage === GameStage.PLAYING && <PlayingUI transitionStatus={status} />}
-            {stage === GameStage.COMPLETED && <CompletedUI transitionStatus={status} />}
-          </div>
-        )}
-      </Transition>
-    </SwitchTransition>
-  )
+type Props = {
+  transitionStatus: TransitionStatus
 }
 
-export default GameUI
-
-const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
-  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
-  const { handleStart } = useGameControls()
+const ConfigUI: FC<Props> = ({ transitionStatus }) => {
+  const onConfigCompleted = useLevelStore((s) => s.onConfigCompleted)
   const container = useRef<HTMLDivElement>(null)
 
   // Configuration...
@@ -56,6 +33,8 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
 
   const phaseDurations = useConfigStore((s) => s.phaseDurations)
   const setPhaseDurations = useConfigStore((s) => s.setPhaseDurations)
+
+  const getLevelConfig = useConfigStore((s) => s.getLevelConfig)
 
   const [{ preset }, setControls] = useControls(() => {
     return {
@@ -145,16 +124,16 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Enter') {
-        handleStart()
+        onConfigCompleted(getLevelConfig())
       }
     }
 
-    if (!isPlaying) window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleKeyDown)
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isPlaying, handleStart])
+  }, [getLevelConfig, onConfigCompleted])
 
   useGSAP(
     () => {
@@ -184,3 +163,5 @@ const ReadyUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus 
     </div>
   )
 }
+
+export default ConfigUI

@@ -1,11 +1,13 @@
+import { z } from 'zod'
+
 export enum LevelPhase {
-  INTRO = 'INTRO',
-  ONBOARDING = 'ONBOARDING',
-  REST = 'REST',
-  OBSTACLES = 'OBSTACLES',
-  QUESTION = 'QUESTION',
-  OUTRO = 'OUTRO',
-  FINISHED = 'FINISHED',
+  CONFIG = 'CONFIG', // Pre-level configuration
+  INTRO = 'INTRO', // Animate in, show course title
+  ONBOARDING = 'ONBOARDING', // How to play
+  REST = 'REST', // Rest after question
+  OBSTACLES = 'OBSTACLES', // Avoid obstacles
+  QUESTION = 'QUESTION', // Answer question
+  OUTRO = 'OUTRO', // Level complete, show stats
 }
 
 export enum RigidBodyType {
@@ -49,3 +51,34 @@ export type RigidBodyUserData =
   | AnswerGateUserData
   | PlayerUserData
   | OnboardingTargetUserData
+
+//   id: string
+//   courseId: string // identifier for the course
+//   chapterId: string // identifier for the chapter
+//   timestamp: number
+//   points: number
+//   answers: AnswerHit[]
+//   correctAnswers: number
+//   accuracyPercentage: number
+//   completionTime: number // in milliseconds
+
+const AnswerHitSchema = z.object({
+  questionId: z.string(),
+  answerId: z.string().nullable(),
+  isCorrect: z.boolean(),
+  timestamp: z.number(),
+})
+
+export type AnswerHit = z.infer<typeof AnswerHitSchema>
+
+export const LevelSummarySchema = z.object({
+  id: z.string(),
+  courseId: z.string(),
+  chapterId: z.string(),
+  points: z.number(),
+  answers: z.array(AnswerHitSchema),
+  timestamp: z.number(),
+  completionTime: z.number(),
+})
+
+export type ChapterRun = z.infer<typeof LevelSummarySchema>

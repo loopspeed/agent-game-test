@@ -6,14 +6,14 @@ import React, { type FC, useRef } from 'react'
 
 import { LevelPhase } from '@/model/game'
 import { FONTS } from '@/resources/fonts'
-import { GRID_SQUARE_SIZE_M, KILL_OBSTACLE_Z, LANES_Y, SPAWN_OBSTACLE_Z } from '@/stores/GameProvider'
+import { GRID_SQUARE_SIZE_M, KILL_OBSTACLE_Z, LANES_Y, SPAWN_OBSTACLE_Z } from '@/stores/LevelProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 
 const LEVEL_COMPLETE_SPEED = 15
 
 const Outro: FC = () => {
   const isOutroPhase = useLevelStore((s) => s.phase === LevelPhase.OUTRO)
-  const onOutroPhaseCompleted = useLevelStore((s) => s.onOutroPhaseCompleted)
+  const onOutroPhaseCompleted = useLevelStore((s) => s.onOutroCompleted)
 
   const body = useRef<RapierRigidBody>(null)
   const isLive = useRef(false)

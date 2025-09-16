@@ -1,27 +1,22 @@
 'use client'
 
-import { useGSAP } from '@gsap/react'
 import { useFrame } from '@react-three/fiber'
 import { BallCollider, type IntersectionEnterHandler, type RapierRigidBody, RigidBody } from '@react-three/rapier'
-import { gsap } from 'gsap'
 import { type FC, useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
 import PlayerParticles, { ORB_RADIUS } from '@/components/game/player/particles/PlayerParticles'
 import ScoreIndicator from '@/components/game/player/ScoreIndicator'
 import { RigidBodyType, type RigidBodyUserData } from '@/model/game'
-import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
-import { useLevelStore } from '@/stores/LevelProvider'
+import { LANES_X, LANES_Y, useLevelStore } from '@/stores/LevelProvider'
 import { type InputState, useInputStore } from '@/stores/useInputStore'
-
-gsap.registerPlugin(useGSAP)
 
 const Player: FC = () => {
   const input = useInputStore()
 
-  const onObstacleHit = useGameStore((s) => s.onObstacleHit)
-  const onObstacleAvoided = useGameStore((s) => s.onObstacleAvoided)
-  const onAnswerHit = useGameStore((s) => s.onAnswerHit)
+  const onObstacleHit = useLevelStore((s) => s.onObstacleHit)
+  const onObstacleAvoided = useLevelStore((s) => s.onObstacleAvoided)
+  const onAnswerHit = useLevelStore((s) => s.onAnswerHit)
   const updatePlayerPosition = useLevelStore((s) => s.updatePlayerPosition)
 
   const laneXIndex = useRef(1)

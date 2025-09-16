@@ -4,7 +4,7 @@ import React, { type FC, useEffect, useRef } from 'react'
 import { Color } from 'three'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { CAMERA_FAR, GRID_SQUARE_SIZE_M } from '@/stores/GameProvider'
+import { CAMERA_FAR, GRID_SQUARE_SIZE_M } from '@/stores/LevelProvider'
 
 import tunnelFragment from './tunnel.frag'
 import tunnelVertex from './tunnel.vert'

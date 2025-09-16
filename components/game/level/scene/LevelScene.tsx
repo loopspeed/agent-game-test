@@ -5,7 +5,8 @@ import { type FC, Suspense } from 'react'
 
 import Player from '@/components/game/Player'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { SPAWN_OBSTACLE_Z } from '@/stores/GameProvider'
+import { LevelPhase } from '@/model/game'
+import { SPAWN_OBSTACLE_Z } from '@/stores/LevelProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 
 import AnswerGates from './AnswerGates'
@@ -16,10 +17,12 @@ import Tunnel from './tunnel/Tunnel'
 import TunnelParticles from './tunnelParticles/TunnelParticles'
 
 const LevelScene: FC = () => {
+  const isPlaying = useLevelStore((s) => s.phase !== LevelPhase.CONFIG)
   const update = useLevelStore((s) => s.update)
   const { totalTime, timeMultiplier } = useTimeSubscription()
 
   useFrame((_, delta) => {
+    if (!isPlaying) return
     const newTime = totalTime.current + delta * timeMultiplier.current
     update(newTime)
   })

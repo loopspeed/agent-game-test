@@ -4,13 +4,13 @@ import { persist } from 'zustand/middleware'
 import { LevelPhase } from '@/model/game'
 
 const DEFAULT_PHASE_DURATIONS: Record<LevelPhase, number> = {
+  CONFIG: 100000, // For level config - effectively infinite until player starts
   INTRO: 1, // READONLY For entry animation and get-ready
-  ONBOARDING: 10000, // READONLY Effectively infinite until player completels onboarding - then phase is advanced manually
+  ONBOARDING: 100000, // READONLY Effectively infinite until player completels onboarding - then phase is advanced manually
   REST: 1, // READONLY Short rest before obstacles
   OBSTACLES: 6, // EDITABLE Duration for obstacles phase (0 = No obstacles)
-  QUESTION: 10000, // READONLY Effectively infinite until question is answered and the gate is killed - then phase is advanced manually
-  OUTRO: 10000, // READONLY For showing "level complete" and other end of level stuff
-  FINISHED: 10000, // READONLY For showing level complete screen - does not advance from here
+  QUESTION: 100000, // READONLY Effectively infinite until question is answered and the gate is killed - then phase is advanced manually
+  OUTRO: 100000, // READONLY For showing "level complete" and other end of level stuff
 } as const
 
 export const OBSTACLE_PRESETS: Record<string, Pick<LevelConfig, 'obstacleSpeed' | 'obstacleSpawnInterval'>> = {

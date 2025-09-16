@@ -8,7 +8,8 @@ import { AdditiveBlending, Color, DataTexture, Points, Texture, Vector2 } from '
 import { GPUComputationRenderer, type Variable } from 'three/addons/misc/GPUComputationRenderer.js'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { GameStage, useGameStore } from '@/stores/GameProvider'
+import { LevelPhase } from '@/model/game'
+import { useLevelStore } from '@/stores/LevelProvider'
 
 import particleFragment from './points/point.frag'
 import particleVertex from './points/point.vert'
@@ -76,8 +77,8 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
 
   // Animation values
   const damageAmount = useRef({ value: 0 })
-  const scoreEvents = useGameStore((s) => s.scoreEvents)
-  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
+  const scoreEvents = useLevelStore((s) => s.scoreEvents)
+  const isPlaying = useLevelStore((s) => s.phase !== LevelPhase.CONFIG)
   const { totalTime: gameTime, timeMultiplier } = useTimeSubscription()
 
   useGSAP(() => {

@@ -7,10 +7,15 @@ import { SwitchTransition, Transition, type TransitionStatus } from 'react-trans
 import { twJoin } from 'tailwind-merge'
 
 import { LevelPhase } from '@/model/game'
-import { useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 
-const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatus }) => {
+type Props = {
+  transitionStatus: TransitionStatus
+}
+
+// The playing UI is displayed when the level phase is NOT Config or Onboarding
+
+const PlayingUI: FC<Props> = ({ transitionStatus }) => {
   const container = useRef<HTMLDivElement>(null)
 
   useGSAP(
@@ -27,35 +32,19 @@ const PlayingUI: FC<{ transitionStatus: TransitionStatus }> = ({ transitionStatu
 
   return (
     <section ref={container} className="contents opacity-0">
-      <Onboarding />
       <QuestionIndicators />
       <Question />
       <QuestionTimer />
       <Points />
-      <Streak />
+      {/* <Streak /> */}
     </section>
   )
 }
 
 export default PlayingUI
 
-const Onboarding: FC = () => {
-  const isOnboardingPhase = useLevelStore((s) => s.phase === LevelPhase.ONBOARDING)
-  if (!isOnboardingPhase) return null
-
-  return (
-    <section className="absolute top-20 right-0 left-0 flex w-full flex-col items-center">
-      <p className="max-w-xl px-4 py-8 text-center text-2xl leading-relaxed font-semibold">
-        Use the [Arrow Keys] to move your player.
-        <br />
-        Follow the highlighted path around the lanes!
-      </p>
-    </section>
-  )
-}
-
 const Points: FC = () => {
-  const points = useGameStore((s) => s.points)
+  const points = useLevelStore((s) => s.points)
 
   // Determine color based on points value
   const getPointsColor = (): string => {
@@ -74,17 +63,17 @@ const Points: FC = () => {
   )
 }
 
-const Streak: FC = () => {
-  const streak = useGameStore((s) => s.streak)
-  if (streak <= 0) return null
+// const Streak: FC = () => {
+//   const streak = useLevelStore((s) => s.streak)
+//   if (streak <= 0) return null
 
-  return (
-    <div className="absolute right-6 bottom-6 rounded-full bg-black/70 px-3 py-1 text-xl font-semibold">
-      <span className="mr-1">🔥</span>
-      {streak}
-    </div>
-  )
-}
+//   return (
+//     <div className="absolute right-6 bottom-6 rounded-full bg-black/70 px-3 py-1 text-xl font-semibold">
+//       <span>🔥</span>
+//       {streak}
+//     </div>
+//   )
+// }
 
 const Question: FC = () => {
   const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
@@ -136,7 +125,7 @@ const Question: FC = () => {
 const QuestionIndicators: FC = () => {
   const questions = useLevelStore((s) => s.questions)
   const questionIndex = useLevelStore((s) => s.questionIndex)
-  const answersHit = useGameStore((s) => s.answersHit)
+  const answersHit = useLevelStore((s) => s.answersHit)
 
   return (
     <div className="absolute top-6 flex items-center gap-3">

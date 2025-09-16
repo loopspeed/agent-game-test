@@ -7,15 +7,14 @@ import { useObstaclesSpawning } from '@/hooks/useObstaclesSpawning'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { LevelPhase, type ObstacleAvoidedUserData, type ObstacleUserData, RigidBodyType } from '@/model/game'
 import {
-  GameStage,
   GRID_SQUARE_SIZE_M,
   KILL_OBSTACLE_Z,
   LANES_X,
   LANES_Y,
+  type ObstacleSpawnData,
   SPAWN_OBSTACLE_Z,
-  useGameStore,
-} from '@/stores/GameProvider'
-import { type ObstacleSpawnData, useLevelStore } from '@/stores/LevelProvider'
+  useLevelStore,
+} from '@/stores/LevelProvider'
 
 type ObstacleInstance = {
   id: string
@@ -31,7 +30,7 @@ const INSTANCES_COUNT = 64
 const ZONE_INSTANCES_COUNT = 8
 
 const Obstacles: FC = () => {
-  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
+  const isPlaying = useLevelStore((s) => s.phase !== LevelPhase.CONFIG)
   const isObstaclesPhase = useLevelStore((s) => s.phase === LevelPhase.OBSTACLES)
 
   const obstaclesData = useRef<ObstacleInstance[]>([])
@@ -49,8 +48,6 @@ const Obstacles: FC = () => {
   useEffect(() => {
     const setupInstances = () => {
       if (isSetup.current) return // Prevent double setup
-
-      console.warn('🏗️ Setting up obstacle instances:')
 
       const initialData = {
         id: '',

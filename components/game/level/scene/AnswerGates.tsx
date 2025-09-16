@@ -11,19 +11,14 @@ import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import type { Answer } from '@/model/content'
 import { type AnswerGateUserData, LevelPhase, RigidBodyType } from '@/model/game'
 import {
-  GameStage,
   GRID_SQUARE_SIZE_M,
   KILL_OBSTACLE_Z,
   LANES_X,
   LANES_Y,
-  SPAWN_OBSTACLE_Z,
-  useGameStore,
-} from '@/stores/GameProvider'
-import {
   MAX_SLOW_MO_TRIGGER_DISTANCE,
-  SLOW_MO_EXTREME_MULTIPLIER,
   SLOW_MO_MULTIPLIER,
   SLOW_MO_RAMP_DURATION,
+  SPAWN_OBSTACLE_Z,
   useLevelStore,
 } from '@/stores/LevelProvider'
 
@@ -82,7 +77,7 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
 AnswerGate.displayName = 'AnswerGate'
 
 const AnswerGates: FC = () => {
-  const isPlaying = useGameStore((s) => s.stage === GameStage.PLAYING)
+  const isPlaying = useLevelStore((s) => s.phase !== LevelPhase.CONFIG)
   const goSlowMo = useLevelStore((s) => s.goSlowMo)
   const isSlowMo = useLevelStore((s) => s.isSlowMo)
   const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
@@ -90,7 +85,7 @@ const AnswerGates: FC = () => {
   const answerTimeDuration = useLevelStore((s) => s.config.answerTimeDuration)
   const questionIndex = useLevelStore((s) => s.questionIndex)
   const answersMapping = useLevelStore((s) => s.answersMapping)
-  const onQuestionPhaseCompleted = useLevelStore((s) => s.onQuestionPhaseCompleted)
+  const onQuestionPhaseCompleted = useLevelStore((s) => s.onQuestionCompleted)
   const question = useLevelStore((s) => s.question)
   const currentPlayerLane = useLevelStore((s) => s.currentPlayerLane) // [xIndex, yIndex]
 

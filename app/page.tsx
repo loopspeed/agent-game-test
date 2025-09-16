@@ -1,10 +1,8 @@
 'use client'
-import { Leva } from 'leva'
+
 import { useRouter } from 'next/navigation'
 
-import { LEVA_CONTROLS_THEME } from '@/resources/leva'
-
-export default function HomePage() {
+export default function LandingPage() {
   const router = useRouter()
 
   const onStartClick = () => {
@@ -18,7 +16,7 @@ export default function HomePage() {
       <button
         onClick={onStartClick}
         className="rounded bg-teal-500 px-6 py-3 font-semibold text-black hover:bg-teal-600">
-        Start Game
+        Enter Game
       </button>
     </main>
   )

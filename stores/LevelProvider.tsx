@@ -1,12 +1,19 @@
 import type { Vector3Tuple } from '@react-three/rapier'
 import gsap from 'gsap'
-import { createContext, type FC, type PropsWithChildren, useContext, useRef } from 'react'
+import { createContext, type FC, type PropsWithChildren, useContext, useEffect, useRef } from 'react'
 import { createStore, type StoreApi, useStore } from 'zustand'
 
-import type { Answer, Question } from '@/model/content'
-import { LevelPhase } from '@/model/game'
-import { useGameStore } from '@/stores/GameProvider'
-import { type LevelConfig, useConfigStore } from '@/stores/useConfigStore'
+import type { Answer, Chapter, Course, Question } from '@/model/content'
+import {
+  AnswerGateUserData,
+  AnswerHit,
+  ChapterRun,
+  LevelPhase,
+  ObstacleAvoidedUserData,
+  ObstacleUserData,
+} from '@/model/game'
+import { SoundFX } from '@/stores/SoundProvider'
+import { DEFAULT_LEVEL_CONFIG, type LevelConfig } from '@/stores/useConfigStore'
 
 type DebugInfo = {
   gameTime: number
@@ -21,11 +28,26 @@ type DebugInfo = {
 const OBSTACLE_QUESTION_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.OBSTACLES, LevelPhase.QUESTION] as const
 const QUESTION_ONLY_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.QUESTION] as const
 
+// Level constants
+export const GRID_SQUARE_SIZE_M = 1.6 // Meters
+export const LANES_Y_OFFSET = -0.6 // Move them down to avoid question
+export const LANES_X = [-1, 0, 1].map((x) => x * GRID_SQUARE_SIZE_M)
+export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M + LANES_Y_OFFSET)
+export const CAMERA_FAR = 50
+export const SPAWN_OBSTACLE_Z = -40 as const
+export const KILL_OBSTACLE_Z = 9 as const
+
 // Slow motion constants
 export const SLOW_MO_RAMP_DURATION = 0.5 // Duration in seconds for slowing down to slow-mo speed
 export const SLOW_MO_MULTIPLIER = 0.04 // Time multiplier during slow-mo
 export const SLOW_MO_EXTREME_MULTIPLIER = 0.015 // Extreme slow-mo multiplier for very long answer durations
 export const MAX_SLOW_MO_TRIGGER_DISTANCE = 5 // Maximum distance from player to trigger slow-mo to keep gates readable
+
+// Points system constants
+export const POINTS_OBSTACLE_HIT = -10 as const
+export const POINTS_OBSTACLE_AVOIDED = 5 as const
+export const POINTS_ANSWER_CORRECT = 20 as const
+export const POINTS_ANSWER_INCORRECT = -5 as const
 
 export enum ObstacleType {
   SPHERE = 'SPHERE',
@@ -40,11 +62,19 @@ export type ObstacleSpawnData = {
   speed: number
 }
 
+// Currently score events only track obstacle hits/avoids, not answers
+export type ScoreEvent = {
+  type: 'hit' | 'avoided'
+  obstacleId: string
+  points: number
+  timestamp: number
+}
+
 type LevelState = {
-  // Config - passed in from config store when the level starts
   config: LevelConfig
 
   // Time control state
+  gameStartTime: number
   totalTime: number
   timeMultiplier: number
   setTimeMultiplier: (value: number) => void
@@ -57,9 +87,10 @@ type LevelState = {
   phaseIndex: number
   phase: LevelPhase
   phaseTime: number
-  onOnboardingPhaseCompleted: () => void // Manually trigger transition from onboarding to next phase
-  onQuestionPhaseCompleted: () => void // Manually trigger transition to next phase rather than time based because questions could need dynamic time to answer.
-  onOutroPhaseCompleted: () => void // Manually trigger transition from outro to finished phase
+  onConfigCompleted: (config: LevelConfig) => void // Manually trigger transition from config to intro phase
+  onOnboardingCompleted: () => void // Manually trigger transition from onboarding to next phase
+  onQuestionCompleted: () => void // Manually trigger transition to next phase rather than time based because questions could need dynamic time to answer.
+  onOutroCompleted: () => void
 
   // Player
   playerPosition: Vector3Tuple
@@ -75,9 +106,21 @@ type LevelState = {
   // Obstacles
   obstacles: ObstacleSpawnData[]
 
+  // Scoring
+  points: number
+  scoreEvents: ScoreEvent[]
+  streak: number
+  maxStreak: number
+  answersHit: AnswerHit[]
+
+  // Game events
+  onObstacleHit: (data: ObstacleUserData) => void
+  onObstacleAvoided: (data: ObstacleAvoidedUserData) => void
+  onAnswerHit: (data: AnswerGateUserData) => void
+
   // Event system methods
-  start: (config: LevelConfig) => void
-  reset: () => void
+  // start: (config: LevelConfig) => void
+  // reset: () => void
   update: (gameTime: number) => void
   getDebugInfo: () => DebugInfo
 }
@@ -98,10 +141,15 @@ const INITIAL_STATE: Pick<
   | 'slowMoTimeRemaining'
   | 'questionIndex'
   | 'obstacles'
+  | 'streak'
+  | 'maxStreak'
+  | 'points'
+  | 'scoreEvents'
+  | 'answersHit'
 > = {
   totalTime: 0,
   phaseIndex: 0,
-  phase: LevelPhase.INTRO,
+  phase: LevelPhase.CONFIG,
   phaseTime: 0,
   isSlowMo: false,
   timeMultiplier: 1,
@@ -110,32 +158,46 @@ const INITIAL_STATE: Pick<
   currentPlayerLane: 4, // Center lane in 3x3 grid
   questionIndex: 0,
   obstacles: [],
+  streak: 0,
+  maxStreak: 0,
+  points: 0,
+  scoreEvents: [],
+  answersHit: [],
 }
 
-const createLevelStore = ({
-  config,
-  questions,
-  onCompleted,
-}: {
-  config: LevelConfig
-  questions: Question[]
-  onCompleted: () => void
-}) => {
+type CreateStoreParams = {
+  course: Course
+  chapter: Chapter
+  onComplete: (run: ChapterRun) => void
+  playSoundFX: (fx: SoundFX) => void
+}
+
+const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateStoreParams) => {
   let speedTimeline: GSAPTimeline
   // Create values which can be animated using GSAP (synced with store values which can't be mutated directly)
   const timeTweenTarget = { value: 1 }
-  let answerTimeRemaining = { value: config.answerTimeDuration }
+  let answerTimeRemaining = { value: 4.0 }
+
+  const questions = chapter.questions
+
+  const goToNextPhase = (get: any, set: any) => {
+    const state = get()
+    const newPhaseIndex = state.phaseIndex + 1
+    const newPhase = state.phases[newPhaseIndex]
+    console.warn('[LevelProvider] moving to next phase:', { newPhase })
+  }
 
   return createStore<LevelState>()((set, get) => ({
     // Configurable parameters set on load with default values
     ...INITIAL_STATE,
-    config,
+    gameStartTime: 0,
+    config: DEFAULT_LEVEL_CONFIG,
     questions,
     question: questions[0],
-    phases: [],
+    phases: [LevelPhase.CONFIG, LevelPhase.INTRO],
     answersMapping: generateAnswerMapping(questions[0].answers),
 
-    start: (config: LevelConfig) => {
+    onConfigCompleted: (config: LevelConfig) => {
       const phases = generatePhasesFromQuestions({
         questions,
         showOnboarding: config.showOnboarding,
@@ -143,25 +205,28 @@ const createLevelStore = ({
       })
       answerTimeRemaining = { value: config.answerTimeDuration }
       console.warn('[LevelProvider] Starting level with config:', { config, phases })
+
       set({
-        ...INITIAL_STATE,
-        config,
         phases,
-        answersMapping: generateAnswerMapping(questions[0].answers),
+        config,
+        gameStartTime: Date.now(),
+        phase: phases[1],
+        phaseIndex: 1,
+        phaseTime: 0,
       })
     },
-    reset: () => {
-      set({
-        ...INITIAL_STATE,
-        question: questions[0],
-      })
+    onOnboardingCompleted: () => {
+      goToNextPhase(get, set)
     },
-    onQuestionPhaseCompleted: () => {
-      const state = get()
-      const newPhaseIndex = state.phaseIndex + 1
-      const newPhase = state.phases[newPhaseIndex]
+    onQuestionCompleted: () => {
+      const phaseIndex = get().phaseIndex
+      const phases = get().phases
+      const questionIndex = get().questionIndex
+
+      const newPhaseIndex = phaseIndex + 1
+      const newPhase = phases[newPhaseIndex]
       console.warn('[LevelProvider] Question phase completed, moving to next phase:', { newPhase })
-      const newQuestionIndex = state.questionIndex + 1
+      const newQuestionIndex = questionIndex + 1
 
       const hasMoreQuestions = newQuestionIndex < questions.length
       if (hasMoreQuestions) {
@@ -181,40 +246,34 @@ const createLevelStore = ({
         phaseTime: 0,
       })
     },
-    onOnboardingPhaseCompleted: () => {
-      const state = get()
-      const newPhaseIndex = state.phaseIndex + 1
-      const newPhase = state.phases[newPhaseIndex]
-      console.warn('[LevelProvider] Onboarding phase completed, moving to next phase:', { newPhase })
 
-      set({
-        phase: newPhase,
-        phaseIndex: newPhaseIndex,
-        phaseTime: 0,
-      })
-    },
-    onOutroPhaseCompleted: () => {
+    onOutroCompleted: () => {
+      console.warn('[LevelProvider] Outro phase completed. Ending level')
       const state = get()
-      const newPhaseIndex = state.phaseIndex + 1
-      const newPhase = state.phases[newPhaseIndex]
-      console.warn('[LevelProvider] Outro phase completed, moving to next phase:', { newPhase })
-      set({
-        phase: newPhase,
-        phaseIndex: newPhaseIndex,
-        phaseTime: 0,
+
+      // play different sound based on result - TODO: we probably want to play this as soon as the level complete comes up (start of OUTRO phase, not end.)
+      const finalScore = state.answersHit.some((hit) => !hit.isCorrect)
+      const soundFX = finalScore ? SoundFX.GAME_OVER : SoundFX.LEVEL_COMPLETE
+      playSoundFX(soundFX)
+
+      const completionTime = Date.now() - state.gameStartTime // This doesn't account for slow motion time so needs re-assessing.
+      onComplete({
+        id: crypto.randomUUID(),
+        courseId: course.id,
+        chapterId: chapter.id,
+        timestamp: Date.now(),
+        answers: state.answersHit,
+        points: state.points,
+        completionTime,
       })
-      if (newPhase === LevelPhase.FINISHED) {
-        console.warn('[LevelProvider] Reached FINISHED phase, triggering game over')
-        onCompleted()
-      }
     },
     update: (gameTime: number) => {
       const state = get()
-      let phaseIndex = state.phaseIndex
       let phase = state.phase
-      let phaseTime = state.phaseTime + (gameTime - state.totalTime)
+      if (phase === LevelPhase.CONFIG) return // Don't advance time in config phase
 
-      if (phase === LevelPhase.FINISHED) return // No updates once in the finished phase (this is in the background of the level complete screen)
+      let phaseIndex = state.phaseIndex
+      let phaseTime = state.phaseTime + (gameTime - state.totalTime)
 
       const { phaseDurations } = state.config
       const shouldMoveToNextPhase = phaseTime >= phaseDurations[phase]
@@ -271,7 +330,6 @@ const createLevelStore = ({
       }
     },
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
-
     goSlowMo: () => {
       if (get().isSlowMo) return
       set({ isSlowMo: true })
@@ -349,7 +407,6 @@ const createLevelStore = ({
           },
         })
     },
-
     updatePlayerPosition: ({ pos, lanes }) => {
       const currentPlayerLane = lanes[1] * 3 + lanes[0] // Convert to 0-8 index
       set({
@@ -357,16 +414,87 @@ const createLevelStore = ({
         currentPlayerLane,
       })
     },
+    onObstacleHit: (data: ObstacleUserData) => {
+      playSoundFX(SoundFX.OBSTACLE_HIT)
+      const scoreEvent: ScoreEvent = {
+        type: 'hit',
+        obstacleId: data.obstacleId,
+        points: POINTS_OBSTACLE_HIT,
+        timestamp: Date.now(),
+      }
+      console.warn('Obstacle hit!', { scoreEvent })
+      set((state) => ({
+        points: state.points + POINTS_OBSTACLE_HIT,
+        scoreEvents: [...state.scoreEvents, scoreEvent],
+        streak: 0, // Reset streak on obstacle hit
+      }))
+    },
+    onObstacleAvoided: (data: ObstacleAvoidedUserData) => {
+      playSoundFX(SoundFX.OBSTACLE_AVOIDED)
+      const scoreEvents = get().scoreEvents
+      // If this obstacle has been hit, don't reward avoidance
+      const hasHitThisObstacle = scoreEvents.some((e) => e.type === 'hit' && e.obstacleId === data.obstacleId)
+      if (hasHitThisObstacle) {
+        console.warn('Obstacle already hit, no avoidance points', { data })
+        return
+      }
+      const scoreEvent: ScoreEvent = {
+        type: 'avoided',
+        obstacleId: data.obstacleId,
+        points: POINTS_OBSTACLE_AVOIDED,
+        timestamp: Date.now(),
+      }
+      console.warn('Obstacle avoided!', { scoreEvent })
+      set((state) => ({
+        points: state.points + POINTS_OBSTACLE_AVOIDED,
+        scoreEvents: [...state.scoreEvents, scoreEvent],
+      }))
+    },
+    onAnswerHit: (data: AnswerGateUserData) => {
+      // Record the answer hit
+      const answerHit: AnswerHit = {
+        ...data,
+        timestamp: Date.now(),
+      }
+      console.warn('Answer hit!', { answerHit })
+
+      if (data.isCorrect) {
+        playSoundFX(SoundFX.CORRECT_ANSWER)
+        set((s) => {
+          const newCurrentStreak = s.streak + 1
+          const newMaxStreak = Math.max(s.maxStreak, newCurrentStreak)
+          // Remove any previous answers for this question in case of multiple hits
+          const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
+          return {
+            streak: newCurrentStreak,
+            maxStreak: newMaxStreak,
+            answersHit: [...cleanAnswersHit, answerHit],
+          }
+        })
+      } else {
+        playSoundFX(SoundFX.WRONG_ANSWER)
+        set((s) => {
+          const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
+          return {
+            streak: 0,
+            answersHit: [...cleanAnswersHit, answerHit],
+          }
+        })
+      }
+    },
   }))
 }
 
-type Props = PropsWithChildren<{ questions: Question[] }>
+type Props = PropsWithChildren<CreateStoreParams>
 
-export const LevelProvider: FC<Props> = ({ children, questions }) => {
-  const getLevelConfig = useConfigStore((s) => s.getLevelConfig)
-  const onCompleted = useGameStore((s) => s.onCompleted)
+export const LevelProvider: FC<Props> = ({ children, ...storeParams }) => {
+  const store = useRef<LevelStore>(createLevelStore(storeParams))
 
-  const store = useRef<LevelStore>(createLevelStore({ config: getLevelConfig(), questions, onCompleted }))
+  useEffect(() => {
+    return () => {
+      // Any cleanup logic if needed when LevelProvider is unmounted
+    }
+  }, [])
 
   return <LevelContext.Provider value={store.current}>{children}</LevelContext.Provider>
 }
@@ -393,7 +521,7 @@ const generatePhasesFromQuestions = ({
   withObstacles: boolean
   questions: Question[]
 }): LevelPhase[] => {
-  const phases = [LevelPhase.INTRO]
+  const phases = [LevelPhase.CONFIG, LevelPhase.INTRO]
 
   if (showOnboarding) phases.push(LevelPhase.ONBOARDING)
 
@@ -402,7 +530,7 @@ const generatePhasesFromQuestions = ({
   )
 
   phases.push(...questionPhases)
-  phases.push(LevelPhase.OUTRO, LevelPhase.FINISHED)
+  phases.push(LevelPhase.OUTRO)
   return phases
 }
 
