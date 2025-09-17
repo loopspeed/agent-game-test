@@ -18,7 +18,7 @@ interface CourseState {
   setHasHydrated: (state: boolean) => void
 
   // Actions
-  addCourse: (course: Course) => void
+  storeCourse: (course: Course) => void
   setActiveCourse: (courseId: string) => void
   setActiveChapter: (chapterId: string) => void
   getCurrentChapter: () => Chapter | null
@@ -49,7 +49,7 @@ const createCourseStore = () => {
         },
 
         // Actions
-        addCourse: (course: Course) => {
+        storeCourse: (course: Course) => {
           set((state) => ({
             courses: {
               ...state.courses,

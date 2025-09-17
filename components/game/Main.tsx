@@ -11,7 +11,7 @@ import Chat from '@/components/game/chat/Chat'
 import Level from '@/components/game/level/Level'
 import PlayerSetup from '@/components/game/playerSetup/PlayerSetup'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
-import { CourseSchema } from '@/model/content'
+import { Course, CourseSchema } from '@/model/content'
 import { type ChapterRun } from '@/model/game'
 import { useCourseStore } from '@/stores/CourseProvider'
 import { useHistoryStore } from '@/stores/useHistoryStore'
@@ -20,7 +20,7 @@ gsap.registerPlugin(useGSAP)
 
 const Main: FC = () => {
   const { stage, goToStage } = useNavigation()
-  const addCourse = useCourseStore((s) => s.addCourse)
+  const storeCourse = useCourseStore((s) => s.storeCourse)
   const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
   const setActiveChapter = useCourseStore((s) => s.setActiveChapter)
   const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
@@ -39,8 +39,31 @@ const Main: FC = () => {
       // Always check dynamic to avoid TypeScript narrowing issues
       if (toolCall.dynamic) return
 
-      if (toolCall.toolName === 'formatCourseForGame') {
-        console.warn('[DEBUG] formatCourseForGame tool call received', toolCall)
+      if (toolCall.toolName === 'storeCourse') {
+        try {
+          const input = toolCall.input as { course: Course }
+          console.warn('[DEBUG] storeCourse: input', input)
+
+          // Validate the course object against the schema
+          const parsedCourse = CourseSchema.parse(input.course)
+          console.log('[DEBUG] storeCourse: parsedCourse', parsedCourse)
+
+          // Store the course and set it as active
+          storeCourse(parsedCourse)
+
+          chat.addToolResult({
+            tool: 'storeCourse',
+            toolCallId: toolCall.toolCallId,
+            output: { status: 'ready to play', courseId: parsedCourse.id },
+          })
+        } catch (error) {
+          chat.addToolResult({
+            tool: 'storeCourse',
+            toolCallId: toolCall.toolCallId,
+            output: { status: 'error', error: (error as Error).message },
+          })
+        }
+        return
       }
 
       // Play chapter: set active course and chapter, store tool call for later completion
