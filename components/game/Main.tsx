@@ -1,7 +1,7 @@
 'use client'
 import { useChat } from '@ai-sdk/react'
 import { useGSAP } from '@gsap/react'
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, tool } from 'ai'
 import gsap from 'gsap'
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary'
 import React, { type FC, useRef } from 'react'
@@ -22,12 +22,13 @@ const Main: FC = () => {
   const { stage, goToStage } = useNavigation()
   const storeCourse = useCourseStore((s) => s.storeCourse)
   const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
-  const setActiveChapter = useCourseStore((s) => s.setActiveChapter)
   const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
 
   const container = useRef<HTMLDivElement>(null)
   // Store pending tool call to resolve after level completion
-  const pendingToolCall = useRef<{ toolCallId: string; courseId: string; chapterId: string } | null>(null)
+  const pendingToolCall = useRef<{ toolName: string; toolCallId: string; courseId: string; chapterId: string } | null>(
+    null,
+  )
 
   const chat = useChat({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
@@ -72,17 +73,17 @@ const Main: FC = () => {
           const input = toolCall.input as { courseId: string; chapterId: string }
           const { courseId, chapterId } = input
           console.warn('[DEBUG] playChapter: courseId', courseId, 'chapterId', chapterId)
-
           // Store the pending tool call to resolve after level completion
           pendingToolCall.current = {
+            toolName: 'playChapter',
             toolCallId: toolCall.toolCallId,
             courseId,
             chapterId,
           }
-
           // Set active course and chapter
-          setActiveCourse(courseId)
-          setActiveChapter(chapterId)
+          const { success, error } = setActiveCourse({ courseId, chapterId })
+          if (!success) throw error
+
           goToStage(Stage.Level)
         } catch (error) {
           chat.addToolResult({
@@ -97,27 +98,41 @@ const Main: FC = () => {
 
   const onChapterLevelComplete = (run: ChapterRun) => {
     addChapterRunToHistory(run)
-
     // If there's a pending playChapter tool call, resolve it now
-    if (pendingToolCall.current) {
-      const { toolCallId, courseId, chapterId } = pendingToolCall.current
-      chat.addToolResult({
-        tool: 'playChapter',
-        toolCallId,
-        output: {
-          status: 'completed',
-          courseId,
-          chapterId,
-          points: run.points,
-          answers: run.answers,
-          completionTime: run.completionTime,
-        },
-      })
-      // Clear the pending tool call
-      pendingToolCall.current = null
-    }
-
+    if (!pendingToolCall.current) return
+    const { toolName, toolCallId, courseId, chapterId } = pendingToolCall.current
+    if (toolName !== 'playChapter') return
+    chat.addToolResult({
+      tool: 'playChapter',
+      toolCallId,
+      output: {
+        status: 'completed',
+        courseId,
+        chapterId,
+        points: run.points,
+        answers: run.answers,
+        completionTime: run.completionTime,
+      },
+    })
+    pendingToolCall.current = null
     goToStage(Stage.Chat)
+  }
+
+  const onLevelExited = () => {
+    // If there's a pending playChapter tool call, resolve it now
+    if (!pendingToolCall.current) return
+    const { toolName, toolCallId, courseId, chapterId } = pendingToolCall.current
+    if (toolName !== 'playChapter') return
+    chat.addToolResult({
+      tool: 'playChapter',
+      toolCallId,
+      output: {
+        status: 'aborted',
+        courseId,
+        chapterId,
+      },
+    })
+    pendingToolCall.current = null
   }
 
   return (
@@ -141,7 +156,11 @@ const Main: FC = () => {
                 )}
                 {stage === Stage.Level && (
                   <ErrorBoundary errorComponent={Error}>
-                    <Level transitionStatus={transitionStatus} onChapterLevelComplete={onChapterLevelComplete} />
+                    <Level
+                      transitionStatus={transitionStatus}
+                      onExited={onLevelExited}
+                      onChapterLevelComplete={onChapterLevelComplete}
+                    />
                   </ErrorBoundary>
                 )}
               </div>

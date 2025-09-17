@@ -21,13 +21,13 @@ const Chat: FC<Props> = ({ chat, transitionStatus }) => {
   }, [messages])
 
   return (
-    <div className="mx-auto grid h-full w-6xl max-w-full grid-cols-1 grid-rows-[1fr_auto] gap-6 overflow-hidden">
+    <div className="grid size-full grid-cols-1 grid-rows-[1fr_auto] justify-items-center overflow-hidden pb-10">
       {/* Messages container */}
-      <section ref={messagesContainer} className="h-full space-y-4 overflow-y-auto">
+      <section ref={messagesContainer} className="h-full w-3xl max-w-full space-y-4 overflow-y-auto px-5 py-12">
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[80%] rounded-lg p-4 shadow-sm ${
+              className={`max-w-4/5 rounded-lg p-4 shadow-sm ${
                 message.role === 'user' ? 'bg-blue-500 text-white' : 'border border-gray-200 bg-white text-gray-800'
               }`}>
               <div
@@ -47,14 +47,13 @@ const Chat: FC<Props> = ({ chat, transitionStatus }) => {
                   }
 
                   // Handle step boundaries for multi-step tool calls
-                  if (part.type === 'step-start') {
-                    return index > 0 ? (
-                      <div key={index} className="text-gray-500">
-                        <hr className="my-2 border-gray-300" />
-                      </div>
-                    ) : null
-                  }
-
+                  // if (part.type === 'step-start') {
+                  //   return index > 0 ? (
+                  //     <div key={index} className="text-gray-500">
+                  //       <hr className="my-2 border-gray-300" />
+                  //     </div>
+                  //   ) : null
+                  // }
                   return null
                 })}
               </div>
@@ -62,12 +61,12 @@ const Chat: FC<Props> = ({ chat, transitionStatus }) => {
           </div>
         ))}
         {status !== 'ready' && (
-          <div className="absolute mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-blue-500"></div>
+          <div className="absolute bottom-20 size-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
         )}
       </section>
 
       {/* Input form */}
-      <div className="rounded-lg border bg-white p-6 text-black shadow-lg">
+      <div className="w-lg max-w-full rounded-xl bg-white p-5 text-black shadow-lg">
         <form
           onSubmit={(e) => {
             e.preventDefault()

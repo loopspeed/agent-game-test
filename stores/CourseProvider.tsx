@@ -13,16 +13,18 @@ interface CourseState {
   activeCourseId: string | null
   activeChapterId: string | null
 
+  // Actions
+  storeCourse: (course: Course) => void
+  setActiveCourse: ({ courseId, chapterId }: { courseId: string; chapterId?: string }) => {
+    success: boolean
+    error?: unknown
+  }
+  getCurrentChapter: () => Chapter | null
+  getCurrentCourse: () => Course | null
+
   // Hydration state
   _hasHydrated: boolean
   setHasHydrated: (state: boolean) => void
-
-  // Actions
-  storeCourse: (course: Course) => void
-  setActiveCourse: (courseId: string) => void
-  setActiveChapter: (chapterId: string) => void
-  getCurrentChapter: () => Chapter | null
-  getCurrentCourse: () => Course | null
 
   // Utility methods
   getCourse: (courseId: string) => Course | null
@@ -49,7 +51,7 @@ const createCourseStore = () => {
         },
 
         // Actions
-        storeCourse: (course: Course) => {
+        storeCourse: async (course: Course) => {
           set((state) => ({
             courses: {
               ...state.courses,
@@ -60,49 +62,47 @@ const createCourseStore = () => {
           }))
         },
 
-        setActiveCourse: (courseId: string) => {
-          const state = get()
-          const course = state.courses[courseId]
+        setActiveCourse: ({
+          courseId,
+          chapterId,
+        }: {
+          courseId: string
+          chapterId?: string
+        }): { success: boolean; error?: unknown } => {
+          const courses = get().courses
 
-          if (!course) {
-            console.warn(`Course with ID ${courseId} not found`)
-            return
+          const course = courses[courseId]
+          if (!course)
+            return {
+              success: false,
+              error: new Error(`Course with ID '${courseId}' not found. Ensure it is saved before setting active.`),
+            }
+
+          let validChapterId: string | null = null
+          if (!!chapterId) {
+            const chapterExists = course.chapters.some((ch) => ch.id === chapterId)
+            if (!chapterExists)
+              return {
+                success: false,
+                error: new Error(`Chapter with ID '${chapterId}' not found in course '${courseId}'.`),
+              }
+            validChapterId = chapterId
           }
-
-          const firstChapterId = course.chapters[0]?.id || null
 
           set({
             activeCourseId: courseId,
-            activeChapterId: firstChapterId,
+            activeChapterId: validChapterId,
           })
-        },
 
-        setActiveChapter: (chapterId: string) => {
-          const state = get()
-          const currentCourse = state.getCurrentCourse()
-
-          if (!currentCourse) {
-            console.warn('No active course set')
-            return
+          return {
+            success: true,
           }
-
-          const chapter = currentCourse.chapters.find((ch) => ch.id === chapterId)
-          if (!chapter) {
-            console.warn(`Chapter with ID ${chapterId} not found in course ${currentCourse.id}`)
-            return
-          }
-
-          set({ activeChapterId: chapterId })
         },
 
         getCurrentChapter: (): Chapter | null => {
           const state = get()
           const { activeCourseId, activeChapterId } = state
-
-          if (!activeCourseId || !activeChapterId) {
-            return null
-          }
-
+          if (!activeCourseId || !activeChapterId) return null
           return state.getChapter(activeCourseId, activeChapterId)
         },
 

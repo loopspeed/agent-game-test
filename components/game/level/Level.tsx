@@ -1,7 +1,7 @@
 'use client'
 import { CameraShake, type CameraShakeProps, type ShakeController, Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { type FC, useRef } from 'react'
+import { type FC, useEffect, useRef } from 'react'
 import React from 'react'
 import { type TransitionStatus } from 'react-transition-group'
 
@@ -18,14 +18,22 @@ import { useSoundStore } from '@/stores/SoundProvider'
 
 type Props = {
   transitionStatus: TransitionStatus
+  onExited: () => void
   onChapterLevelComplete: (run: ChapterRun) => void
 }
 
-const Level: FC<Props> = ({ transitionStatus, onChapterLevelComplete }) => {
+const Level: FC<Props> = ({ transitionStatus, onExited, onChapterLevelComplete }) => {
   const playSoundFX = useSoundStore((s) => s.playSoundFX)
   const hasHydrated = useCourseStore((s) => s._hasHydrated)
   const course = useCourseStore((s) => s.getCurrentCourse())
   const chapter = useCourseStore((s) => s.getCurrentChapter())
+
+  useEffect(() => {
+    return () => {
+      onExited()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useKeypadInput()
 
