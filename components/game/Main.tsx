@@ -20,9 +20,13 @@ gsap.registerPlugin(useGSAP)
 
 const Main: FC = () => {
   const { stage, goToStage } = useNavigation()
+
+  // TODO: These should be replaced by DB and called on the server
   const storeCourse = useCourseStore((s) => s.storeCourse)
-  const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
+  const getAllCourses = useCourseStore((s) => s.getAllCourses)
   const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
+
+  const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
 
   const container = useRef<HTMLDivElement>(null)
   // Store pending tool call to resolve after level completion
@@ -93,6 +97,16 @@ const Main: FC = () => {
           })
         }
       }
+
+      if (toolCall.toolName === 'getAllCourses') {
+        const courses = getAllCourses()
+        console.log('[DEBUG] getAllCourses: courses', courses)
+        chat.addToolResult({
+          tool: 'getAllCourses',
+          toolCallId: toolCall.toolCallId,
+          output: { status: 'success', courses },
+        })
+      }
     },
   })
 
@@ -127,7 +141,7 @@ const Main: FC = () => {
       tool: 'playChapter',
       toolCallId,
       output: {
-        status: 'aborted',
+        status: 'player cancelled',
         courseId,
         chapterId,
       },

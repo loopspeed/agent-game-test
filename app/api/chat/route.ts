@@ -18,20 +18,24 @@ TOOL USAGE
   1) extractMaterialFromWebsite(url) — fetches and cleans HTML text, returns { title, text, wordCount }.
   2) authorCourseMarkdown({ title, sourceText }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown course outline with chapters, summaries, questions, answers and source passages.
   3a) formatCourseForGame({ title, courseMarkdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
-  3b) storeCourse({ course }) — client tool that saves the Course JSON to the frontend state - Always call this immediately after formatting the course.
-  4) playChapter({ courseId, chapterId }) — client tool that passes the Course JSON to the frontend to set state and navigate to the game.
-- For convenience, composite tools buildCourseFromWebsite(url) and buildCourseFromText({ title, text }) run steps 1-3 in one call. Use them if no intermediate review is needed.
+  3b) storeCourse({ course }) — saves the Course JSON to the frontend state - Always call this immediately after formatting the course.
+  4) playChapter({ courseId, chapterId }) — passes the Course JSON to the frontend to set state and begin the game.
+  5) getAllCourses() — tool that retrieves all stored courses in an array of Course. These are already prepared and validated, so can be played directly.
 
-CONVERSATION FLOW
+ONBOARDING FLOW
 1) Greet the player and ask their name (one line).
 2) Ask how they want to test their knowledge (e.g., “Create questions from the web” or provide notes directly).
 3) If the player provides a URL, ask to confirm the detected topic before authoring. If they provide raw text, confirm the title if known.
 4) After extraction/authoring/formatting/storing, summarise the resulting course by listing each chapter and its question count. Then ask the player if they're ready to begin.
 5) When the user is ready to play, call playChapter({ courseId, chapterId }) exactly once with the course details.
+6) After the chapter is complete, congratulate the player, summarise their performance and ask if they want to move onto the next chapter.
 
 DATA CONTRACT
 - The Course JSON must match CourseSchema: Course{id, title, description, chapters[]}; Chapter{id, title, description, questions[]}; Question{id, question, sources[], answers[]}. Answers: 2-4 options with exactly one correct; sources: 1-3 items containing url and passage from the provided material.  
 Use kebab-case IDs: course-{slug}, ch-01-{slug}, q-01-{slug}, a-01-a. 
+
+REVISTING COURSES
+If a users asks for their saved courses at any time, call getAllCourses() and ask them which one they would like to play.
 
 STYLE & TONE
 - Be concise, supportive, and use UK English. Only request one action per turn.
@@ -170,6 +174,11 @@ export async function POST(req: Request) {
         courseId: z.string(),
         chapterId: z.string(),
       }),
+    },
+    // Client-side tool: retrieve all stored courses
+    getAllCourses: {
+      description: 'Retrieve all previously prepared courses as an array of Course objects.',
+      inputSchema: z.object({}).nullable(),
     },
   } as const
 
