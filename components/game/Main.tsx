@@ -48,14 +48,11 @@ const Main: FC = () => {
         try {
           const input = toolCall.input as { course: Course }
           console.warn('[DEBUG] storeCourse: input', input)
-
           // Validate the course object against the schema
           const parsedCourse = CourseSchema.parse(input.course)
           console.log('[DEBUG] storeCourse: parsedCourse', parsedCourse)
-
           // Store the course and set it as active
           storeCourse(parsedCourse)
-
           chat.addToolResult({
             tool: 'storeCourse',
             toolCallId: toolCall.toolCallId,
@@ -87,7 +84,6 @@ const Main: FC = () => {
           // Set active course and chapter
           const { success, error } = setActiveCourse({ courseId, chapterId })
           if (!success) throw error
-
           goToStage(Stage.Level)
         } catch (error) {
           chat.addToolResult({
@@ -111,7 +107,9 @@ const Main: FC = () => {
   })
 
   const onChapterLevelComplete = (run: ChapterRun) => {
+    console.log('[DEBUG] Chapter level complete', run)
     addChapterRunToHistory(run)
+    goToStage(Stage.Chat)
     // If there's a pending playChapter tool call, resolve it now
     if (!pendingToolCall.current) return
     const { toolName, toolCallId, courseId, chapterId } = pendingToolCall.current
@@ -129,10 +127,10 @@ const Main: FC = () => {
       },
     })
     pendingToolCall.current = null
-    goToStage(Stage.Chat)
   }
 
   const onLevelExited = () => {
+    console.log('[DEBUG] Level exited to chat')
     // If there's a pending playChapter tool call, resolve it now
     if (!pendingToolCall.current) return
     const { toolName, toolCallId, courseId, chapterId } = pendingToolCall.current

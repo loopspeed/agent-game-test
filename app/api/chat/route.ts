@@ -35,7 +35,8 @@ DATA CONTRACT
 Use kebab-case IDs: course-{slug}, ch-01-{slug}, q-01-{slug}, a-01-a. 
 
 REVISTING COURSES
-If a users asks for their saved courses at any time, call getAllCourses() and ask them which one they would like to play.
+If a users asks for their saved courses at any time, call getAllCourses() and ask them which one they would like to open.
+After they have picked a course, list them the available chapters and ask which chapter they want to play next.
 
 STYLE & TONE
 - Be concise, supportive, and use UK English. Only request one action per turn.
@@ -178,7 +179,7 @@ export async function POST(req: Request) {
     // Client-side tool: retrieve all stored courses
     getAllCourses: {
       description: 'Retrieve all previously prepared courses as an array of Course objects.',
-      inputSchema: z.object({}).nullable(),
+      inputSchema: z.object({}),
     },
   } as const
 
