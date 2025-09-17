@@ -3,9 +3,9 @@ import { createStore, type StoreApi, useStore } from 'zustand'
 
 import type { AnswerGateUserData, ObstacleAvoidedUserData, ObstacleUserData } from '@/model/game'
 import { SAMPLE_COURSE, SAMPLE_QUESTIONS } from '@/resources/course'
+import { LevelProvider } from '@/stores/LevelProvider'
+import { SoundFX, useSoundStore } from '@/stores/SoundProvider'
 import { type ChapterRun, useHistoryStore } from '@/stores/useHistoryStore'
-
-import { LevelProvider } from './LevelProvider'
 
 export enum GameStage {
   READY = 'READY',
@@ -81,11 +81,12 @@ const createGameStore = ({
   courseId,
   chapterId,
   addChapterRunToHistory,
-  // playSoundEffect,
+  playSoundFX,
 }: {
   courseId: string
   chapterId: string
   addChapterRunToHistory: (run: Omit<ChapterRun, 'id'>) => void
+  playSoundFX: (fx: SoundFX) => void
 }) => {
   return createStore<GameState>()((set, get) => ({
     ...INITIAL_STATE,
@@ -102,6 +103,8 @@ const createGameStore = ({
       set({ ...INITIAL_STATE })
     },
     onObstacleHit: (data: ObstacleUserData) => {
+      playSoundFX(SoundFX.OBSTACLE_HIT)
+      console.log('[GameProvider] obstacle hit:', data)
       const scoreEvent: ScoreEvent = {
         type: 'hit',
         obstacleId: data.obstacleId,
@@ -116,6 +119,7 @@ const createGameStore = ({
       }))
     },
     onObstacleAvoided: (data: ObstacleAvoidedUserData) => {
+      console.log('[GameProvider] obstacle avoided:', data)
       const scoreEvents = get().scoreEvents
       // If this obstacle has been hit, don't reward avoidance
       const hasHitThisObstacle = scoreEvents.some((e) => e.type === 'hit' && e.obstacleId === data.obstacleId)
@@ -130,12 +134,14 @@ const createGameStore = ({
         timestamp: Date.now(),
       }
       console.warn('Obstacle avoided!', { scoreEvent })
+      playSoundFX(SoundFX.OBSTACLE_AVOIDED)
       set((state) => ({
         points: state.points + POINTS_OBSTACLE_AVOIDED,
         scoreEvents: [...state.scoreEvents, scoreEvent],
       }))
     },
     onAnswerHit: (data: AnswerGateUserData) => {
+      console.log('[GameProvider] answer gate hit:', data)
       // Record the answer hit
       const answerHit: AnswerHit = {
         ...data,
@@ -144,21 +150,25 @@ const createGameStore = ({
       console.warn('Answer hit!', { answerHit })
 
       if (data.isCorrect) {
+        playSoundFX(SoundFX.CORRECT_ANSWER)
         set((s) => {
           const newCurrentStreak = s.streak + 1
           const newMaxStreak = Math.max(s.maxStreak, newCurrentStreak)
           // Remove any previous answers for this question in case of multiple hits
           const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
           return {
+            points: s.points + POINTS_ANSWER_CORRECT,
             streak: newCurrentStreak,
             maxStreak: newMaxStreak,
             answersHit: [...cleanAnswersHit, answerHit],
           }
         })
       } else {
+        playSoundFX(SoundFX.WRONG_ANSWER)
         set((s) => {
           const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
           return {
+            points: s.points + POINTS_ANSWER_INCORRECT,
             streak: 0,
             answersHit: [...cleanAnswersHit, answerHit],
           }
@@ -167,6 +177,11 @@ const createGameStore = ({
     },
     onCompleted: () => {
       const state = get()
+      // play different sound based on result
+      const finalScore = state.answersHit.some((hit) => !hit.isCorrect)
+      const soundFX = finalScore ? SoundFX.GAME_OVER : SoundFX.LEVEL_COMPLETE
+      playSoundFX(soundFX)
+
       const completionTime = Date.now() - state.gameStartTime
       const correctAnswers = state.answersHit.filter((hit) => hit.isCorrect).length
       const incorrectAnswers = state.answersHit.filter((hit) => !hit.isCorrect).length
@@ -195,11 +210,17 @@ const createGameStore = ({
 }
 
 export const GameProvider: FC<PropsWithChildren> = ({ children }) => {
-  // const playSoundEffect = useSoundStore((s) => s.playSoundEffect)
+  const playSoundFX = useSoundStore((s) => s.playSoundFX)
   const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
+
   // Create the game store with incoming configuration
   const gameStore = useRef<GameStateStore>(
-    createGameStore({ courseId: SAMPLE_COURSE.id, chapterId: SAMPLE_COURSE.chapters[0].id, addChapterRunToHistory }),
+    createGameStore({
+      courseId: SAMPLE_COURSE.id,
+      chapterId: SAMPLE_COURSE.chapters[0].id,
+      addChapterRunToHistory,
+      playSoundFX,
+    }),
   )
 
   return (

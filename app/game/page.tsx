@@ -3,7 +3,7 @@
 import { type FC, useEffect } from 'react'
 import React from 'react'
 
-import DebugDisplay from '@/components/debug/DebugDisplay'
+// import DebugDisplay from '@/components/debug/DebugDisplay'
 import LevelCanvas from '@/components/game/level/LevelCanvas'
 import GameUI from '@/components/ui/GameUI'
 import { GameProvider, useGameStore } from '@/stores/GameProvider'

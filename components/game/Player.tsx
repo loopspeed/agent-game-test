@@ -7,12 +7,12 @@ import { gsap } from 'gsap'
 import { type FC, useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
+import PlayerParticles, { ORB_RADIUS } from '@/components/game/player/particles/PlayerParticles'
+import ScoreIndicator from '@/components/game/player/ScoreIndicator'
 import { RigidBodyType, type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useGameStore } from '@/stores/GameProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 import { type InputState, useInputStore } from '@/stores/useInputStore'
-
-import PlayerParticles, { ORB_RADIUS } from './player/particles/PlayerParticles'
 
 gsap.registerPlugin(useGSAP)
 
@@ -128,15 +128,18 @@ const Player: FC = () => {
   })
 
   return (
-    <RigidBody
-      ref={bodyRef}
-      type="kinematicPosition"
-      userData={{
-        type: 'player',
-      }}>
-      <BallCollider args={[ORB_RADIUS]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
-      <PlayerParticles isMobile={false} playerVelocity={playerVelocity.current} />
-    </RigidBody>
+    <>
+      <RigidBody
+        ref={bodyRef}
+        type="kinematicPosition"
+        userData={{
+          type: 'player',
+        }}>
+        <BallCollider args={[ORB_RADIUS]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
+        <PlayerParticles isMobile={false} playerVelocity={playerVelocity.current} />
+      </RigidBody>
+      <ScoreIndicator />
+    </>
   )
 }
 

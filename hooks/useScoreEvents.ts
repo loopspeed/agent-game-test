@@ -1,0 +1,52 @@
+import { useMemo } from 'react'
+
+import { useGameStore } from '@/stores/GameProvider'
+import { type AnswerHit, POINTS_ANSWER_CORRECT, POINTS_ANSWER_INCORRECT, type ScoreEvent } from '@/stores/GameProvider'
+
+export type UnifiedScoreEvent = {
+  id: string // Unique identifier used for React keys
+  points: number // Positive or negative score
+  timestamp: number // When the event occurred
+}
+
+/**
+ * Combines obstacle score events and answer-hit events into a unified array.
+ * The array is kept sorted by timestamp so popups appear in chronological order.
+ */
+export const useScoreEvents = () => {
+  const scoreEvents = useGameStore((s) => s.scoreEvents)
+  const answersHit = useGameStore((s) => s.answersHit)
+
+  const unifiedEvents = useMemo<UnifiedScoreEvent[]>(() => {
+    const events: UnifiedScoreEvent[] = []
+
+    // Convert obstacle ScoreEvent objects to unified events
+    scoreEvents.forEach((ev: ScoreEvent) => {
+      events.push({
+        id: `${ev.obstacleId}-${ev.timestamp}`,
+        points: ev.points,
+        timestamp: ev.timestamp,
+      })
+    })
+
+    // Convert AnswerHit objects to unified events with point values
+    answersHit.forEach((hit: AnswerHit) => {
+      const points = hit.isCorrect ? POINTS_ANSWER_CORRECT : POINTS_ANSWER_INCORRECT
+      events.push({
+        id: `${hit.questionId}-${hit.timestamp}`,
+        points,
+        timestamp: hit.timestamp,
+      })
+    })
+
+    // Sort so the earliest events are first
+    events.sort((a, b) => a.timestamp - b.timestamp)
+    console.log('[useScoreEvents] unifiedEvents:', events)
+    return events
+  }, [scoreEvents, answersHit])
+
+  // Provide the most recent event if needed
+  const latestScore = unifiedEvents.length > 0 ? unifiedEvents[unifiedEvents.length - 1] : null
+
+  return { scoreEvents: unifiedEvents, latestScore }
+}
