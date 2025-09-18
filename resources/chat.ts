@@ -24,7 +24,7 @@ TOOL USAGE
   1) extractContentFromWebsite(url) — fetches and cleans HTML text, returns { title, text, wordCount }.
   2) authorCourseMarkdown({ title, sourceText }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown course outline with chapters, summaries, questions, answers and source passages.
   3a) formatCourseForGame({ title, courseMarkdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
-  3b) storeCourse({ course }) — saves the Course JSON to the frontend state - Always call this immediately after formatting the course.
+  3b) storeCourse({ course }) — saves the Course JSON to the frontend state - always call this immediately after formatting the course.
   4) playChapter({ courseId, chapterId }) — passes the Course JSON to the frontend to set state and begin the game. On completion it returns a status and a summary of the run.
   5) getCourses() — tool that retrieves stored courses in an array of CourseSummary. These are already prepared and validated, and are ready to be played. 
 
@@ -55,17 +55,18 @@ const COURSE_AUTHORING_SYSTEM_PROMPT = `
   Your task is to use the provided source text and create a concise, reviewable Markdown course with chapters, questions, answers and source passages.
   Return ONLY the Markdown block between <!-- COURSE-MD-START --> and <!-- COURSE-MD-END -->.
   COURSE_MD must contain:
-  - 1-4 chapters
-  - 4-10 questions per chapter
+  - 1 or more chapters
+  - 4 or more questions per chapter
   - Each question has 2-4 choices (one correct, others plausible incorrect answers), summaries and sources.
-  Balanced difficulty, no duplicates, and all content must be grounded in the source (except for incorrect answers).
+   If the source material is short, create a single chapter course.
+
+  Ensure balanced difficulty, no duplicates, and all content must be grounded in the source (except for incorrect answers).
 `
 
 // Helper to extract material from a webpage (no JavaScript). Returns the
 // cleaned text, page title and word count.  Truncates very long pages to
 // prevent overloading subsequent steps.
 async function extractContentFromUrl(url: string): Promise<{ title: string; text: string; wordCount: number }> {
-  console.warn('[DEBUG] extractMaterial: Fetching URL:', url)
   const res = await fetch(url, { redirect: 'follow' })
   if (!res.ok) throw new Error(`Fetch failed: ${res.status}`)
   const html = await res.text()
@@ -78,9 +79,8 @@ async function extractContentFromUrl(url: string): Promise<{ title: string; text
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
   const title = (titleMatch?.[1] ?? new URL(url).hostname).trim()
   const wordCount = text.split(/\s+/).length
-  const MAX_CHARS = 40_000
+  const MAX_CHARS = 50_000
   const trimmed = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text
-  console.warn('[DEBUG] extractMaterial: title', title, 'wordCount', wordCount, 'trimmedLength', trimmed.length)
   return { title, text: trimmed, wordCount }
 }
 
@@ -135,7 +135,7 @@ async function formatCourse(title: string, courseMarkdown: string) {
 export const tools = {
   // Server-side tool: fetches HTML and extracts text
   extractContentFromWebsite: tool({
-    description: 'Fetch textual content from a webpage (no JavaScript). Returns cleaned text, title and word count.',
+    description: 'Fetch textual content from a webpage. Returns title, clean text, and word count.',
     inputSchema: z.object({ url: z.url() }),
     outputSchema: z.object({ title: z.string(), text: z.string(), wordCount: z.number() }),
     execute: async ({ url }: { url: string }) => {
@@ -144,7 +144,7 @@ export const tools = {
   }),
   // Server-side tool: author Markdown from text
   authorCourseMarkdown: tool({
-    description: 'Create a concise, reviewable course outline in Markdown from source text.',
+    description: 'Create a concise, reviewable course in Markdown from source text.',
     inputSchema: z.object({
       title: z.string(),
       sourceText: z.string(),
@@ -164,7 +164,8 @@ export const tools = {
       return formatCourse(title, courseMarkdown)
     },
   }),
-  // Client-side tool: store the formatted course in the client
+  // Client-side tools
+  // Store the formatted course in the client
   storeCourse: tool({
     description: 'Save the course to storage.',
     inputSchema: z.object({
@@ -172,7 +173,7 @@ export const tools = {
     }),
     outputSchema: z.object({ status: z.string(), courseId: z.string().optional(), error: z.string().optional() }),
   }),
-  // Client-side tool: play a specific chapter of a course
+  // Play a specific chapter of a course, when finished return a summary of the run
   playChapter: tool({
     description:
       'Play a specific chapter of a course. Sets the active course and chapter, then navigates to the game screen.',
@@ -185,7 +186,7 @@ export const tools = {
       run: ChapterRunSchema.optional(),
     }),
   }),
-  // Client-side tool: retrieve all stored courses
+  // Retrieve all stored courses
   getCourses: tool({
     description: 'Retrieve all previously prepared courses as an array of CourseSummary objects.',
     inputSchema: z.object({}),

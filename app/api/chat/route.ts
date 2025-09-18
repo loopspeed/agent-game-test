@@ -2,7 +2,7 @@ import { openai } from '@ai-sdk/openai'
 import { convertToModelMessages, hasToolCall, stepCountIs, streamText, type UIMessage } from 'ai'
 import z from 'zod'
 
-import { SYSTEM_PROMPT, tools } from '@/resources/tools'
+import { SYSTEM_PROMPT, tools } from '@/resources/chat'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120

@@ -1,30 +1,27 @@
 'use client'
 import { useChat } from '@ai-sdk/react'
 import { useGSAP } from '@gsap/react'
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, UIDataTypes, UIMessage } from 'ai'
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import gsap from 'gsap'
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary'
-import React, { type FC, useMemo, useRef } from 'react'
+import React, { type FC, useRef } from 'react'
 import { SwitchTransition, Transition } from 'react-transition-group'
 
 import Chat from '@/components/game/chat/Chat'
 import Level from '@/components/game/level/Level'
 import PlayerSetup from '@/components/game/playerSetup/PlayerSetup'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
-import { Course, CourseSchema } from '@/model/content'
+import { CourseSchema } from '@/model/content'
 import { type ChapterRun } from '@/model/game'
-import { type MyUIMessage } from '@/resources/tools'
+import { type MyUIMessage, type MyUITools } from '@/resources/chat'
 import { useCourseStore } from '@/stores/CourseProvider'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 
 gsap.registerPlugin(useGSAP)
 
-// type MyUIMessage = UIMessage<unknown, UIDataTypes, MyToolCall>
-
 const Main: FC = () => {
   const { stage, goToStage } = useNavigation()
 
-  // TODO: These should be replaced by DB and called on the server
   const storeCourse = useCourseStore((s) => s.storeCourse)
   const getCourseSummaries = useCourseStore((s) => s.getCourseSummaries)
   const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
@@ -32,6 +29,7 @@ const Main: FC = () => {
   const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
 
   const container = useRef<HTMLDivElement>(null)
+
   // Store pending tool call to resolve after level completion
   const pendingToolCall = useRef<{ toolName: string; toolCallId: string; courseId: string; chapterId: string } | null>(
     null,
@@ -50,8 +48,7 @@ const Main: FC = () => {
 
       if (toolCall.toolName === 'storeCourse') {
         try {
-          const input = toolCall.input as { course: Course }
-          console.warn('[DEBUG] storeCourse: input', input)
+          const input = toolCall.input as MyUITools['storeCourse']['input']
           // Validate the course object against the schema
           const parsedCourse = CourseSchema.parse(input.course)
           console.warn('[DEBUG] storeCourse: parsedCourse', parsedCourse)
@@ -75,7 +72,7 @@ const Main: FC = () => {
       // Play chapter: set active course and chapter, store tool call for later completion
       if (toolCall.toolName === 'playChapter') {
         try {
-          const input = toolCall.input as { courseId: string; chapterId: string }
+          const input = toolCall.input as MyUITools['playChapter']['input']
           const { courseId, chapterId } = input
           console.warn('[DEBUG] playChapter: courseId', courseId, 'chapterId', chapterId)
           // Store the pending tool call to resolve after level completion
