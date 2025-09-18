@@ -113,18 +113,19 @@ const Main: FC = () => {
     const { success, error } = setActiveCourse({ courseId, chapterId })
     if (!success) throw error
     // Insert tool message to initiate playChapter tool call
+    const toolCallId = `play-chapter-${Date.now()}`
     chat.sendMessage({
       role: 'assistant',
       parts: [
         {
           type: 'tool-playChapter',
-          toolCallId: `play-chapter-${Date.now()}`,
+          toolCallId: toolCallId,
           state: 'input-available',
           input: { courseId, chapterId },
         },
       ],
     })
-    pendingToolCall.current = { toolName: 'playChapter', toolCallId: `play-chapter-${Date.now()}`, courseId, chapterId }
+    pendingToolCall.current = { toolName: 'playChapter', toolCallId, courseId, chapterId }
     goToStage(Stage.Level)
   }
 
