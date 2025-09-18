@@ -50,7 +50,6 @@ const Chat: FC<Props> = ({ chat, onStartTestClick }) => {
                 if (part.type === 'reasoning') {
                   return (
                     <div key={message.id + '-part-' + i} className="text-yellow-600">
-                      <label>Reasoning:</label>
                       <MemoizedMarkdown id={message.id} content={part.text} />
                     </div>
                   )
@@ -150,12 +149,11 @@ type TextMessageProps = {
 }
 
 const TextMessage: FC<TextMessageProps> = ({ messageId, role, text }) => {
+  if (role === 'user') return <div className="prose-sm lg:prose rounded-lg bg-blue-500 p-4 !text-white">{text}</div>
+
+  // Only the assistant and system messages get the markdown treatment
   return (
-    <div
-      className={twJoin(
-        'prose-sm lg:prose rounded-lg p-4',
-        role === 'user' ? 'bg-blue-500 !text-white' : 'bg-white !text-black',
-      )}>
+    <div className="prose-sm lg:prose rounded-lg bg-white p-4 !text-black">
       <MemoizedMarkdown content={text} id={messageId} />
     </div>
   )

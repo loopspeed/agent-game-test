@@ -19,11 +19,17 @@ type AuthorCourseToolMessageProps = {
 }
 
 export const AuthorCourseToolMessage: FC<AuthorCourseToolMessageProps> = ({ part }) => {
-  if (part.state === 'input-streaming' || part.state === 'input-available') return <div>Authoring...</div>
+  console.log('Rendering AuthorCourseToolMessage for part:', part)
+  if (part.state === 'input-streaming' || part.state === 'input-available') return null
 
   if (part.state === 'output-available') {
     const output = part.output as MyUITools['authorCourseMarkdown']['output']
-    if (!!output) return <MemoizedMarkdown id={`${part.toolCallId}`} content={output} />
+    if (!!output)
+      return (
+        <div className="prose-sm lg:prose rounded-lg bg-white p-4 !text-black">
+          <MemoizedMarkdown id={`${part.toolCallId}`} content={output} />
+        </div>
+      )
     return <div>No content...</div>
   }
 

@@ -67,6 +67,24 @@ const COURSE_AUTHORING_SYSTEM_PROMPT = `
    If the source material is short, create a single chapter course.
 
   Ensure balanced difficulty, no duplicates, and all content must be grounded in the source (except for incorrect answers).
+
+  Here is an example of the COURSE-MD format:
+  <!-- COURSE-MD-START -->
+  # Course Title
+
+  ## Chapter 1: Title
+
+  Q1. Question one?
+  - a) Answer 1
+  - b) Answer 2
+  - c) Answer 3 (correct)
+  - d) Answer 4
+
+  Explanation: <explanation of the answer>
+  Source: “<quote from the material>”
+  ...
+
+  </!-- COURSE-MD-END -->
 `
 
 // Helper to extract material from a webpage (no JavaScript). Returns the
@@ -116,7 +134,7 @@ async function authorCourse({
   if (input.length > 24_000) {
     writer.write({
       type: 'reasoning-delta',
-      delta: 'Shortening long text...',
+      delta: '\nShortening long text...',
       id: reasoningId,
     })
 
@@ -136,7 +154,7 @@ async function authorCourse({
 
   writer.write({
     type: 'reasoning-delta',
-    delta: 'Producing chapters and questions...',
+    delta: '\nProducing chapters and questions...',
     id: reasoningId,
   })
 
@@ -150,7 +168,7 @@ async function authorCourse({
 
   writer.write({
     type: 'reasoning-delta',
-    delta: 'Sending it over',
+    delta: '\nSending it over',
     id: reasoningId,
   })
   writer.write({ type: 'reasoning-end', id: reasoningId })
@@ -195,7 +213,6 @@ export const tools = (writer: UIMessageStreamWriter) => ({
     }),
     outputSchema: z.string(),
     execute: async ({ title, sourceText }: { title: string; sourceText: string }) => {
-      // TODO: add yield for temporary feedback during long generation
       return authorCourse({ title, sourceText, writer })
     },
   }),
@@ -204,7 +221,7 @@ export const tools = (writer: UIMessageStreamWriter) => ({
     description: 'Convert course Markdown into a Course JSON object conforming to CourseSchema.',
     inputSchema: z.object({ title: z.string(), courseMarkdown: z.string() }),
     execute: async ({ title, courseMarkdown }: { title: string; courseMarkdown: string }) => {
-      // TODO: add yield for temporary feedback during long generation
+      // TODO: use writer to send frequent updates during generation
       return formatCourse(title, courseMarkdown)
     },
   }),
