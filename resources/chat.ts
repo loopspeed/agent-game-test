@@ -1,5 +1,6 @@
 import { openai } from '@ai-sdk/openai'
 import {
+  generateId,
   generateObject,
   generateText,
   InferUITools,
@@ -8,17 +9,21 @@ import {
   TypedToolResult,
   UIDataTypes,
   UIMessage,
+  UIMessageStreamWriter,
 } from 'ai'
 import { z } from 'zod'
 
 import { CourseSchema, CourseSummarySchema } from '@/model/content'
 import { ChapterRunSchema } from '@/model/game'
 
+const AVATAR_NAME = 'TestOwl' // TODO: this will change
+
 export const SYSTEM_PROMPT = `
-You are ChatRunner — the learning assistant and game manager for Educational Runner.
+You are ${AVATAR_NAME} - An quiz game assitant - you test students knowledge on anything that they throw at you.
+Your content is always based on the material provided by the user, and you never make up content.
 
 MISSION
-- Onboard the player, confirm a learning topic, author a quiz-based course, play it and then summarise results.
+- Onboard the player, gather a testing topic, author a quiz-based course, play it and then summarise results.
 
 TOOL USAGE
   1) extractContentFromWebsite(url) — fetches and cleans HTML text, returns { title, text, wordCount }.
@@ -30,25 +35,26 @@ TOOL USAGE
 
 ONBOARDING FLOW
 1) Greet the player and ask their name (one line).
-2) Ask how they want to test their knowledge (e.g., “Create questions from the web” or provide notes directly).
+2) Ask how they want to test their knowledge (e.g., provide a URL for extraction or content directly).
 3) If the player provides a URL, ask to confirm the detected topic before authoring. If they provide raw text, confirm the title if known.
 4) After extraction/authoring/formatting/storing, summarise the resulting course by listing each chapter and its question count. Then ask the player if they're ready to begin.
 5) When the user is ready to play, call playChapter({ courseId, chapterId }) exactly once with the course details.
-6) After the chapter is complete, congratulate the player, summarise their performance and ask if they want to move onto the next chapter.
-
-REVISTING COURSES
-If a users asks for their saved courses, call getCourses() and ask them which one they would like to open.
-After they have picked a course, list them the available chapters and ask which chapter they want to play next.
-
-DATA CONTRACT
-- The Course JSON must match CourseSchema: Course{id, title, description, chapters[]}; Chapter{id, title, description, questions[]}; Question{id, question, sources[], answers[]}. Answers: 2-4 options with exactly one correct; sources: 1-3 items containing url and passage from the provided material.  
-Use kebab-case IDs: course-{slug}, ch-01-{slug}, q-01-{slug}, a-01-a. 
-
-STYLE & TONE
-- Be concise, supportive, and use UK English. Only request one action per turn.
+6) After the chapter is complete, congratulate the player, summarise their performance and ask if they want to move onto the next chapter or re-test.
 
 ERROR HANDLING
 - If fetching fails or content is insufficient/noisy, politely ask the user for another URL or alternative text.
+
+REVISTING COURSES
+If a users asks for their saved courses or previous courses, call getCourses() - this will render custom cards in the UI for them to interact with.
+Do not summarise the courses yourself - simply ask if they want to create a new one.
+
+STYLE & TONE
+- Be concise, fun, and use UK English. Only request one action per turn and keep your responses brief.
+- Avoid unnecessary repetition and verbosity.
+- Do not use emoticons or emojis of any kind.
+- If the user requests something outside your capabilities, say that's outside of your remit. You are here to test their knowledge and turn them into champions - nothing else!
+
+
 `
 
 const COURSE_AUTHORING_SYSTEM_PROMPT = `
@@ -86,11 +92,35 @@ async function extractContentFromUrl(url: string): Promise<{ title: string; text
 
 // Helper to author course Markdown.  Summarises the source text if very long
 // before generating the Markdown outline.
-async function authorCourse(title: string, sourceText: string): Promise<string> {
+
+async function authorCourse({
+  title,
+  sourceText,
+  writer,
+}: {
+  title: string
+  sourceText: string
+  writer: UIMessageStreamWriter
+}): Promise<string> {
   // Summarise if source text is too long (> 12k chars)
+  const reasoningId = generateId()
+  writer.write({ type: 'reasoning-start', id: reasoningId })
+
+  writer.write({
+    type: 'reasoning-delta',
+    delta: 'Understanding the material...',
+    id: reasoningId,
+  })
+
   let input = sourceText
-  if (input.length > 12_000) {
-    console.warn('[DEBUG] authorCourse: summarising long text', input.length)
+  if (input.length > 24_000) {
+    writer.write({
+      type: 'reasoning-delta',
+      delta: 'Shortening long text...',
+      id: reasoningId,
+    })
+
+    // TODO: REVIEW THIS _ NOT CHECKED
     const { object: summaryObj } = await generateObject({
       model: openai('gpt-4o-mini'),
       temperature: 0.2,
@@ -104,6 +134,12 @@ async function authorCourse(title: string, sourceText: string): Promise<string> 
     console.warn('[DEBUG] authorCourse: summarised length', input.length)
   }
 
+  writer.write({
+    type: 'reasoning-delta',
+    delta: 'Producing chapters and questions...',
+    id: reasoningId,
+  })
+
   // Generate Markdown following the COURSE-MD spec
   const { text: courseMarkdown } = await generateText({
     model: openai('gpt-5'),
@@ -111,6 +147,14 @@ async function authorCourse(title: string, sourceText: string): Promise<string> 
     system: COURSE_AUTHORING_SYSTEM_PROMPT,
     prompt: `Title: ${title}\n\nSource Text:\n${input}\n\n`,
   })
+
+  writer.write({
+    type: 'reasoning-delta',
+    delta: 'Sending it over',
+    id: reasoningId,
+  })
+  writer.write({ type: 'reasoning-end', id: reasoningId })
+
   console.warn('[DEBUG] authorCourse: markdown length', courseMarkdown.length)
   return courseMarkdown
 }
@@ -132,7 +176,7 @@ async function formatCourse(title: string, courseMarkdown: string) {
 }
 
 // Define tools using the AI SDK tool() helper for proper type inference
-export const tools = {
+export const tools = (writer: UIMessageStreamWriter) => ({
   // Server-side tool: fetches HTML and extracts text
   extractContentFromWebsite: tool({
     description: 'Fetch textual content from a webpage. Returns title, clean text, and word count.',
@@ -152,7 +196,7 @@ export const tools = {
     outputSchema: z.string(),
     execute: async ({ title, sourceText }: { title: string; sourceText: string }) => {
       // TODO: add yield for temporary feedback during long generation
-      return authorCourse(title, sourceText)
+      return authorCourse({ title, sourceText, writer })
     },
   }),
   // Server-side tool: format Markdown into Course JSON
@@ -195,11 +239,11 @@ export const tools = {
       courses: z.array(CourseSummarySchema),
     }),
   }),
-} as const
+})
 
-export const TOOL_NAMES = Object.keys(tools) as Array<keyof typeof tools>
+type Tools = ReturnType<typeof tools>
 
-export type MyToolCall = TypedToolCall<typeof tools>
-export type MyToolResult = TypedToolResult<typeof tools>
-export type MyUITools = InferUITools<typeof tools>
+export type MyToolCall = TypedToolCall<Tools>
+export type MyToolResult = TypedToolResult<Tools>
+export type MyUITools = InferUITools<Tools>
 export type MyUIMessage = UIMessage<unknown, UIDataTypes, MyUITools>

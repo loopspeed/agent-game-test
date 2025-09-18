@@ -5,7 +5,7 @@ import { type FC, useEffect, useRef, useState } from 'react'
 import { type TransitionStatus } from 'react-transition-group'
 import { twJoin } from 'tailwind-merge'
 
-import { MyToolResult, type MyUIMessage, type MyUITools } from '@/resources/chat'
+import { type MyUIMessage, type MyUITools } from '@/resources/chat'
 
 import { MemoizedMarkdown } from './Markdown'
 import {
@@ -47,11 +47,20 @@ const Chat: FC<Props> = ({ chat, onStartTestClick }) => {
             {/* Message bubble */}
             <div className={twJoin('max-w-4/5')}>
               {message.parts.map((part, i) => {
+                if (part.type === 'reasoning') {
+                  return (
+                    <div key={message.id + '-part-' + i} className="text-yellow-600">
+                      <label>Reasoning:</label>
+                      <MemoizedMarkdown id={message.id} content={part.text} />
+                    </div>
+                  )
+                }
+
                 if (part.type === 'text')
                   return (
                     <TextMessage
                       key={`${message.id}-${i}`}
-                      messageId={message.id}
+                      messageId={message.id + '-part-' + i}
                       role={message.role}
                       text={part.text}
                     />

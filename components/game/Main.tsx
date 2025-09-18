@@ -31,9 +31,11 @@ const Main: FC = () => {
   const container = useRef<HTMLDivElement>(null)
 
   // Store pending tool call to resolve after level completion
-  const pendingToolCall = useRef<{ toolName: string; toolCallId: string; courseId: string; chapterId: string } | null>(
-    null,
-  )
+  const pendingPlayTestToolCall = useRef<{
+    toolCallId: string
+    courseId: string
+    chapterId: string
+  } | null>(null)
 
   const chat = useChat<MyUIMessage>({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
@@ -76,8 +78,7 @@ const Main: FC = () => {
           const { courseId, chapterId } = input
           console.warn('[DEBUG] playChapter: courseId', courseId, 'chapterId', chapterId)
           // Store the pending tool call to resolve after level completion
-          pendingToolCall.current = {
-            toolName: 'playChapter',
+          pendingPlayTestToolCall.current = {
             toolCallId: toolCall.toolCallId,
             courseId,
             chapterId,
@@ -125,7 +126,7 @@ const Main: FC = () => {
         },
       ],
     })
-    pendingToolCall.current = { toolName: 'playChapter', toolCallId, courseId, chapterId }
+    pendingPlayTestToolCall.current = { toolCallId, courseId, chapterId }
     goToStage(Stage.Level)
   }
 
@@ -133,9 +134,8 @@ const Main: FC = () => {
     console.warn('[DEBUG] Chapter level complete', run)
 
     // If there's a pending playChapter tool call, resolve it now
-    if (!pendingToolCall.current) return
-    const { toolName, toolCallId } = pendingToolCall.current
-    if (toolName !== 'playChapter') return
+    if (!pendingPlayTestToolCall.current) return
+    const { toolCallId } = pendingPlayTestToolCall.current
 
     chat.addToolResult({
       tool: 'playChapter',
@@ -145,7 +145,7 @@ const Main: FC = () => {
         run,
       },
     })
-    pendingToolCall.current = null
+    pendingPlayTestToolCall.current = null
 
     addChapterRunToHistory(run)
     goToStage(Stage.Chat)
