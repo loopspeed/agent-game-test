@@ -33,9 +33,25 @@ export const CourseSchema = z.object({
   chapters: z.array(ChapterSchema).min(1).describe('Array of chapters in the course'),
 })
 
+export const ChapterSummarySchema = z.object({
+  id: z.string().describe('Unique identifier for the chapter'),
+  title: z.string().describe('Chapter title'),
+  questions: z.number().describe('Number of questions in the chapter'),
+})
+
+export const CourseSummarySchema = z.object({
+  id: z.string().describe('Unique identifier for the course'),
+  title: z.string().describe('Course title'),
+  description: z.string().describe('Course description'),
+  chapters: z.array(ChapterSummarySchema).min(1).describe('Array of chapter summaries in the course'),
+})
+
 // Inferred TypeScript types from Zod schemas
 export type QuestionSource = z.infer<typeof QuestionSourceSchema>
 export type Answer = z.infer<typeof AnswerSchema>
 export type Question = z.infer<typeof QuestionSchema>
 export type Chapter = z.infer<typeof ChapterSchema>
 export type Course = z.infer<typeof CourseSchema>
+
+export type ChapterSummary = z.infer<typeof ChapterSummarySchema>
+export type CourseSummary = z.infer<typeof CourseSummarySchema>

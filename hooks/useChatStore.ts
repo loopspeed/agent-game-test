@@ -1,0 +1,3 @@
+// Create a Zustand store for chat state management
+
+// Store the Chats, Store the messages...

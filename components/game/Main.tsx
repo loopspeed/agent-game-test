@@ -1,10 +1,10 @@
 'use client'
 import { useChat } from '@ai-sdk/react'
 import { useGSAP } from '@gsap/react'
-import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, tool } from 'ai'
+import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, UIDataTypes, UIMessage } from 'ai'
 import gsap from 'gsap'
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary'
-import React, { type FC, useRef } from 'react'
+import React, { type FC, useMemo, useRef } from 'react'
 import { SwitchTransition, Transition } from 'react-transition-group'
 
 import Chat from '@/components/game/chat/Chat'
@@ -13,17 +13,20 @@ import PlayerSetup from '@/components/game/playerSetup/PlayerSetup'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 import { Course, CourseSchema } from '@/model/content'
 import { type ChapterRun } from '@/model/game'
+import { type MyUIMessage } from '@/resources/tools'
 import { useCourseStore } from '@/stores/CourseProvider'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 
 gsap.registerPlugin(useGSAP)
+
+// type MyUIMessage = UIMessage<unknown, UIDataTypes, MyToolCall>
 
 const Main: FC = () => {
   const { stage, goToStage } = useNavigation()
 
   // TODO: These should be replaced by DB and called on the server
   const storeCourse = useCourseStore((s) => s.storeCourse)
-  const getAllCourses = useCourseStore((s) => s.getAllCourses)
+  const getCourseSummaries = useCourseStore((s) => s.getCourseSummaries)
   const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
 
   const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
@@ -34,8 +37,9 @@ const Main: FC = () => {
     null,
   )
 
-  const chat = useChat({
+  const chat = useChat<MyUIMessage>({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
+    messages: [],
     // messageMetadataSchema
     // Automatically send messages once all tool results are provided
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
@@ -50,7 +54,7 @@ const Main: FC = () => {
           console.warn('[DEBUG] storeCourse: input', input)
           // Validate the course object against the schema
           const parsedCourse = CourseSchema.parse(input.course)
-          console.log('[DEBUG] storeCourse: parsedCourse', parsedCourse)
+          console.warn('[DEBUG] storeCourse: parsedCourse', parsedCourse)
           // Store the course and set it as active
           storeCourse(parsedCourse)
           chat.addToolResult({
@@ -86,19 +90,20 @@ const Main: FC = () => {
           if (!success) throw error
           goToStage(Stage.Level)
         } catch (error) {
+          console.error('[ERROR] playChapter failed', error)
           chat.addToolResult({
             tool: 'playChapter',
             toolCallId: toolCall.toolCallId,
-            output: { status: 'error', error: (error as Error).message },
+            output: { status: 'error' },
           })
         }
       }
 
-      if (toolCall.toolName === 'getAllCourses') {
-        const courses = getAllCourses()
-        console.log('[DEBUG] getAllCourses: courses', courses)
+      if (toolCall.toolName === 'getCourses') {
+        const courses = getCourseSummaries()
+        console.warn('[DEBUG] getCourses: courses', courses)
         chat.addToolResult({
-          tool: 'getAllCourses',
+          tool: 'getCourses',
           toolCallId: toolCall.toolCallId,
           output: { status: 'success', courses },
         })
@@ -107,44 +112,25 @@ const Main: FC = () => {
   })
 
   const onChapterLevelComplete = (run: ChapterRun) => {
-    console.log('[DEBUG] Chapter level complete', run)
-    addChapterRunToHistory(run)
-    goToStage(Stage.Chat)
+    console.warn('[DEBUG] Chapter level complete', run)
+
     // If there's a pending playChapter tool call, resolve it now
     if (!pendingToolCall.current) return
-    const { toolName, toolCallId, courseId, chapterId } = pendingToolCall.current
+    const { toolName, toolCallId } = pendingToolCall.current
     if (toolName !== 'playChapter') return
+
     chat.addToolResult({
       tool: 'playChapter',
       toolCallId,
       output: {
         status: 'completed',
-        courseId,
-        chapterId,
-        points: run.points,
-        answers: run.answers,
-        completionTime: run.completionTime,
+        run,
       },
     })
     pendingToolCall.current = null
-  }
 
-  const onLevelExited = () => {
-    console.log('[DEBUG] Level exited to chat')
-    // If there's a pending playChapter tool call, resolve it now
-    if (!pendingToolCall.current) return
-    const { toolName, toolCallId, courseId, chapterId } = pendingToolCall.current
-    if (toolName !== 'playChapter') return
-    chat.addToolResult({
-      tool: 'playChapter',
-      toolCallId,
-      output: {
-        status: 'player cancelled',
-        courseId,
-        chapterId,
-      },
-    })
-    pendingToolCall.current = null
+    addChapterRunToHistory(run)
+    goToStage(Stage.Chat)
   }
 
   return (
@@ -168,11 +154,7 @@ const Main: FC = () => {
                 )}
                 {stage === Stage.Level && (
                   <ErrorBoundary errorComponent={Error}>
-                    <Level
-                      transitionStatus={transitionStatus}
-                      onExited={onLevelExited}
-                      onChapterLevelComplete={onChapterLevelComplete}
-                    />
+                    <Level transitionStatus={transitionStatus} onChapterLevelComplete={onChapterLevelComplete} />
                   </ErrorBoundary>
                 )}
               </div>

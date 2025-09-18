@@ -4,7 +4,7 @@ import { createContext, type FC, type PropsWithChildren, useContext, useRef } fr
 import { createStore, type StoreApi, useStore } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-import type { Chapter, Course } from '@/model/content'
+import type { Chapter, ChapterSummary, Course, CourseSummary } from '@/model/content'
 import { SAMPLE_COURSE } from '@/resources/course'
 
 interface CourseState {
@@ -27,8 +27,7 @@ interface CourseState {
   setHasHydrated: (state: boolean) => void
 
   // Utility methods
-  getCourse: (courseId: string) => Course | null
-  getChapter: (courseId: string, chapterId: string) => Chapter | null
+  getCourseSummaries: () => CourseSummary[]
   getAllCourses: () => Course[]
 }
 
@@ -103,23 +102,31 @@ const createCourseStore = () => {
           const state = get()
           const { activeCourseId, activeChapterId } = state
           if (!activeCourseId || !activeChapterId) return null
-          return state.getChapter(activeCourseId, activeChapterId)
+          return state.courses[activeCourseId]?.chapters.find((ch) => ch.id === activeChapterId) || null
         },
 
         getCurrentCourse: (): Course | null => {
           const state = get()
-          return state.activeCourseId ? state.getCourse(state.activeCourseId) : null
+          if (!state.activeCourseId) return null
+          return state.courses[state.activeCourseId]
         },
 
-        getCourse: (courseId: string): Course | null => {
-          return get().courses[courseId] || null
-        },
-
-        getChapter: (courseId: string, chapterId: string): Chapter | null => {
-          const course = get().courses[courseId]
-          if (!course) return null
-
-          return course.chapters.find((chapter) => chapter.id === chapterId) || null
+        getCourseSummaries: (): CourseSummary[] => {
+          const allCourses = get().courses
+          return Object.values(allCourses).map((course) => {
+            const chapterSummaries: ChapterSummary[] = course.chapters.map((chapter) => ({
+              id: chapter.id,
+              title: chapter.title,
+              questions: chapter.questions.length,
+            }))
+            const courseSummary: CourseSummary = {
+              id: course.id,
+              title: course.title,
+              description: course.description,
+              chapters: chapterSummaries,
+            }
+            return courseSummary
+          })
         },
 
         getAllCourses: (): Course[] => {

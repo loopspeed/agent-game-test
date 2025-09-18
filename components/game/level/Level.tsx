@@ -18,22 +18,14 @@ import { useSoundStore } from '@/stores/SoundProvider'
 
 type Props = {
   transitionStatus: TransitionStatus
-  onExited: () => void
   onChapterLevelComplete: (run: ChapterRun) => void
 }
 
-const Level: FC<Props> = ({ transitionStatus, onExited, onChapterLevelComplete }) => {
+const Level: FC<Props> = ({ transitionStatus, onChapterLevelComplete }) => {
   const playSoundFX = useSoundStore((s) => s.playSoundFX)
   const hasHydrated = useCourseStore((s) => s._hasHydrated)
   const course = useCourseStore((s) => s.getCurrentCourse())
   const chapter = useCourseStore((s) => s.getCurrentChapter())
-
-  useEffect(() => {
-    return () => {
-      onExited()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   useKeypadInput()
 

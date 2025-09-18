@@ -71,7 +71,7 @@ const AnswerHitSchema = z.object({
 
 export type AnswerHit = z.infer<typeof AnswerHitSchema>
 
-export const LevelSummarySchema = z.object({
+export const ChapterRunSchema = z.object({
   id: z.string(),
   courseId: z.string(),
   chapterId: z.string(),
@@ -81,4 +81,4 @@ export const LevelSummarySchema = z.object({
   completionTime: z.number(),
 })
 
-export type ChapterRun = z.infer<typeof LevelSummarySchema>
+export type ChapterRun = z.infer<typeof ChapterRunSchema>

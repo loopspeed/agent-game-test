@@ -63,8 +63,8 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
               <planeGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M]} />
             </Image>
             <Html transform={true}>
-              <div className="flex aspect-square size-16 items-center justify-center overflow-hidden p-1">
-                <p className="text-center text-[8px] font-semibold text-white">{answer.label}</p>
+              <div className="flex aspect-square size-16 items-center justify-center overflow-hidden p-0.5">
+                <p className="text-center text-[6px] font-semibold text-white">{answer.label}</p>
               </div>
             </Html>
           </>
