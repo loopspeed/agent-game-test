@@ -1,7 +1,7 @@
 'use client'
 import { CameraShake, type CameraShakeProps, type ShakeController, Stats } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { type FC, useEffect, useRef } from 'react'
+import { type FC, useRef } from 'react'
 import React from 'react'
 import { type TransitionStatus } from 'react-transition-group'
 

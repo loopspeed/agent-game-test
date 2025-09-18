@@ -8,6 +8,7 @@ import { SwitchTransition, Transition, type TransitionStatus } from 'react-trans
 
 import { LEVA_CONTROLS_THEME } from '@/resources/leva'
 import { useLevelStore } from '@/stores/LevelProvider'
+import { SoundFX, useSoundStore } from '@/stores/SoundProvider'
 import { OBSTACLE_PRESETS, useConfigStore } from '@/stores/useConfigStore'
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
 
 const ConfigUI: FC<Props> = ({ transitionStatus }) => {
   const onConfigCompleted = useLevelStore((s) => s.onConfigCompleted)
+  const playSoundFX = useSoundStore((s) => s.playSoundFX)
   const container = useRef<HTMLDivElement>(null)
 
   // Configuration...
@@ -124,6 +126,7 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Enter') {
+        playSoundFX(SoundFX.GET_READY)
         onConfigCompleted(getLevelConfig())
       }
     }
@@ -133,7 +136,7 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [getLevelConfig, onConfigCompleted])
+  }, [getLevelConfig, onConfigCompleted, playSoundFX])
 
   useGSAP(
     () => {

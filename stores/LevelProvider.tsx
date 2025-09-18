@@ -226,6 +226,14 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
       const newPhaseIndex = phaseIndex + 1
       const newPhase = phases[newPhaseIndex]
       console.warn('[LevelProvider] Question phase completed, moving to next phase:', { newPhase })
+
+      // Play level complete sound over outro - different based on result
+      if (newPhase === LevelPhase.OUTRO) {
+        const hasIncorrectAnswers = get().answersHit.some((hit) => !hit.isCorrect)
+        const soundFX = hasIncorrectAnswers ? SoundFX.GAME_OVER : SoundFX.LEVEL_COMPLETE
+        playSoundFX(soundFX)
+      }
+
       const newQuestionIndex = questionIndex + 1
 
       const hasMoreQuestions = newQuestionIndex < questions.length
@@ -250,12 +258,6 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
     onOutroCompleted: () => {
       console.warn('[LevelProvider] Outro phase completed. Ending level')
       const state = get()
-
-      // play different sound based on result - TODO: we probably want to play this as soon as the level complete comes up (start of OUTRO phase, not end.)
-      const finalScore = state.answersHit.some((hit) => !hit.isCorrect)
-      const soundFX = finalScore ? SoundFX.GAME_OVER : SoundFX.LEVEL_COMPLETE
-      playSoundFX(soundFX)
-
       const completionTime = Date.now() - state.gameStartTime // This doesn't account for slow motion time so needs re-assessing.
       onComplete({
         id: crypto.randomUUID(),
@@ -280,10 +282,14 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
 
       // Handle phase transitions
       if (shouldMoveToNextPhase) {
+        const previousPhase = phase
         phaseIndex++
         phaseTime = 0
         phase = state.phases[phaseIndex]
 
+        if (previousPhase === LevelPhase.INTRO) {
+          playSoundFX(SoundFX.COUNTDOWN)
+        }
         if (phase === LevelPhase.REST) {
           console.warn('[LevelProvider] Transitioning to REST phase')
         }
