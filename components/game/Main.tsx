@@ -132,6 +132,8 @@ const Main: FC = () => {
 
   const onChapterLevelComplete = (run: ChapterRun) => {
     console.warn('[DEBUG] Chapter level complete', run)
+    addChapterRunToHistory(run)
+    goToStage(Stage.Chat)
 
     // If there's a pending playChapter tool call, resolve it now
     if (!pendingPlayTestToolCall.current) return
@@ -146,9 +148,6 @@ const Main: FC = () => {
       },
     })
     pendingPlayTestToolCall.current = null
-
-    addChapterRunToHistory(run)
-    goToStage(Stage.Chat)
   }
 
   return (
