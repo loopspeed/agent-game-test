@@ -7,6 +7,7 @@ import { type MyUIMessage, type MyUITools } from '@/resources/chat'
 
 import { MemoizedMarkdown } from './Markdown'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
+import { ChapterRun } from '@/model/game'
 
 // TODO: Create wrapper components for loading/error/success states for tool messages
 // TODO: Create course card component for GetCoursesToolMessage
@@ -64,8 +65,9 @@ export const PlayChapterToolMessage: FC<PlayChapterToolMessageProps> = ({ part, 
 
   if (part.state === 'output-available') {
     const output = part.output as MyUITools['playChapter']['output']
+    const run = output.run as ChapterRun // TODO: fix type
     if (output.status === 'completed') {
-      return <div>Chapter completed!</div>
+      return <div>Chapter completed! {JSON.stringify(run)}</div>
     }
   }
 
@@ -88,19 +90,18 @@ export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = ({ part, on
     if (!courses || courses.length === 0) return <div>No courses...</div>
 
     return (
-      <div className="text-xs text-blue-400">
+      <div className="flex flex-col gap-3 py-6 text-sm text-blue-100">
         {courses.map((c: CourseSummary, index: number) => (
-          <div key={c.id} className="mb-2">
-            <div className="font-bold">
-              {index + 1}. {c.title}
-            </div>
-            <div className="italic">{c.description}</div>
+          // TODO: Produce nice course card component - make it expandable...
+          <div key={c.id} className="rounded-lg border p-4">
+            <div className="text-lg font-bold">{c.title}</div>
+            <div className="">{c.description}</div>
 
             <div className="p-2">
               {c.chapters.map((ch) => (
-                <div key={ch.id} className="ml-4">
+                <div key={ch.id} className="ml-4 flex items-center gap-3">
                   - {ch.title}
-                  <button className="cursor-pointer border px-4" onClick={() => onStartTestClick(c.id, ch.id)}>
+                  <button className="cursor-pointer border px-4 py-1" onClick={() => onStartTestClick(c.id, ch.id)}>
                     START TEST
                   </button>
                 </div>

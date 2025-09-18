@@ -13,7 +13,7 @@ import {
   ObstacleUserData,
 } from '@/model/game'
 import { SoundFX } from '@/stores/SoundProvider'
-import { DEFAULT_LEVEL_CONFIG, type LevelConfig } from '@/stores/useConfigStore'
+import { DEFAULT_LEVEL_CONFIG, type LevelConfig } from '@/stores/useLevelConfigStore'
 
 type DebugInfo = {
   gameTime: number
@@ -81,6 +81,7 @@ type LevelState = {
   slowMoTimeRemaining: number
   isSlowMo: boolean
   goSlowMo: () => void
+  goFullSpeed: () => void
 
   // Phase state
   phases: LevelPhase[]
@@ -341,6 +342,17 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
       set({ isSlowMo: true })
       gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 1 })
 
+      const goFullSpeed = get().goFullSpeed
+
+      const onKeyPress = (e: KeyboardEvent) => {
+        const CONFIRM_KEYS = ['Enter', 'Space', 'ShiftLeft']
+        if (!CONFIRM_KEYS.includes(e.key)) return
+        window.removeEventListener('keypress', onKeyPress)
+        goFullSpeed()
+      }
+
+      window.addEventListener('keypress', onKeyPress)
+
       const { answerTimeDuration, answerSpeed } = get().config
       answerTimeRemaining.value = answerTimeDuration
 
@@ -362,6 +374,7 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
           onComplete: () => {
             set({ isSlowMo: false, slowMoTimeRemaining: answerTimeDuration })
             gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 0 })
+            window.removeEventListener('keypress', onKeyPress)
           },
         })
         // Slow time down as the answer gate approaches
@@ -412,6 +425,40 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
             set({ timeMultiplier: timeTweenTarget.value })
           },
         })
+    },
+    goFullSpeed: () => {
+      if (!get().isSlowMo) return
+      // Speed back up if the user manually triggers full speed again
+      const { answerTimeDuration } = get().config
+
+      speedTimeline?.kill()
+      speedTimeline = gsap
+        .timeline({
+          onComplete: () => {
+            set({ isSlowMo: false, slowMoTimeRemaining: answerTimeDuration })
+            gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 0 })
+          },
+        })
+        .to('#slow-mo-bar', {
+          scaleX: 1,
+          duration: 0.3,
+          ease: 'power1.out',
+          onUpdate: () => {
+            set({ slowMoTimeRemaining: answerTimeRemaining.value })
+          },
+        })
+        .to(
+          timeTweenTarget,
+          {
+            duration: 0.3,
+            ease: 'power1.out',
+            value: 1.0,
+            onUpdate: () => {
+              set({ timeMultiplier: timeTweenTarget.value })
+            },
+          },
+          0,
+        )
     },
     updatePlayerPosition: ({ pos, lanes }) => {
       const currentPlayerLane = lanes[1] * 3 + lanes[0] // Convert to 0-8 index

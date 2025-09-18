@@ -52,16 +52,6 @@ export type RigidBodyUserData =
   | PlayerUserData
   | OnboardingTargetUserData
 
-//   id: string
-//   courseId: string // identifier for the course
-//   chapterId: string // identifier for the chapter
-//   timestamp: number
-//   points: number
-//   answers: AnswerHit[]
-//   correctAnswers: number
-//   accuracyPercentage: number
-//   completionTime: number // in milliseconds
-
 const AnswerHitSchema = z.object({
   questionId: z.string(),
   answerId: z.string().nullable(),

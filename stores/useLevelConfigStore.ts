@@ -32,7 +32,7 @@ export const OBSTACLE_PRESETS: Record<string, Pick<LevelConfig, 'obstacleSpeed' 
   },
 }
 
-const DEFAULT_ANSWER_TIME_DURATION = 4.0 // Seconds to answer each question
+const DEFAULT_ANSWER_TIME_DURATION = 10.0 // Seconds to answer each question
 
 export const DEFAULT_LEVEL_CONFIG: LevelConfig = {
   showOnboarding: false,
@@ -62,7 +62,7 @@ type StoreState = LevelConfig & {
   getLevelConfig: () => LevelConfig
 }
 
-export const useConfigStore = create<StoreState>()(
+export const useLevelConfigStore = create<StoreState>()(
   persist(
     (set, get) => ({
       ...DEFAULT_LEVEL_CONFIG,

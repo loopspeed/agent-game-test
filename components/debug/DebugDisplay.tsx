@@ -2,12 +2,12 @@
 import { type FC } from 'react'
 
 import { useLevelStore } from '@/stores/LevelProvider'
-import { useConfigStore } from '@/stores/useConfigStore'
+import { useLevelConfigStore } from '@/stores/useLevelConfigStore'
 
 const DebugDisplay: FC = () => {
   useLevelStore((s) => s.totalTime) // used to trigger re-renders
   const debugInfo = useLevelStore((s) => s.getDebugInfo)()
-  const phaseDurations = useConfigStore((s) => s.phaseDurations)
+  const phaseDurations = useLevelConfigStore((s) => s.phaseDurations)
 
   return (
     <div className="fixed top-4 left-4 max-w-md bg-black py-10 text-xs leading-loose text-white/70">

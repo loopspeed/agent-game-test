@@ -33,6 +33,11 @@ function useKeypadInput() {
           setKey('right', true)
           break
         }
+        case 'Space':
+        case 'Enter': {
+          console.warn('[DEBUG] User hit space or enter')
+          break
+        }
         default:
           break
       }

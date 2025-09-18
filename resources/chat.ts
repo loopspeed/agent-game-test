@@ -31,15 +31,14 @@ TOOL USAGE
   3a) formatCourseForGame({ title, courseMarkdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
   3b) storeCourse({ course }) — saves the Course JSON to the frontend state - always call this immediately after formatting the course.
   4) playChapter({ courseId, chapterId }) — passes the Course JSON to the frontend to set state and begin the game. On completion it returns a status and a summary of the run.
-  5) getCourses() — tool that retrieves stored courses in an array of CourseSummary. These are already prepared and validated, and are ready to be played. 
+  5) getCourses() — tool that retrieves stored courses in an array of CourseSummary. These are already prepared and validated, and are ready to be played. Do NOT summarize the output.
 
-ONBOARDING FLOW
-1) Greet the player and ask their name (one line).
-2) Ask how they want to test their knowledge (e.g., provide a URL for extraction or content directly).
-3) If the player provides a URL, ask to confirm the detected topic before authoring. If they provide raw text, confirm the title if known.
-4) After extraction/authoring/formatting/storing, summarise the resulting course by listing each chapter and its question count. Then ask the player if they're ready to begin.
-5) When the user is ready to play, call playChapter({ courseId, chapterId }) exactly once with the course details.
-6) After the chapter is complete, congratulate the player, summarise their performance and ask if they want to move onto the next chapter or re-test.
+FLOW
+1) Greet the player and ask how they want to test their knowledge (e.g., provide a URL for extraction or content directly).
+2) If the player provides a URL, confirm the detected topic before authoring. If they provide raw text, confirm the title if known.
+3) After extraction/authoring/formatting/storing then ask the player if they're ready to begin.
+4) When the user is ready to play a test, call playChapter({ courseId, chapterId }) exactly once with the course details.
+5) After the play is complete, congratulate the player, summarise their performance in a few words (full summary will be displayed in the UI). Then based on performance, suggest that they move onto the next chapter or re-test.
 
 ERROR HANDLING
 - If fetching fails or content is insufficient/noisy, politely ask the user for another URL or alternative text.
@@ -152,11 +151,13 @@ async function authorCourse({
     console.warn('[DEBUG] authorCourse: summarised length', input.length)
   }
 
-  writer.write({
-    type: 'reasoning-delta',
-    delta: '\nProducing chapters and questions...',
-    id: reasoningId,
-  })
+  setTimeout(() => {
+    writer.write({
+      type: 'reasoning-delta',
+      delta: '\nProducing chapters and questions...',
+      id: reasoningId,
+    })
+  }, 2000)
 
   // Generate Markdown following the COURSE-MD spec
   const { text: courseMarkdown } = await generateText({
@@ -168,28 +169,61 @@ async function authorCourse({
 
   writer.write({
     type: 'reasoning-delta',
-    delta: '\nSending it over',
+    delta: '\nPackaging it up...',
     id: reasoningId,
   })
   writer.write({ type: 'reasoning-end', id: reasoningId })
 
-  console.warn('[DEBUG] authorCourse: markdown length', courseMarkdown.length)
   return courseMarkdown
 }
 
 // Helper to format the Markdown into a Course JSON object.  Ensures the
 // output validates against CourseSchema.  Uses gpt-4o-mini for cost control.
-async function formatCourse(title: string, courseMarkdown: string) {
+async function formatCourse({
+  title,
+  courseMarkdown,
+  writer,
+}: {
+  title: string
+  courseMarkdown: string
+  writer: UIMessageStreamWriter
+}) {
+  const reasoningId = generateId()
+  writer.write({ type: 'reasoning-start', id: reasoningId })
+  writer.write({
+    type: 'reasoning-delta',
+    delta: 'Converting Markdown into structured JSON for the game...',
+    id: reasoningId,
+  })
+
+  setTimeout(() => {
+    writer.write({
+      type: 'reasoning-delta',
+      delta: '\nAlmost there...',
+      id: reasoningId,
+    })
+  }, 2000)
+
+  const FORMAT_COURSE_SYSTEM_PROMPT = `Convert the content into a JSON object that validates CourseSchema.
+  Remove any numbers (e.g "1.") or letters (e.g "a.") that sit in front of questions and answers.
+  Retain Chapter numbers.
+  Follow the exact content provided to you.
+  `
+
   const { object: course } = await generateObject({
     model: openai('gpt-4o-mini'),
     temperature: 0.2,
     schema: CourseSchema,
     messages: [
-      { role: 'system', content: 'Return ONLY a JSON object that validates CourseSchema.' },
+      {
+        role: 'system',
+        content: FORMAT_COURSE_SYSTEM_PROMPT,
+      },
       { role: 'user', content: `Title: ${title}\n\nMarkdown:\n${courseMarkdown}` },
     ],
   })
-  console.warn('[DEBUG] formatCourse: chapters', course.chapters?.length ?? 0)
+
+  writer.write({ type: 'reasoning-end', id: reasoningId })
   return { course }
 }
 
@@ -222,7 +256,7 @@ export const tools = (writer: UIMessageStreamWriter) => ({
     inputSchema: z.object({ title: z.string(), courseMarkdown: z.string() }),
     execute: async ({ title, courseMarkdown }: { title: string; courseMarkdown: string }) => {
       // TODO: use writer to send frequent updates during generation
-      return formatCourse(title, courseMarkdown)
+      return formatCourse({ title, courseMarkdown, writer })
     },
   }),
   // Client-side tools

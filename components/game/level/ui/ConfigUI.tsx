@@ -9,7 +9,7 @@ import { SwitchTransition, Transition, type TransitionStatus } from 'react-trans
 import { LEVA_CONTROLS_THEME } from '@/resources/leva'
 import { useLevelStore } from '@/stores/LevelProvider'
 import { SoundFX, useSoundStore } from '@/stores/SoundProvider'
-import { OBSTACLE_PRESETS, useConfigStore } from '@/stores/useConfigStore'
+import { OBSTACLE_PRESETS, useLevelConfigStore } from '@/stores/useLevelConfigStore'
 
 type Props = {
   transitionStatus: TransitionStatus
@@ -21,22 +21,22 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
   const container = useRef<HTMLDivElement>(null)
 
   // Configuration...
-  const showOnboarding = useConfigStore((s) => s.showOnboarding)
-  const setShowOnboarding = useConfigStore((s) => s.setShowOnboarding)
+  const showOnboarding = useLevelConfigStore((s) => s.showOnboarding)
+  const setShowOnboarding = useLevelConfigStore((s) => s.setShowOnboarding)
 
-  const obstacleSpeed = useConfigStore((s) => s.obstacleSpeed)
-  const setObstacleSpeed = useConfigStore((s) => s.setObstacleSpeed)
+  const obstacleSpeed = useLevelConfigStore((s) => s.obstacleSpeed)
+  const setObstacleSpeed = useLevelConfigStore((s) => s.setObstacleSpeed)
 
-  const obstacleSpawnInterval = useConfigStore((s) => s.obstacleSpawnInterval)
-  const setObstacleSpawnInterval = useConfigStore((s) => s.setObstacleSpawnInterval)
+  const obstacleSpawnInterval = useLevelConfigStore((s) => s.obstacleSpawnInterval)
+  const setObstacleSpawnInterval = useLevelConfigStore((s) => s.setObstacleSpawnInterval)
 
-  const slowMoDuration = useConfigStore((s) => s.answerTimeDuration)
-  const setSlowMoDuration = useConfigStore((s) => s.setAnswerTimeDuration)
+  const slowMoDuration = useLevelConfigStore((s) => s.answerTimeDuration)
+  const setSlowMoDuration = useLevelConfigStore((s) => s.setAnswerTimeDuration)
 
-  const phaseDurations = useConfigStore((s) => s.phaseDurations)
-  const setPhaseDurations = useConfigStore((s) => s.setPhaseDurations)
+  const phaseDurations = useLevelConfigStore((s) => s.phaseDurations)
+  const setPhaseDurations = useLevelConfigStore((s) => s.setPhaseDurations)
 
-  const getLevelConfig = useConfigStore((s) => s.getLevelConfig)
+  const getLevelConfig = useLevelConfigStore((s) => s.getLevelConfig)
 
   const [{ preset }, setControls] = useControls(() => {
     return {
