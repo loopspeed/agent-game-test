@@ -3,7 +3,6 @@
 import { type FC, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
-// import CompletedUI from '@/components/ui/GameOver'
 import PlayingUI from '@/components/game/level/ui/PlayingUI'
 import { LevelPhase } from '@/model/game'
 import { useLevelStore } from '@/stores/LevelProvider'
@@ -26,8 +25,6 @@ const LevelUI: FC<Props> = ({ transitionStatus }) => {
 
   const switchKey = `${showConfigUI}-${showOnboardingUI}-${showPlayingUI}-${isExiting}`
 
-  console.log('[DEBUG] LevelUI render', { switchKey })
-
   return (
     <SwitchTransition>
       <Transition key={switchKey} timeout={{ enter: 0, exit: 400 }} nodeRef={container} appear>
@@ -38,7 +35,6 @@ const LevelUI: FC<Props> = ({ transitionStatus }) => {
             {showConfigUI && <ConfigUI transitionStatus={status} />}
             {showOnboardingUI && <OnboardingUI transitionStatus={status} />}
             {showPlayingUI && <PlayingUI transitionStatus={status} />}
-            {/* {stage === GameStage.COMPLETED && <CompletedUI transitionStatus={status} />} */}
           </div>
         )}
       </Transition>

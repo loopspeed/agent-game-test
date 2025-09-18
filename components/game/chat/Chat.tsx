@@ -18,9 +18,10 @@ import {
 type Props = {
   transitionStatus: TransitionStatus
   chat: ReturnType<typeof useChat<MyUIMessage>>
+  onStartTestClick: (courseId: string, chapterId: string) => void
 }
 
-const Chat: FC<Props> = ({ chat }) => {
+const Chat: FC<Props> = ({ chat, onStartTestClick }) => {
   const [input, setInput] = useState('')
   const { status, messages, sendMessage } = chat
 
@@ -72,7 +73,7 @@ const Chat: FC<Props> = ({ chat }) => {
 
                 if (part.type === 'tool-getCourses')
                   return (
-                    <GetCoursesToolMessage key={`${message.id}-${i}`} part={part} addToolResult={chat.addToolResult} />
+                    <GetCoursesToolMessage key={`${message.id}-${i}`} part={part} onStartTestClick={onStartTestClick} />
                   )
 
                 if (part.type.includes('tool-')) return <DebuggingToolMessage key={`${message.id}-${i}`} part={part} />

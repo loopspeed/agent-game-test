@@ -108,6 +108,26 @@ const Main: FC = () => {
     },
   })
 
+  const onStartTestClick = (courseId: string, chapterId: string) => {
+    // Set active course and chapter
+    const { success, error } = setActiveCourse({ courseId, chapterId })
+    if (!success) throw error
+    // Insert tool message to initiate playChapter tool call
+    chat.sendMessage({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool-playChapter',
+          toolCallId: `play-chapter-${Date.now()}`,
+          state: 'input-available',
+          input: { courseId, chapterId },
+        },
+      ],
+    })
+    pendingToolCall.current = { toolName: 'playChapter', toolCallId: `play-chapter-${Date.now()}`, courseId, chapterId }
+    goToStage(Stage.Level)
+  }
+
   const onChapterLevelComplete = (run: ChapterRun) => {
     console.warn('[DEBUG] Chapter level complete', run)
 
@@ -146,7 +166,7 @@ const Main: FC = () => {
                 {stage === Stage.PlayerSetup && <PlayerSetup transitionStatus={transitionStatus} />}
                 {stage === Stage.Chat && (
                   <ErrorBoundary errorComponent={Error}>
-                    <Chat transitionStatus={transitionStatus} chat={chat} />
+                    <Chat transitionStatus={transitionStatus} chat={chat} onStartTestClick={onStartTestClick} />
                   </ErrorBoundary>
                 )}
                 {stage === Stage.Level && (

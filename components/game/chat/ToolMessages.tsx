@@ -6,11 +6,13 @@ import { type CourseSummary } from '@/model/content'
 import { type MyUIMessage, type MyUITools } from '@/resources/chat'
 
 import { MemoizedMarkdown } from './Markdown'
+import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 
 // TODO: Create wrapper components for loading/error/success states for tool messages
 // TODO: Create course card component for GetCoursesToolMessage
 
 type AddToolResult = ReturnType<typeof useChat<MyUIMessage>>['addToolResult']
+type SendMessage = ReturnType<typeof useChat<MyUIMessage>>['sendMessage']
 
 type AuthorCourseToolMessageProps = {
   part: ToolUIPart<MyUITools>
@@ -69,10 +71,10 @@ export const PlayChapterToolMessage: FC<PlayChapterToolMessageProps> = ({ part, 
 
 type GetCoursesToolMessageProps = {
   part: ToolUIPart<MyUITools>
-  addToolResult: AddToolResult
+  onStartTestClick: (courseId: string, chapterId: string) => void
 }
 
-export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = ({ part, addToolResult }) => {
+export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = ({ part, onStartTestClick }) => {
   if (part.state === 'input-streaming' || part.state === 'input-available') return <div>Loading...</div>
   if (part.state === 'output-available') {
     const output = part.output as MyUITools['getCourses']['output']
@@ -87,6 +89,17 @@ export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = ({ part, ad
               {index + 1}. {c.title}
             </div>
             <div className="italic">{c.description}</div>
+
+            <div className="p-2">
+              {c.chapters.map((ch) => (
+                <div key={ch.id} className="ml-4">
+                  - {ch.title}
+                  <button className="cursor-pointer border px-4" onClick={() => onStartTestClick(c.id, ch.id)}>
+                    START TEST
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
