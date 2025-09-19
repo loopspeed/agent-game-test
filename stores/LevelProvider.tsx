@@ -63,9 +63,9 @@ export type ObstacleSpawnData = {
   speed: number
 }
 
-// Currently score events only track obstacle hits/avoids, not answers
+// Score events track all game events: obstacle hits/avoids and answer hits
 export type ScoreEvent = {
-  type: 'hit' | 'avoided'
+  type: 'hit' | 'avoided' | 'correct' | 'incorrect'
   obstacleId: string
   points: number
   timestamp: number
@@ -512,6 +512,15 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
       }
       console.warn('Answer hit!', { answerHit })
 
+      // Create score event for the answer hit
+      const points = data.isCorrect ? POINTS_ANSWER_CORRECT : POINTS_ANSWER_INCORRECT
+      const scoreEvent: ScoreEvent = {
+        type: data.isCorrect ? 'correct' : 'incorrect',
+        obstacleId: `answer-${data.questionId}-${data.answerId}`,
+        points,
+        timestamp: answerHit.timestamp,
+      }
+
       if (data.isCorrect) {
         playSoundFX(SoundFX.CORRECT_ANSWER)
         set((s) => {
@@ -520,9 +529,11 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
           // Remove any previous answers for this question in case of multiple hits
           const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
           return {
+            points: s.points + POINTS_ANSWER_CORRECT,
             streak: newCurrentStreak,
             maxStreak: newMaxStreak,
             answersHit: [...cleanAnswersHit, answerHit],
+            scoreEvents: [...s.scoreEvents, scoreEvent],
           }
         })
       } else {
@@ -530,8 +541,10 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
         set((s) => {
           const cleanAnswersHit = [...s.answersHit].filter((hit) => hit.questionId !== answerHit.questionId)
           return {
+            points: s.points + POINTS_ANSWER_INCORRECT,
             streak: 0,
             answersHit: [...cleanAnswersHit, answerHit],
+            scoreEvents: [...s.scoreEvents, scoreEvent],
           }
         })
       }

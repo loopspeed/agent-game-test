@@ -7,19 +7,18 @@ import { createRef, type FC, type RefObject, useEffect, useRef, useState } from 
 import { Transition, TransitionGroup } from 'react-transition-group'
 import { twJoin } from 'tailwind-merge'
 
-import { useScoreEvents } from '@/hooks/useScoreEvents'
-import { useLevelStore } from '@/stores/LevelProvider'
+import { type ScoreEvent, useLevelStore } from '@/stores/LevelProvider'
 
 // ScoreIndicator displays colored popups above the player whenever an obstacle event or answer hit modifies the score.
 // Newer events appear under & push older ones upward and each fades opacity before being removed.
 
-type DisplayEvent = ReturnType<typeof useScoreEvents>['scoreEvents'][number] & {
+type DisplayEvent = ScoreEvent & {
   key: string
   nodeRef: RefObject<HTMLDivElement | null>
 }
 
 const ScoreIndicator: FC = () => {
-  const { scoreEvents = [] } = useScoreEvents()
+  const scoreEvents = useLevelStore((s) => s.scoreEvents)
   const playerPosition = useLevelStore((s) => s.playerPosition)
 
   const [displayEvents, setDisplayEvents] = useState<DisplayEvent[]>([])
@@ -33,12 +32,14 @@ const ScoreIndicator: FC = () => {
     const eventsToAdd: DisplayEvent[] = []
 
     for (const event of scoreEvents) {
-      if (seenItems.current.has(event.id)) continue
-      seenItems.current.add(event.id)
+      // Create unique ID from event properties
+      const eventId = `${event.obstacleId}-${event.timestamp}`
+      if (seenItems.current.has(eventId)) continue
+      seenItems.current.add(eventId)
 
       const displayEvent: DisplayEvent = {
         ...event,
-        key: `${event.id}-${Date.now()}`,
+        key: eventId,
         nodeRef: createRef<HTMLDivElement>(),
       }
 
