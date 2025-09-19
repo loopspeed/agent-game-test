@@ -29,8 +29,9 @@ const OBSTACLE_QUESTION_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.OBSTACLES, Le
 const QUESTION_ONLY_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.QUESTION] as const
 
 // Level constants
-export const GRID_SQUARE_SIZE_M = 1.6 // Meters
-export const LANES_Y_OFFSET = -0.6 // Move them down to avoid question
+export const PLAYER_Z_POSITION = 0
+export const GRID_SQUARE_SIZE_M = 2 // Meters
+export const LANES_Y_OFFSET = -0.4 // Move them down to avoid question
 export const LANES_X = [-1, 0, 1].map((x) => x * GRID_SQUARE_SIZE_M)
 export const LANES_Y = [-1, 0, 1].map((y) => y * GRID_SQUARE_SIZE_M + LANES_Y_OFFSET)
 export const CAMERA_FAR = 50
@@ -38,9 +39,9 @@ export const SPAWN_OBSTACLE_Z = -40 as const
 export const KILL_OBSTACLE_Z = 9 as const
 
 // Slow motion constants
-export const SLOW_MO_RAMP_DURATION = 0.5 // Duration in seconds for slowing down to slow-mo speed
+export const SLOW_MO_RAMP_DURATION = 0.4 // Duration in seconds for slowing down to slow-mo speed
 export const SLOW_MO_MULTIPLIER = 0.04 // Time multiplier during slow-mo
-export const SLOW_MO_EXTREME_MULTIPLIER = 0.015 // Extreme slow-mo multiplier for very long answer durations
+export const SLOW_MO_EXTREME_MULTIPLIER = 0.015 // Extreme slow-mo multiplier for longer answer durations
 export const MAX_SLOW_MO_TRIGGER_DISTANCE = 5 // Maximum distance from player to trigger slow-mo to keep gates readable
 
 // Points system constants

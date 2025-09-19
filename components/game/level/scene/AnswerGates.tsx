@@ -16,14 +16,12 @@ import {
   LANES_X,
   LANES_Y,
   MAX_SLOW_MO_TRIGGER_DISTANCE,
+  PLAYER_Z_POSITION,
   SLOW_MO_MULTIPLIER,
   SLOW_MO_RAMP_DURATION,
   SPAWN_OBSTACLE_Z,
   useLevelStore,
 } from '@/stores/LevelProvider'
-
-// Player Z position (where the player is positioned)
-const PLAYER_Z_POSITION = 0
 
 type AnswerGateProps = {
   position: [number, number, number]
@@ -34,7 +32,6 @@ type AnswerGateProps = {
 
 const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
   ({ position, answer, questionId, isActive }, ref) => {
-    // Get answer from rhythm data - this is always provided by the rhythm system
     const userData: AnswerGateUserData = {
       type: RigidBodyType.ANSWER_GATE,
       isCorrect: answer?.isCorrect ?? false,
@@ -63,8 +60,8 @@ const AnswerGate = React.forwardRef<RapierRigidBody, AnswerGateProps>(
               <planeGeometry args={[GRID_SQUARE_SIZE_M, GRID_SQUARE_SIZE_M]} />
             </Image>
             <Html transform={true}>
-              <div className="pointer-events-none flex aspect-square size-16 items-center justify-center overflow-hidden p-0.5">
-                <p className="text-center text-[5px] font-semibold text-white">{answer.label}</p>
+              <div className="pointer-events-none flex aspect-square size-20 items-center justify-center overflow-hidden p-0.5">
+                <p className="text-center text-[8px] font-semibold text-white">{answer.label}</p>
               </div>
             </Html>
           </>
