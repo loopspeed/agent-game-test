@@ -13,7 +13,7 @@ import PlayerSetup from '@/components/game/playerSetup/PlayerSetup'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 import { CourseSchema } from '@/model/content'
 import { type ChapterRun } from '@/model/game'
-import { type MyUIMessage, type MyUITools } from '@/resources/chat'
+import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus } from '@/resources/chat'
 import { useCourseStore } from '@/stores/CourseProvider'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 
@@ -92,7 +92,7 @@ const Main: FC = () => {
           chat.addToolResult({
             tool: 'playChapter',
             toolCallId: toolCall.toolCallId,
-            output: { status: 'error' },
+            output: { status: PlayChapterOutputStatus.Error },
           })
         }
       }
@@ -143,7 +143,7 @@ const Main: FC = () => {
       tool: 'playChapter',
       toolCallId,
       output: {
-        status: 'completed',
+        status: PlayChapterOutputStatus.Completed,
         run,
       },
     })

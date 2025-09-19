@@ -3,11 +3,10 @@ import { type ToolUIPart } from 'ai'
 import { type FC } from 'react'
 
 import { type CourseSummary } from '@/model/content'
-import { type MyUIMessage, type MyUITools } from '@/resources/chat'
+import { ChapterRun } from '@/model/game'
+import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus } from '@/resources/chat'
 
 import { MemoizedMarkdown } from './Markdown'
-import useNavigation, { Stage } from '@/hooks/useGameNavigation'
-import { ChapterRun } from '@/model/game'
 
 // TODO: Create wrapper components for loading/error/success states for tool messages
 // TODO: Create course card component for GetCoursesToolMessage
@@ -24,7 +23,7 @@ export const AuthorCourseToolMessage: FC<AuthorCourseToolMessageProps> = ({ part
   if (part.state === 'input-streaming' || part.state === 'input-available') return null
 
   if (part.state === 'output-available') {
-    const output = part.output as MyUITools['authorCourseMarkdown']['output']
+    const output = part.output as MyUITools['authorTestMarkdown']['output']
     if (!!output)
       return (
         <div className="prose-sm lg:prose rounded-lg bg-white p-4 !text-black">
@@ -50,13 +49,13 @@ export const PlayChapterToolMessage: FC<PlayChapterToolMessageProps> = ({ part, 
     addToolResult({
       tool: 'playChapter',
       toolCallId: part.toolCallId,
-      output: { status: 'cancelled' },
+      output: { status: PlayChapterOutputStatus.Cancelled },
     })
   }
   if (part.state === 'input-available')
     return (
       <div>
-        Playing...
+        Running the test...
         <button className="text-xl" onClick={onCancelClick}>
           Cancel
         </button>
@@ -66,8 +65,15 @@ export const PlayChapterToolMessage: FC<PlayChapterToolMessageProps> = ({ part, 
   if (part.state === 'output-available') {
     const output = part.output as MyUITools['playChapter']['output']
     const run = output.run as ChapterRun // TODO: fix type
-    if (output.status === 'completed') {
+    // Handle ERROR status..
+    if (output.status === PlayChapterOutputStatus.Error) {
+      return <div>There was an error starting the test (retry).</div>
+    }
+    if (output.status === PlayChapterOutputStatus.Completed) {
       return <div>Chapter completed! {JSON.stringify(run)}</div>
+    }
+    if (output.status === PlayChapterOutputStatus.Cancelled) {
+      return <div>Chapter run cancelled.</div>
     }
   }
 

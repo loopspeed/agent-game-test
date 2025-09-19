@@ -28,7 +28,7 @@ const Chat: FC<Props> = ({ chat, onStartTestClick }) => {
   const messagesContainer = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    messagesContainer.current?.scrollTo({ top: messagesContainer.current.scrollHeight, behavior: 'smooth' })
+    // messagesContainer.current?.scrollTo({ top: messagesContainer.current.scrollHeight, behavior: 'smooth' })
   }, [messages])
 
   const showEmptyState = messages.length === 0 && status === 'ready'
@@ -67,9 +67,9 @@ const Chat: FC<Props> = ({ chat, onStartTestClick }) => {
 
                 if (part.type === 'dynamic-tool') return null // Skip dynamic-tool parts
 
-                // TODO: implement UI for the following tools: 'extractContentFromWebsite', 'formatCourseForGame'
+                // TODO: implement UI for the following tools: 'extractContentFromWebsite', 'formatTestForGame'
 
-                if (part.type === 'tool-authorCourseMarkdown') {
+                if (part.type === 'tool-authorTestMarkdown') {
                   return <AuthorCourseToolMessage key={`${message.id}-${i}`} part={part} />
                 }
 

@@ -19,7 +19,7 @@ import { ChapterRunSchema } from '@/model/game'
 const AVATAR_NAME = 'TestOwl' // TODO: this will change
 
 export const SYSTEM_PROMPT = `
-You are ${AVATAR_NAME} - An quiz game assitant - you test students knowledge on anything that they throw at you.
+You are ${AVATAR_NAME} - An quiz game assitant - you test students knowledge on anything that they want to learn about.
 Your content is always based on the material provided by the user, and you never make up content.
 
 MISSION
@@ -27,10 +27,10 @@ MISSION
 
 TOOL USAGE
   1) extractContentFromWebsite(url) — fetches and cleans HTML text, returns { title, text, wordCount }.
-  2) authorCourseMarkdown({ title, sourceText }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown course outline with chapters, summaries, questions, answers and source passages.
-  3a) formatCourseForGame({ title, courseMarkdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
+  2) authorTestMarkdown({ title, sourceText }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown test outline with chapters, summaries, questions, answers and source passages.
+  3a) formatTestForGame({ title, courseMarkdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
   3b) storeCourse({ course }) — saves the Course JSON to the frontend state - always call this immediately after formatting the course.
-  4) playChapter({ courseId, chapterId }) — passes the Course JSON to the frontend to set state and begin the game. On completion it returns a status and a summary of the run.
+  4) playChapter({ courseId, chapterId }) — passes the Course JSON to the frontend to set state and begin the test (playable as a game). On completion it returns a status and a summary of the run.
   5) getCourses() — tool that retrieves stored courses in an array of CourseSummary. These are already prepared and validated, and are ready to be played. Do NOT summarize the output.
 
 FLOW
@@ -52,13 +52,12 @@ STYLE & TONE
 - Avoid unnecessary repetition and verbosity.
 - Do not use emoticons or emojis of any kind.
 - If the user requests something outside your capabilities, say that's outside of your remit. You are here to test their knowledge and turn them into champions - nothing else!
-
-
 `
 
-const COURSE_AUTHORING_SYSTEM_PROMPT = `
-  Your task is to use the provided source text and create a concise, reviewable Markdown course with chapters, questions, answers and source passages.
+const TEST_AUTHORING_SYSTEM_PROMPT = `
+  Your task is to use the provided source text and create a concise, reviewable Markdown test with chapters, questions, answers and source passages.
   Return ONLY the Markdown block between <!-- COURSE-MD-START --> and <!-- COURSE-MD-END -->.
+  
   COURSE_MD must contain:
   - 1 or more chapters
   - 4 or more questions per chapter
@@ -66,6 +65,7 @@ const COURSE_AUTHORING_SYSTEM_PROMPT = `
    If the source material is short, create a single chapter course.
 
   Ensure balanced difficulty, no duplicates, and all content must be grounded in the source (except for incorrect answers).
+  Discard and ignore content that is not relevant to the title/topic: such as ads, cookies, legal information, navigation, or unrelated links.
 
   Here is an example of the COURSE-MD format:
   <!-- COURSE-MD-START -->
@@ -107,10 +107,7 @@ async function extractContentFromUrl(url: string): Promise<{ title: string; text
   return { title, text: trimmed, wordCount }
 }
 
-// Helper to author course Markdown.  Summarises the source text if very long
-// before generating the Markdown outline.
-
-async function authorCourse({
+async function authorTest({
   title,
   sourceText,
   writer,
@@ -163,7 +160,7 @@ async function authorCourse({
   const { text: courseMarkdown } = await generateText({
     model: openai('gpt-5'),
     temperature: 0.2,
-    system: COURSE_AUTHORING_SYSTEM_PROMPT,
+    system: TEST_AUTHORING_SYSTEM_PROMPT,
     prompt: `Title: ${title}\n\nSource Text:\n${input}\n\n`,
   })
 
@@ -179,15 +176,7 @@ async function authorCourse({
 
 // Helper to format the Markdown into a Course JSON object.  Ensures the
 // output validates against CourseSchema.  Uses gpt-4o-mini for cost control.
-async function formatCourse({
-  title,
-  courseMarkdown,
-  writer,
-}: {
-  title: string
-  courseMarkdown: string
-  writer: UIMessageStreamWriter
-}) {
+async function formatTestForGame({ markdown, writer }: { markdown: string; writer: UIMessageStreamWriter }) {
   const reasoningId = generateId()
   writer.write({ type: 'reasoning-start', id: reasoningId })
   writer.write({
@@ -211,7 +200,7 @@ async function formatCourse({
   `
 
   const { object: course } = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model: openai('gpt-5-mini'),
     temperature: 0.2,
     schema: CourseSchema,
     messages: [
@@ -219,7 +208,7 @@ async function formatCourse({
         role: 'system',
         content: FORMAT_COURSE_SYSTEM_PROMPT,
       },
-      { role: 'user', content: `Title: ${title}\n\nMarkdown:\n${courseMarkdown}` },
+      { role: 'user', content: markdown },
     ],
   })
 
@@ -239,24 +228,23 @@ export const tools = (writer: UIMessageStreamWriter) => ({
     },
   }),
   // Server-side tool: author Markdown from text
-  authorCourseMarkdown: tool({
-    description: 'Create a concise, reviewable course in Markdown from source text.',
+  authorTestMarkdown: tool({
+    description: 'Create a concise, reviewable test in Markdown from source text.',
     inputSchema: z.object({
       title: z.string(),
       sourceText: z.string(),
     }),
     outputSchema: z.string(),
     execute: async ({ title, sourceText }: { title: string; sourceText: string }) => {
-      return authorCourse({ title, sourceText, writer })
+      return authorTest({ title, sourceText, writer })
     },
   }),
   // Server-side tool: format Markdown into Course JSON
-  formatCourseForGame: tool({
-    description: 'Convert course Markdown into a Course JSON object conforming to CourseSchema.',
-    inputSchema: z.object({ title: z.string(), courseMarkdown: z.string() }),
-    execute: async ({ title, courseMarkdown }: { title: string; courseMarkdown: string }) => {
-      // TODO: use writer to send frequent updates during generation
-      return formatCourse({ title, courseMarkdown, writer })
+  formatTestForGame: tool({
+    description: 'Convert Markdown into a Course JSON object conforming to CourseSchema.',
+    inputSchema: z.object({ markdown: z.string() }),
+    execute: async ({ markdown }: { markdown: string }) => {
+      return formatTestForGame({ markdown, writer })
     },
   }),
   // Client-side tools
@@ -277,7 +265,11 @@ export const tools = (writer: UIMessageStreamWriter) => ({
       chapterId: z.string(),
     }),
     outputSchema: z.object({
-      status: z.string('player stopped').or(z.string('completed')).or(z.string('error')),
+      status: z.enum([
+        PlayChapterOutputStatus.Cancelled,
+        PlayChapterOutputStatus.Completed,
+        PlayChapterOutputStatus.Error,
+      ]),
       run: ChapterRunSchema.optional(),
     }),
   }),
@@ -291,6 +283,12 @@ export const tools = (writer: UIMessageStreamWriter) => ({
     }),
   }),
 })
+
+export enum PlayChapterOutputStatus {
+  Cancelled = 'cancelled',
+  Completed = 'completed',
+  Error = 'error',
+}
 
 type Tools = ReturnType<typeof tools>
 
