@@ -19,7 +19,7 @@ type DisplayEvent = ReturnType<typeof useScoreEvents>['scoreEvents'][number] & {
 }
 
 const ScoreIndicator: FC = () => {
-  const { scoreEvents } = useScoreEvents()
+  const { scoreEvents = [] } = useScoreEvents()
   const playerPosition = useLevelStore((s) => s.playerPosition)
 
   const [displayEvents, setDisplayEvents] = useState<DisplayEvent[]>([])
@@ -27,33 +27,35 @@ const ScoreIndicator: FC = () => {
   const removeTimers = useRef<Map<string, number>>(new Map())
 
   useEffect(() => {
-    if (!scoreEvents?.length) return
+    if (!scoreEvents.length) return
 
+    const DELAY_BEFORE_REMOVAL_MS = 2400
     const eventsToAdd: DisplayEvent[] = []
 
     for (const event of scoreEvents) {
-      if (!seenItems.current.has(event.id)) {
-        seenItems.current.add(event.id)
+      if (seenItems.current.has(event.id)) continue
+      seenItems.current.add(event.id)
 
-        eventsToAdd.push({
-          ...event,
-          key: `${event.id}-${Date.now()}`,
-          nodeRef: createRef<HTMLDivElement>(),
-        })
+      const displayEvent: DisplayEvent = {
+        ...event,
+        key: `${event.id}-${Date.now()}`,
+        nodeRef: createRef<HTMLDivElement>(),
       }
+
+      eventsToAdd.push(displayEvent)
+
+      const onTimeout = () => {
+        removeTimers.current.delete(displayEvent.key)
+        setDisplayEvents((previousEvents) => previousEvents.filter((item) => item.key !== displayEvent.key))
+      }
+
+      const id = window.setTimeout(onTimeout, DELAY_BEFORE_REMOVAL_MS)
+      removeTimers.current.set(displayEvent.key, id)
     }
 
     if (!eventsToAdd.length) return
 
     setDisplayEvents((previousEvents) => [...previousEvents, ...eventsToAdd].slice(-3))
-
-    for (const event of eventsToAdd) {
-      const id = window.setTimeout(() => {
-        setDisplayEvents((previousEvents) => previousEvents.filter((item) => item.key !== event.key))
-        removeTimers.current.delete(event.key)
-      }, 3000)
-      removeTimers.current.set(event.key, id)
-    }
   }, [scoreEvents])
 
   // clear timers on unmount
@@ -71,13 +73,16 @@ const ScoreIndicator: FC = () => {
 
   const onEnter = contextSafe((node: HTMLElement | null) => {
     if (!node) return
-    gsap.set(node, { opacity: 0, scale: 0.6 })
-    gsap.to(node, {
-      opacity: 1,
-      scale: 1,
-      duration: 0.3,
-      ease: 'back.out(1.5)',
-    })
+    gsap.fromTo(
+      node,
+      { opacity: 0, scale: 0.6 },
+      {
+        opacity: 1,
+        scale: 1,
+        duration: 0.3,
+        ease: 'back.out(1.5)',
+      },
+    )
   })
 
   const onExit = contextSafe((node: HTMLElement | null) => {
@@ -85,9 +90,7 @@ const ScoreIndicator: FC = () => {
     gsap.killTweensOf(node)
     gsap.to(node, {
       opacity: 0,
-      scale: 0.8,
-      duration: 0.3,
-      ease: 'power2.in',
+      duration: 0.2,
     })
   })
 
@@ -98,14 +101,25 @@ const ScoreIndicator: FC = () => {
       if (!node) return
 
       const indexFromBottom = eventCount - 1 - index
-      const yOffset = -40 * indexFromBottom
+      const yOffset = -24 * indexFromBottom
 
-      let scoreOpacity = 1
-      if (indexFromBottom === 1) scoreOpacity = 0.6
-      if (indexFromBottom === 2) scoreOpacity = 0.3
+      let opacity = 1
+      let blurAmount = 0
+      if (indexFromBottom === 1) {
+        opacity = 0.6
+        blurAmount = 1
+      }
+      if (indexFromBottom === 2) {
+        opacity = 0.4
+        blurAmount = 2
+      }
 
       gsap.killTweensOf(node)
-      gsap.to(node, { y: yOffset, opacity: scoreOpacity, duration: 0.3, ease: 'power2.out' })
+      gsap.to(node, { y: yOffset, opacity: opacity, duration: 0.26, ease: 'power2.out' })
+      if (!!blurAmount)
+        gsap.set(node, {
+          filter: `blur(${blurAmount}px)`,
+        })
     })
   }, [displayEvents])
 
@@ -128,9 +142,9 @@ const ScoreIndicator: FC = () => {
               <Transition
                 key={event.key}
                 nodeRef={event.nodeRef}
-                timeout={{ enter: 300, exit: 300 }}
-                mountOnEnter
-                unmountOnExit
+                timeout={{ enter: 0, exit: 300 }}
+                mountOnEnter={true}
+                unmountOnExit={true}
                 onEnter={() => onEnter(event.nodeRef.current)}
                 onExit={() => onExit(event.nodeRef.current)}>
                 <div

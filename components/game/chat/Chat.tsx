@@ -1,6 +1,7 @@
 'use client'
 
 import { useChat } from '@ai-sdk/react'
+import { usePrevious } from '@mantine/hooks'
 import { type FC, useEffect, useRef, useState } from 'react'
 import { type TransitionStatus } from 'react-transition-group'
 import { twJoin } from 'tailwind-merge'
@@ -26,10 +27,13 @@ const Chat: FC<Props> = ({ chat, onStartTestClick }) => {
   const { status, messages, sendMessage } = chat
 
   const messagesContainer = useRef<HTMLDivElement>(null)
+  const previousMessagesLength = usePrevious(messages.length)
 
   useEffect(() => {
-    // messagesContainer.current?.scrollTo({ top: messagesContainer.current.scrollHeight, behavior: 'smooth' })
-  }, [messages])
+    if (messages.length !== previousMessagesLength) {
+      messagesContainer.current?.scrollTo({ top: messagesContainer.current.scrollHeight, behavior: 'smooth' })
+    }
+  }, [messages.length, previousMessagesLength])
 
   const showEmptyState = messages.length === 0 && status === 'ready'
 
