@@ -57,7 +57,7 @@ const CustomTunnelShaderMaterial = shaderMaterial(TUNNEL_UNIFORMS, tunnelVertex,
 const TunnelShaderMaterial = extend(CustomTunnelShaderMaterial)
 
 const TUNNEL_RADIUS = GRID_SQUARE_SIZE_M * 4.5 // Large enough to wrap around the 3x3 grid
-const TUNNEL_LENGTH = CAMERA_FAR * 2
+const TUNNEL_LENGTH = CAMERA_FAR
 const TUNNEL_SEGMENTS = 32
 
 const Tunnel: FC = () => {
@@ -142,11 +142,11 @@ const Tunnel: FC = () => {
   })
 
   return (
-    <mesh position={[0, LANES_Y_OFFSET, 0]} rotation={[Math.PI / 2, 0, 0]}>
+    <mesh position={[0, LANES_Y_OFFSET, -TUNNEL_LENGTH / 2]} rotation={[Math.PI / 2, 0, 0]}>
       <cylinderGeometry
         args={[
           TUNNEL_RADIUS, // radiusTop
-          TUNNEL_RADIUS, // radiusBottom
+          TUNNEL_RADIUS * 0.6, // radiusBottom
           TUNNEL_LENGTH, // height (length along Y-axis, but we rotate it to Z)
           TUNNEL_SEGMENTS, // radialSegments
           1, // heightSegments

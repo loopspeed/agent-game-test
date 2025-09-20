@@ -5,7 +5,6 @@ import { createStore, type StoreApi, useStore } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
 import type { Chapter, ChapterSummary, Course, CourseSummary } from '@/model/content'
-import { SAMPLE_COURSE } from '@/resources/course'
 
 interface CourseState {
   // Course data
@@ -147,12 +146,6 @@ const createCourseStore = () => {
             if (error) {
               console.error('Course store hydration failed:', error)
             } else {
-              // Initialize with sample course if no courses exist after hydration
-              if (!!state && Object.keys(state.courses).length === 0) {
-                state.courses = { [SAMPLE_COURSE.id]: SAMPLE_COURSE }
-                state.activeCourseId = SAMPLE_COURSE.id
-                state.activeChapterId = SAMPLE_COURSE.chapters[0]?.id || null
-              }
               state?.setHasHydrated(true)
             }
           }

@@ -66,8 +66,8 @@ void main() {
     vec3 scaledFlyingForce = flyingForce * speedMultiplier * uTimeMultiplier;
 
     // When damaged (-1), add explosive outward force; when healed (+1), add inward force
-    float damageForceMultiplier = -uScoreAmount * 12.0 * speedMultiplier; // Negative score = outward explosion
-    vec3 damageExplosion = normalize(pos) * damageForceMultiplier;
+    float scoreForceMultiplier = -uScoreAmount * 8.0 * speedMultiplier; // Negative score = outward explosion
+    vec3 damageExplosion = normalize(pos) * scoreForceMultiplier;
     
     // Subtle noise influence for natural movement - also scaled and more chaotic when damaged
     // Use time multiplier for consistent slow motion effect
@@ -82,7 +82,7 @@ void main() {
     noiseForce *= noiseMultiplier;
 
     // Slight radial expansion from sphere center - also scaled
-    vec3 radialForce = normalize(pos) * 1.4 * speedMultiplier;
+    vec3 radialForce = normalize(pos) * 1.2 * speedMultiplier;
     
     // Player movement influence - creates "wave" effect in the particle tail
     // Older particles (lower life) get more influence from player movement - creates tail wave

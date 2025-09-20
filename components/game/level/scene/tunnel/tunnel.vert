@@ -14,8 +14,8 @@ void main() {
 
   vec4 projectionPosition = projectionMatrix * viewPosition;
   // Add some noise to the vertex position for a non-uniform effect
-  float displacement = noise(vPosition * 0.5 + vec3(0.0, 0.0, uTime * 0.25));
-  projectionPosition.y += displacement;
+  float displacement = noise(vPosition * 0.5 + vec3(0.0, 0.0, uTime * 0.4)) * 0.25;
+  projectionPosition.xy += displacement;
 
   gl_Position = projectionPosition;
 }
