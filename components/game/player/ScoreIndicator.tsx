@@ -3,12 +3,12 @@
 import { useGSAP } from '@gsap/react'
 import { Html } from '@react-three/drei'
 import gsap from 'gsap'
+import { CheckIcon, XIcon } from 'lucide-react'
 import { createRef, type FC, ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 import { Transition, TransitionGroup } from 'react-transition-group'
 import { twJoin } from 'tailwind-merge'
 
 import { type ScoreEvent, useLevelStore } from '@/stores/LevelProvider'
-import { CheckIcon, XIcon } from 'lucide-react'
 
 // ScoreIndicator displays colored popups above the player whenever an obstacle event or answer hit modifies the score.
 // Newer events appear under & push older ones upward and each fades opacity before being removed.
@@ -23,7 +23,7 @@ const ScoreIndicator: FC = () => {
   const playerPosition = useLevelStore((s) => s.playerPosition)
 
   const [displayEvents, setDisplayEvents] = useState<DisplayEvent[]>([])
-  const seenItems = useRef<Set<string>>(new Set())
+  const seenEventIds = useRef<Set<string>>(new Set())
   const removeTimers = useRef<Map<string, number>>(new Map())
 
   useEffect(() => {
@@ -35,8 +35,8 @@ const ScoreIndicator: FC = () => {
     for (const event of scoreEvents) {
       // Create unique ID from event properties
       const eventId = `${event.obstacleId}-${event.timestamp}`
-      if (seenItems.current.has(eventId)) continue
-      seenItems.current.add(eventId)
+      if (seenEventIds.current.has(eventId)) continue
+      seenEventIds.current.add(eventId)
 
       const displayEvent: DisplayEvent = {
         ...event,
@@ -64,9 +64,7 @@ const ScoreIndicator: FC = () => {
   useEffect(() => {
     const timers = removeTimers.current
     return () => {
-      for (const id of timers.values()) {
-        clearTimeout(id)
-      }
+      for (const id of timers.values()) clearTimeout(id)
       timers.clear()
     }
   }, [])
@@ -92,7 +90,7 @@ const ScoreIndicator: FC = () => {
     gsap.killTweensOf(node)
     gsap.to(node, {
       opacity: 0,
-      duration: 0.2,
+      duration: 0.3,
     })
   })
 
