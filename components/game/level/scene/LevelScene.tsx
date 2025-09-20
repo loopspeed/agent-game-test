@@ -28,22 +28,20 @@ const LevelScene: FC = () => {
   })
 
   return (
-    <>
-      <Suspense fallback={null}>
-        <ambientLight intensity={2} />
-        <fog attach="fog" args={['#000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} />
-        <Tunnel />
-        <TunnelParticles isMobile={false} />
-        {/* Physics world with zero gravity (kinematic bodies only) */}
-        <Physics gravity={[0, 0, 0]} debug={false}>
-          <Obstacles />
-          <AnswerGates />
-          <Onboarding />
-          <Outro />
-          <Player />
-        </Physics>
-      </Suspense>
-    </>
+    <Suspense fallback={null}>
+      <ambientLight intensity={2} />
+      {/* <fog attach="fog" args={['#000', Math.abs(SPAWN_OBSTACLE_Z) - 5, Math.abs(SPAWN_OBSTACLE_Z) - 1]} /> */}
+      <Tunnel />
+      <TunnelParticles isMobile={false} />
+      {/* Physics world with zero gravity (kinematic bodies only) */}
+      <Physics gravity={[0, 0, 0]} debug={false}>
+        <Obstacles />
+        <AnswerGates />
+        <Onboarding />
+        <Outro />
+        <Player />
+      </Physics>
+    </Suspense>
   )
 }
 

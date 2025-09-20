@@ -4,7 +4,7 @@ import React, { type FC, useEffect, useRef } from 'react'
 import { Color } from 'three'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { CAMERA_FAR, GRID_SQUARE_SIZE_M } from '@/stores/LevelProvider'
+import { CAMERA_FAR, GRID_SQUARE_SIZE_M, LANES_Y_OFFSET } from '@/stores/LevelProvider'
 
 import tunnelFragment from './tunnel.frag'
 import tunnelVertex from './tunnel.vert'
@@ -56,7 +56,7 @@ const TUNNEL_UNIFORMS: Uniforms = {
 const CustomTunnelShaderMaterial = shaderMaterial(TUNNEL_UNIFORMS, tunnelVertex, tunnelFragment)
 const TunnelShaderMaterial = extend(CustomTunnelShaderMaterial)
 
-const TUNNEL_RADIUS = GRID_SQUARE_SIZE_M * 4 // Large enough to wrap around the 3x3 grid
+const TUNNEL_RADIUS = GRID_SQUARE_SIZE_M * 4.5 // Large enough to wrap around the 3x3 grid
 const TUNNEL_LENGTH = CAMERA_FAR * 2
 const TUNNEL_SEGMENTS = 32
 
@@ -142,7 +142,7 @@ const Tunnel: FC = () => {
   })
 
   return (
-    <mesh position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+    <mesh position={[0, LANES_Y_OFFSET, 0]} rotation={[Math.PI / 2, 0, 0]}>
       <cylinderGeometry
         args={[
           TUNNEL_RADIUS, // radiusTop
@@ -157,6 +157,7 @@ const Tunnel: FC = () => {
         key={CustomTunnelShaderMaterial.key}
         ref={shaderMaterial}
         side={1}
+        // wireframe={true}
         defines={{
           MAX_RAYS: MAX_RAYS,
         }}
