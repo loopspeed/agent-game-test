@@ -25,14 +25,19 @@ export const useChatStore = create<Store>()(
         return get().messages
       },
       updateMessages: (messages) => {
-        console.log('useChatStore.updateMessages', { messages })
-        const previousMessages = get().messages
-        // Replace previous messages with new ones, avoiding duplicates
-        const updatedMessages = previousMessages.filter((pm) => !messages.find((m) => m.id === pm.id))
-        updatedMessages.push(...messages)
-
-        console.warn('useChatStore.updateMessages', { updatedMessages })
-        set({ messages: updatedMessages })
+        // If the message doesn't have a tool output result, remove it.
+        const sanitizedMessages = messages.filter((message) => {
+          if (!message.parts) return true
+          message.parts.forEach((part) => {
+            if (part.type === 'tool-playChapter' && !part.output) {
+              console.warn('Removing message part without tool output', part)
+              return false
+            }
+          })
+          return true
+        })
+        console.warn('useChatStore.updateMessages', { sanitizedMessages })
+        set({ messages: sanitizedMessages })
       },
       // Hydration state
       _hasHydrated: false,
