@@ -4,12 +4,13 @@ import { useGSAP } from '@gsap/react'
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from 'ai'
 import gsap from 'gsap'
 import { ErrorBoundary } from 'next/dist/client/components/error-boundary'
-import React, { type FC, useRef } from 'react'
+import React, { type FC, useEffect, useRef } from 'react'
 import { SwitchTransition, Transition } from 'react-transition-group'
 
 import Chat from '@/components/game/chat/Chat'
 import Level from '@/components/game/level/Level'
 import PlayerSetup from '@/components/game/playerSetup/PlayerSetup'
+import { useChatStore } from '@/hooks/useChatStore'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 import { CourseSchema } from '@/model/content'
 import { type ChapterRun } from '@/model/game'
@@ -19,13 +20,18 @@ import { useHistoryStore } from '@/stores/useHistoryStore'
 
 gsap.registerPlugin(useGSAP)
 
-const Main: FC = () => {
+type Props = {
+  initialMessages: MyUIMessage[]
+}
+
+const Main: FC<Props> = ({ initialMessages = [] }) => {
   const { stage, goToStage } = useNavigation()
 
+  // Currently all done client side but should be moved to database
+  const updateMessages = useChatStore((s) => s.updateMessages)
   const storeCourse = useCourseStore((s) => s.storeCourse)
   const getCourseSummaries = useCourseStore((s) => s.getCourseSummaries)
   const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
-
   const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
 
   const container = useRef<HTMLDivElement>(null)
@@ -39,7 +45,8 @@ const Main: FC = () => {
 
   const chat = useChat<MyUIMessage>({
     transport: new DefaultChatTransport({ api: '/api/chat' }),
-    messages: [],
+    messages: initialMessages,
+
     // messageMetadataSchema
     // Automatically send messages once all tool results are provided
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
@@ -109,6 +116,12 @@ const Main: FC = () => {
     },
   })
 
+  useEffect(() => {
+    if (!chat.messages.length) return
+    // Store messages in Zustand store
+    updateMessages(chat.messages)
+  }, [chat.messages, updateMessages])
+
   const onStartTestClick = (courseId: string, chapterId: string) => {
     // Set active course and chapter
     const { success, error } = setActiveCourse({ courseId, chapterId })
@@ -163,7 +176,11 @@ const Main: FC = () => {
           {(transitionStatus) => {
             return (
               <div ref={container} className="size-full">
-                {stage === Stage.PlayerSetup && <PlayerSetup transitionStatus={transitionStatus} />}
+                {stage === Stage.PlayerSetup && (
+                  <ErrorBoundary errorComponent={Error}>
+                    <PlayerSetup transitionStatus={transitionStatus} />
+                  </ErrorBoundary>
+                )}
                 {stage === Stage.Chat && (
                   <ErrorBoundary errorComponent={Error}>
                     <Chat transitionStatus={transitionStatus} chat={chat} onStartTestClick={onStartTestClick} />

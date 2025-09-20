@@ -62,7 +62,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
   const performance = useThree((s) => s.performance).current
   const renderer = useThree((s) => s.gl)
 
-  const particlesCount = useMemo(() => Math.pow(isMobile ? 40 : 64 * performance, 2), [isMobile, performance])
+  const particlesCount = useMemo(() => Math.pow(isMobile ? 32 : 64 * performance, 2), [isMobile, performance])
   const points = useRef<Points>(null)
   const pointsShaderMaterial = useRef<typeof FBOPointsShaderMaterial & PointsShaderUniforms>(null)
   const textureSize = useMemo(() => Math.sqrt(particlesCount), [particlesCount])
