@@ -107,8 +107,13 @@ const TunnelParticles: FC<Props> = ({ isMobile }) => {
   }, [particlesCount])
 
   const { seeds, textureUvs } = useMemo(() => {
-    const seeds = new Float32Array(particlesCount)
-    const textureUvs = new Float32Array(particlesCount * 2)
+    // Allocate single buffer: 1 seed + 2 UVs = 3 floats per particle
+    const totalFloats = particlesCount * 3
+    const singleBuffer = new Float32Array(totalFloats)
+
+    // Create views into the buffer
+    const seeds = singleBuffer.subarray(0, particlesCount)
+    const textureUvs = singleBuffer.subarray(particlesCount, particlesCount * 3)
 
     for (let i = 0; i < particlesCount; i++) {
       // Seed
