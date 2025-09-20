@@ -1,7 +1,7 @@
 'use client'
 import { Suspense } from 'react'
 
-import Main from '@/components/game/Main'
+import Main from '@/components/Main'
 import { useChatStore } from '@/hooks/useChatStore'
 import { SoundProvider } from '@/stores/SoundProvider'
 

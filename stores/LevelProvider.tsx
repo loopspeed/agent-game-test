@@ -72,6 +72,8 @@ export type ScoreEvent = {
 }
 
 type LevelState = {
+  course: Course
+  chapter: Chapter
   config: LevelConfig
 
   // Time control state
@@ -198,6 +200,8 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
     question: questions[0],
     phases: [LevelPhase.CONFIG, LevelPhase.INTRO],
     answersMapping: generateAnswerMapping(questions[0].answers),
+    course,
+    chapter,
 
     onConfigCompleted: (config: LevelConfig) => {
       const phases = generatePhasesFromQuestions({
@@ -345,6 +349,7 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
 
       const goFullSpeed = get().goFullSpeed
 
+      // TODO: When in Slow Mo show a "Press Shift/Space to go full speed" UI hint
       const onKeyPress = (e: KeyboardEvent) => {
         const CONFIRM_KEYS = ['Enter', 'Space', 'ShiftLeft']
         if (!CONFIRM_KEYS.includes(e.key)) return

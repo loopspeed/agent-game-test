@@ -3,10 +3,9 @@ import { useFrame } from '@react-three/fiber'
 import { Physics } from '@react-three/rapier'
 import { type FC, Suspense } from 'react'
 
-import Player from '@/components/game/Player'
+import LevelPlayer from '@/components/level/LevelPlayer'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { LevelPhase } from '@/model/game'
-import { SPAWN_OBSTACLE_Z } from '@/stores/LevelProvider'
 import { useLevelStore } from '@/stores/LevelProvider'
 
 import AnswerGates from './AnswerGates'
@@ -39,7 +38,7 @@ const LevelScene: FC = () => {
         <AnswerGates />
         <Onboarding />
         <Outro />
-        <Player />
+        <LevelPlayer />
       </Physics>
     </Suspense>
   )

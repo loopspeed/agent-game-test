@@ -3,7 +3,7 @@
 import { type FC, useRef } from 'react'
 import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
 
-import PlayingUI from '@/components/game/level/ui/PlayingUI'
+import PlayingUI from '@/components/level/ui/PlayingUI'
 import { LevelPhase } from '@/model/game'
 import { useLevelStore } from '@/stores/LevelProvider'
 

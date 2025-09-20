@@ -3,13 +3,11 @@ import { useGSAP } from '@gsap/react'
 import { shaderMaterial } from '@react-three/drei'
 import { extend, useFrame, useThree } from '@react-three/fiber'
 import gsap from 'gsap'
-import React, { type FC, useLayoutEffect, useMemo, useRef } from 'react'
+import React, { type FC, type RefObject, useLayoutEffect, useMemo, useRef } from 'react'
 import { AdditiveBlending, Color, DataTexture, Points, Texture, Vector2 } from 'three'
 import { GPUComputationRenderer, type Variable } from 'three/addons/misc/GPUComputationRenderer.js'
 
-import { useTimeSubscription } from '@/hooks/useTimeSubscription'
-import { LevelPhase } from '@/model/game'
-import { useLevelStore } from '@/stores/LevelProvider'
+import { type ScoreEvent } from '@/stores/LevelProvider'
 
 import particleFragment from './points/point.frag'
 import particleVertex from './points/point.vert'
@@ -53,11 +51,14 @@ const FBOPointsShaderMaterial = extend(CustomShaderMaterial)
 type Props = {
   isMobile: boolean // on mobile we use fewer particles
   playerVelocity: Vector2 // player movement velocity for particle tail effects
+  isPlaying: boolean // whether the game is currently playing (not paused or in config)
+  scoreEvents: ScoreEvent[]
+  timeMultiplier: RefObject<number>
 }
 
 export const ORB_RADIUS = 0.25 as const
 
-const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
+const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity, isPlaying, timeMultiplier, scoreEvents = [] }) => {
   const dpr = useThree((s) => s.viewport.dpr)
   const performance = useThree((s) => s.performance).current
   const renderer = useThree((s) => s.gl)
@@ -75,10 +76,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
   const positionUniforms = useRef<PositionShaderUniforms | null>(null)
 
   // Animation values
-  const scoreEventAmount = useRef({ value: 0 }) // -1 = negative, 0 = neutral, 1 = positive
-  const scoreEvents = useLevelStore((s) => s.scoreEvents)
-  const isPlaying = useLevelStore((s) => s.phase !== LevelPhase.CONFIG)
-  const { totalTime: gameTime, timeMultiplier } = useTimeSubscription()
+  const emotionAmount = useRef({ value: 0 }) // -1 = negative, 0 = neutral, 1 = positive
 
   useGSAP(() => {
     // Respond to score events for damage "explosion" effect
@@ -89,7 +87,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
     const isNegative = latestEvent.points < 0
 
     const restore = () => {
-      gsap.to(scoreEventAmount.current, {
+      gsap.to(emotionAmount.current, {
         value: 0,
         duration: 0.1,
         delay: 0.24,
@@ -98,14 +96,14 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
     }
 
     if (isNegative) {
-      gsap.to(scoreEventAmount.current, {
+      gsap.to(emotionAmount.current, {
         value: -1,
         duration: 0.24,
         ease: 'power1.out',
         onComplete: restore,
       })
     } else {
-      gsap.to(scoreEventAmount.current, {
+      gsap.to(emotionAmount.current, {
         value: 1,
         duration: 0.24,
         ease: 'power1.out',
@@ -230,11 +228,11 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
     )
       return
 
-    const time = gameTime.current
+    const time = clock.elapsedTime
     // Update uniforms
     velocityUniforms.current.uIsIdle.value = !isPlaying
     velocityUniforms.current.uTime.value = time
-    velocityUniforms.current.uScoreAmount.value = scoreEventAmount.current.value
+    velocityUniforms.current.uScoreAmount.value = emotionAmount.current.value
     velocityUniforms.current.uPlayerVelocity.value.copy(playerVelocity)
     velocityUniforms.current.uTimeMultiplier.value = timeMultiplier.current
 
@@ -254,7 +252,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
     pointsShaderMaterial.current.uVelocities = gpuCompute.current.getCurrentRenderTarget(
       velocityVariable.current,
     ).texture
-    pointsShaderMaterial.current.uScoreAmount = scoreEventAmount.current.value
+    pointsShaderMaterial.current.uScoreAmount = emotionAmount.current.value
   })
 
   return (

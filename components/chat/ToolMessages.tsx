@@ -93,12 +93,12 @@ export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = ({ part, on
   if (part.state === 'output-available') {
     const output = part.output as MyUITools['getCourses']['output']
     const courses = output.courses as CourseSummary[] | null
-    if (!courses || courses.length === 0) return <div>No courses...</div>
+    if (!courses || courses.length === 0) return null
 
     return (
       <div className="flex flex-col gap-3 py-6 text-sm text-blue-100">
         {courses.map((c: CourseSummary, index: number) => (
-          // TODO: Produce nice course card component - make it expandable...
+          // TODO: Produce nice course card component - make it expandable to show previous runs.
           <div key={c.id} className="rounded-lg border p-4">
             <div className="text-lg font-bold">{c.title}</div>
             <div className="">{c.description}</div>

@@ -18,7 +18,7 @@ type DisplayEvent = ScoreEvent & {
   nodeRef: RefObject<HTMLDivElement | null>
 }
 
-const ScoreIndicator: FC = () => {
+const PlayerScoreIndicator: FC = () => {
   const scoreEvents = useLevelStore((s) => s.scoreEvents)
   const playerPosition = useLevelStore((s) => s.playerPosition)
 
@@ -174,4 +174,4 @@ const ScoreIndicator: FC = () => {
   )
 }
 
-export default ScoreIndicator
+export default PlayerScoreIndicator

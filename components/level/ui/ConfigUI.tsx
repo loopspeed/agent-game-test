@@ -16,6 +16,9 @@ type Props = {
 }
 
 const ConfigUI: FC<Props> = ({ transitionStatus }) => {
+  const course = useLevelStore((s) => s.course)
+  const chapter = useLevelStore((s) => s.chapter)
+
   const onConfigCompleted = useLevelStore((s) => s.onConfigCompleted)
   const playSoundFX = useSoundStore((s) => s.playSoundFX)
   const container = useRef<HTMLDivElement>(null)
@@ -153,9 +156,11 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
   )
 
   return (
-    <div ref={container} className="absolute inset-0 flex flex-col items-center justify-center gap-12">
-      <h1 className="text-2xl font-bold">Topic</h1>
-      <h2 className="text-xl font-semibold">Chapter</h2>
+    <section ref={container} className="absolute inset-0 flex flex-col items-center justify-center gap-12">
+      <header>
+        <h1 className="text-2xl font-bold">{course.title}</h1>
+        <h2 className="text-xl font-semibold">{chapter.title}</h2>
+      </header>
 
       <div className="pointer-events-auto h-80 w-150">
         <Leva
@@ -168,7 +173,7 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
       </div>
 
       <span className="text-3xl font-black text-white">TAP ENTER TO BEGIN</span>
-    </div>
+    </section>
   )
 }
 

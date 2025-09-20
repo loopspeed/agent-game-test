@@ -1,7 +1,9 @@
 'use client'
-import { Environment } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { type FC, Suspense } from 'react'
+import { type FC, Suspense, useRef } from 'react'
+import * as THREE from 'three'
+
+import PlayerParticles from '@/components/player/particles/PlayerParticles'
 
 const ChatCanvas: FC = () => {
   return (
@@ -22,9 +24,21 @@ const ChatCanvas: FC = () => {
 }
 
 const ChatScene: FC = () => {
+  const playerVelocity = useRef(new THREE.Vector2(0, 0))
+
   return (
     <Suspense fallback={null}>
       <ambientLight intensity={2} />
+
+      <group position={[2, 1, 0]}>
+        <PlayerParticles
+          isPlaying={false}
+          isMobile={false}
+          timeMultiplier={{ current: 1 }}
+          scoreEvents={[]}
+          playerVelocity={playerVelocity.current}
+        />
+      </group>
     </Suspense>
   )
 }

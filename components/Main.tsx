@@ -7,9 +7,9 @@ import { ErrorBoundary } from 'next/dist/client/components/error-boundary'
 import React, { type FC, useEffect, useRef } from 'react'
 import { SwitchTransition, Transition } from 'react-transition-group'
 
-import Chat from '@/components/game/chat/Chat'
-import Level from '@/components/game/level/Level'
-import PlayerSetup from '@/components/game/playerSetup/PlayerSetup'
+import Chat from '@/components/chat/Chat'
+import Level from '@/components/level/Level'
+import PlayerSetup from '@/components/playerSetup/PlayerSetup'
 import { useChatStore } from '@/hooks/useChatStore'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 import { CourseSchema } from '@/model/content'
@@ -118,7 +118,7 @@ const Main: FC<Props> = ({ initialMessages = [] }) => {
 
   useEffect(() => {
     if (!chat.messages.length) return
-    // Store messages in Zustand store
+    // Store messages in Zustand store (should be done server side)
     updateMessages(chat.messages)
   }, [chat.messages, updateMessages])
 
@@ -162,6 +162,21 @@ const Main: FC<Props> = ({ initialMessages = [] }) => {
     })
     pendingPlayTestToolCall.current = null
   }
+
+  useEffect(() => {
+    return () => {
+      //  Clear any pending tool call on unmount
+      if (!!pendingPlayTestToolCall.current) {
+        chat.addToolResult({
+          tool: 'playChapter',
+          toolCallId: pendingPlayTestToolCall.current.toolCallId,
+          output: { status: PlayChapterOutputStatus.Cancelled },
+        })
+        pendingPlayTestToolCall.current = null
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <main className="h-svh w-full overflow-hidden">

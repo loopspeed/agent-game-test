@@ -5,13 +5,15 @@ import { BallCollider, type IntersectionEnterHandler, type RapierRigidBody, Rigi
 import { type FC, useCallback, useEffect, useRef } from 'react'
 import * as THREE from 'three'
 
-import PlayerParticles, { ORB_RADIUS } from '@/components/game/player/particles/PlayerParticles'
-import ScoreIndicator from '@/components/game/player/ScoreIndicator'
-import { RigidBodyType, type RigidBodyUserData } from '@/model/game'
+import PlayerParticles, { ORB_RADIUS } from '@/components/player/particles/PlayerParticles'
+import PlayerScoreIndicator from '@/components/player/PlayerScoreIndicator'
+import { useTimeSubscription } from '@/hooks/useTimeSubscription'
+import { LevelPhase, RigidBodyType, type RigidBodyUserData } from '@/model/game'
 import { LANES_X, LANES_Y, useLevelStore } from '@/stores/LevelProvider'
 import { type InputState, useInputStore } from '@/stores/useInputStore'
 
-const Player: FC = () => {
+// Wrapper for the player when inside the Level scene
+const LevelPlayer: FC = () => {
   const input = useInputStore()
 
   const onObstacleHit = useLevelStore((s) => s.onObstacleHit)
@@ -69,7 +71,6 @@ const Player: FC = () => {
   }, [])
 
   // Track previous input to detect key presses
-  // TODO: this should be tracked inside the STORE instead to be more deterministic
   const prevInput = useRef<InputState>({
     up: false,
     down: false,
@@ -122,6 +123,10 @@ const Player: FC = () => {
     })
   })
 
+  const scoreEvents = useLevelStore((s) => s.scoreEvents)
+  const isPlaying = useLevelStore((s) => s.phase !== LevelPhase.CONFIG)
+  const { timeMultiplier } = useTimeSubscription()
+
   return (
     <>
       <RigidBody
@@ -131,11 +136,17 @@ const Player: FC = () => {
           type: 'player',
         }}>
         <BallCollider args={[ORB_RADIUS]} sensor={true} onIntersectionEnter={onIntersectionEnter} />
-        <PlayerParticles isMobile={false} playerVelocity={playerVelocity.current} />
+        <PlayerParticles
+          isPlaying={isPlaying}
+          scoreEvents={scoreEvents}
+          timeMultiplier={timeMultiplier}
+          isMobile={false}
+          playerVelocity={playerVelocity.current}
+        />
       </RigidBody>
-      <ScoreIndicator />
+      <PlayerScoreIndicator />
     </>
   )
 }
 
-export default Player
+export default LevelPlayer
