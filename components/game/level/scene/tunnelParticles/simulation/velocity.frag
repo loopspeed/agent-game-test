@@ -21,6 +21,8 @@ void main() {
     
     vec3 velocity = currentVel.xyz;
     float life = currentPos.w;
+
+    if (uIsIdle) {gl_FragColor = vec4(velocity, 1.0); return;}
     
     // If particle is dead or behind player, reset velocity
     if (life <= 0.0 || currentPos.z > 5.0) {
@@ -30,7 +32,7 @@ void main() {
         
         velocity = vec3(randomVel.x, randomVel.y, 15.0 + randomVel.z * 5.0); // Base speed towards camera
     } else {
-        if (!uIsIdle) {
+     
             // Add noise to velocity over time for organic movement
             vec3 noiseForce = noise3D(vec3(currentPos.xy * 0.1, uTime * 0.2)) * 3.0;
             
@@ -42,7 +44,7 @@ void main() {
             
             // Add some damping to prevent excessive velocity buildup
             velocity *= 0.98;
-        }
+        
     }
     
     gl_FragColor = vec4(velocity, 1.0);

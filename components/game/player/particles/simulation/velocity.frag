@@ -3,7 +3,7 @@
 
 uniform bool uIsIdle;
 uniform float uTime;
-uniform float uDamageAmount;
+uniform float uScoreAmount; // -1 (negative hit), 0 = normal, to 1 (positive heal)
 uniform sampler2D uSeedTexture;
 uniform vec2 uPlayerVelocity;
 uniform float uTimeMultiplier;
@@ -44,8 +44,8 @@ void main() {
   // Use seed to vary life decay rate - some particles live longer than others
   // Time multiplier affects decay rate - slower when in slow motion
   float baseLifeDecayRate = (0.1 + seed * 0.5) * uTimeMultiplier; // Decay rate from 0.1x to 0.6x based on seed, scaled by time
-  // When damaged, particles die faster
-  float damageLifeMultiplier = 1.0 + uDamageAmount;
+  // When damaged (negative score), particles die faster; when healed (positive), they live longer
+  float damageLifeMultiplier = 1.0 - uScoreAmount * 0.5; // -1 = 1.5x faster decay, 0 = normal, +1 = 0.5x slower decay
   float lifeDecayRate = baseLifeDecayRate * damageLifeMultiplier;
   life -= delta * lifeDecayRate;
   
@@ -65,8 +65,8 @@ void main() {
     // Strong movement toward camera (positive Z) - scaled by speed multiplier and time
     vec3 scaledFlyingForce = flyingForce * speedMultiplier * uTimeMultiplier;
 
-    // When damaged, add explosive force and increase overall movement
-    float damageForceMultiplier = uDamageAmount * 10.0 * speedMultiplier; // Increased from 3.0 to 8.0 for more dramatic explosion
+    // When damaged (-1), add explosive outward force; when healed (+1), add inward force
+    float damageForceMultiplier = -uScoreAmount * 12.0 * speedMultiplier; // Negative score = outward explosion
     vec3 damageExplosion = normalize(pos) * damageForceMultiplier;
     
     // Subtle noise influence for natural movement - also scaled and more chaotic when damaged
@@ -78,7 +78,7 @@ void main() {
       noise(pos * 0.8 + timeScaled * 0.2 + 200.0)
     );
 
-    float noiseMultiplier = 0.5 * (1.0 + uDamageAmount * 8.0); // Increased chaos when damaged
+    float noiseMultiplier = 0.5 * (1.0 + abs(uScoreAmount) * 8.0); // Increased chaos when damaged or healed
     noiseForce *= noiseMultiplier;
 
     // Slight radial expansion from sphere center - also scaled

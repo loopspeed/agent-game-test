@@ -6,7 +6,6 @@
 
 uniform bool uIsIdle;
 uniform float uTime;
-uniform float uDamageAmount;
 uniform float uTimeMultiplier;
 
 varying vec2 vUv;

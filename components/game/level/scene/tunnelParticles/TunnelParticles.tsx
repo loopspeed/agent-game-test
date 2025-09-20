@@ -5,13 +5,13 @@ import { AdditiveBlending, DataTexture, Points, Texture } from 'three'
 import { GPUComputationRenderer, type Variable } from 'three/addons/misc/GPUComputationRenderer.js'
 
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
+import { LevelPhase } from '@/model/game'
+import { useLevelStore } from '@/stores/LevelProvider'
 
 import particleFragment from './points/point.frag'
 import particleVertex from './points/point.vert'
 import positionFragmentShader from './simulation/position.frag'
 import velocityFragmentShader from './simulation/velocity.frag'
-import { useLevelStore } from '@/stores/LevelProvider'
-import { LevelPhase } from '@/model/game'
 
 /**
  * TunnelParticles - GPU-computed particle system for tunnel atmosphere
@@ -83,7 +83,7 @@ const TunnelParticles: FC<Props> = ({ isMobile }) => {
   const performance = useThree((s) => s.performance).current
   const renderer = useThree((s) => s.gl)
 
-  const particlesCount = useMemo(() => Math.pow(isMobile ? 24 : 32 * performance, 2), [isMobile, performance])
+  const particlesCount = useMemo(() => Math.pow(isMobile ? 12 : 24 * performance, 2), [isMobile, performance])
   const points = useRef<Points>(null)
   const pointsShaderMaterial = useRef<typeof TunnelPointsShaderMaterial & PointsShaderUniforms>(null)
   const textureSize = useMemo(() => Math.sqrt(particlesCount), [particlesCount])
@@ -235,10 +235,10 @@ const TunnelParticles: FC<Props> = ({ isMobile }) => {
       <TunnelPointsShaderMaterial
         key={CustomTunnelShaderMaterial.key}
         ref={pointsShaderMaterial}
+        {...INITIAL_POINTS_UNIFORMS}
         transparent={true}
         depthTest={false}
         blending={AdditiveBlending}
-        {...INITIAL_POINTS_UNIFORMS}
         uDpr={dpr}
       />
     </points>

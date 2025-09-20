@@ -4,7 +4,7 @@ import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { Leva, useControls } from 'leva'
 import { type FC, useEffect, useRef } from 'react'
-import { SwitchTransition, Transition, type TransitionStatus } from 'react-transition-group'
+import { type TransitionStatus } from 'react-transition-group'
 
 import { LEVA_CONTROLS_THEME } from '@/resources/leva'
 import { useLevelStore } from '@/stores/LevelProvider'
@@ -19,6 +19,8 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
   const onConfigCompleted = useLevelStore((s) => s.onConfigCompleted)
   const playSoundFX = useSoundStore((s) => s.playSoundFX)
   const container = useRef<HTMLDivElement>(null)
+
+  // const course = useLevelStore(s => s.)
 
   // Configuration...
   const showOnboarding = useLevelConfigStore((s) => s.showOnboarding)
@@ -152,6 +154,9 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
 
   return (
     <div ref={container} className="absolute inset-0 flex flex-col items-center justify-center gap-12">
+      <h1 className="text-2xl font-bold">Topic</h1>
+      <h2 className="text-xl font-semibold">Chapter</h2>
+
       <div className="pointer-events-auto h-80 w-150">
         <Leva
           theme={LEVA_CONTROLS_THEME}

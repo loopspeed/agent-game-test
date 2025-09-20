@@ -20,14 +20,22 @@ type PointsShaderUniforms = {
   uTime: number
   uPositions: Texture | null
   uVelocities: Texture | null
-  uDamageAmount: number
+  uScoreAmount: number
   uDpr: number
+}
+
+const INITIAL_POINTS_UNIFORMS: PointsShaderUniforms = {
+  uTime: 0,
+  uPositions: null,
+  uVelocities: null,
+  uScoreAmount: 0,
+  uDpr: 1,
 }
 
 type VelocityShaderUniforms = {
   uIsIdle: { value: boolean }
   uTime: { value: number }
-  uDamageAmount: { value: number }
+  uScoreAmount: { value: number }
   uSeedTexture: { value: DataTexture | null }
   uPlayerVelocity: { value: Vector2 }
   uTimeMultiplier: { value: number }
@@ -36,16 +44,7 @@ type VelocityShaderUniforms = {
 type PositionShaderUniforms = {
   uIsIdle: { value: boolean }
   uTime: { value: number }
-  uDamageAmount: { value: number }
   uTimeMultiplier: { value: number }
-}
-
-const INITIAL_POINTS_UNIFORMS: PointsShaderUniforms = {
-  uTime: 0,
-  uPositions: null,
-  uVelocities: null,
-  uDamageAmount: 0,
-  uDpr: 1,
 }
 
 const CustomShaderMaterial = shaderMaterial(INITIAL_POINTS_UNIFORMS, particleVertex, particleFragment)
@@ -76,7 +75,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
   const positionUniforms = useRef<PositionShaderUniforms | null>(null)
 
   // Animation values
-  const damageAmount = useRef({ value: 0 })
+  const scoreEventAmount = useRef({ value: 0 }) // -1 = negative, 0 = neutral, 1 = positive
   const scoreEvents = useLevelStore((s) => s.scoreEvents)
   const isPlaying = useLevelStore((s) => s.phase !== LevelPhase.CONFIG)
   const { totalTime: gameTime, timeMultiplier } = useTimeSubscription()
@@ -87,18 +86,30 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
     const latestEvent = scoreEvents.at(-1)
     if (!latestEvent) return
 
-    if (latestEvent.type === 'hit') {
-      gsap.to(damageAmount.current, {
+    const isNegative = latestEvent.points < 0
+
+    const restore = () => {
+      gsap.to(scoreEventAmount.current, {
+        value: 0,
+        duration: 0.1,
+        delay: 0.24,
+        ease: 'power1.out',
+      })
+    }
+
+    if (isNegative) {
+      gsap.to(scoreEventAmount.current, {
+        value: -1,
+        duration: 0.24,
+        ease: 'power1.out',
+        onComplete: restore,
+      })
+    } else {
+      gsap.to(scoreEventAmount.current, {
         value: 1,
         duration: 0.24,
         ease: 'power1.out',
-        onComplete: () => {
-          gsap.to(damageAmount.current, {
-            value: 0,
-            duration: 0.1,
-            delay: 0.3,
-          })
-        },
+        onComplete: restore,
       })
     }
   }, [scoreEvents])
@@ -186,7 +197,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
       if (velocityUniforms.current) {
         velocityUniforms.current.uIsIdle = { value: true }
         velocityUniforms.current.uTime = { value: 0.0 }
-        velocityUniforms.current.uDamageAmount = { value: 0.0 }
+        velocityUniforms.current.uScoreAmount = { value: 0.0 }
         velocityUniforms.current.uSeedTexture = { value: dtSeed }
         velocityUniforms.current.uPlayerVelocity = { value: new Vector2(0, 0) }
         velocityUniforms.current.uTimeMultiplier = { value: 1.0 }
@@ -197,7 +208,6 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
       if (positionUniformsTemp) {
         positionUniformsTemp.uIsIdle = { value: true }
         positionUniformsTemp.uTime = { value: 0.0 }
-        positionUniformsTemp.uDamageAmount = { value: 0.0 }
         positionUniformsTemp.uTimeMultiplier = { value: 1.0 }
       }
 
@@ -224,14 +234,13 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
     // Update uniforms
     velocityUniforms.current.uIsIdle.value = !isPlaying
     velocityUniforms.current.uTime.value = time
-    velocityUniforms.current.uDamageAmount.value = damageAmount.current.value
+    velocityUniforms.current.uScoreAmount.value = scoreEventAmount.current.value
     velocityUniforms.current.uPlayerVelocity.value.copy(playerVelocity)
     velocityUniforms.current.uTimeMultiplier.value = timeMultiplier.current
 
     // Update position uniforms
     positionUniforms.current.uIsIdle.value = !isPlaying
     positionUniforms.current.uTime.value = time
-    positionUniforms.current.uDamageAmount.value = damageAmount.current.value
     positionUniforms.current.uTimeMultiplier.value = timeMultiplier.current
 
     // Compute the simulation
@@ -245,7 +254,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity }) => {
     pointsShaderMaterial.current.uVelocities = gpuCompute.current.getCurrentRenderTarget(
       velocityVariable.current,
     ).texture
-    pointsShaderMaterial.current.uDamageAmount = damageAmount.current.value
+    pointsShaderMaterial.current.uScoreAmount = scoreEventAmount.current.value
   })
 
   return (
@@ -332,6 +341,7 @@ const fillTextures = ({
   textureSeed.needsUpdate = true
 }
 
+// TODO: palette will be conditional based on the player configuration (e.g colour chosen)
 const TEAL_PALETTE = [
   '#00fcdf', // 0
   '#00f0d0', // 1

@@ -228,7 +228,7 @@ const Obstacles: FC = () => {
         sensor={true}
         colliders="cuboid">
         <instancedMesh args={[undefined, undefined, zoneInstances.length]} count={zoneInstances.length}>
-          {/* Large invisible plane covering the entire grid area */}
+          {/* invisible plane covering the entire grid area */}
           <planeGeometry args={[GRID_SQUARE_SIZE_M * 3, GRID_SQUARE_SIZE_M * 3, 1, 1]} />
           <meshBasicMaterial color="#fff" transparent opacity={0} />
         </instancedMesh>

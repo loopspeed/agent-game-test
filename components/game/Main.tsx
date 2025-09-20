@@ -24,9 +24,9 @@ const Main: FC = () => {
 
   const storeCourse = useCourseStore((s) => s.storeCourse)
   const getCourseSummaries = useCourseStore((s) => s.getCourseSummaries)
-  const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
-
   const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
+
+  const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
 
   const container = useRef<HTMLDivElement>(null)
 
