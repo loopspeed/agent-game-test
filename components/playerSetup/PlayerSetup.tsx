@@ -10,7 +10,12 @@ type Props = { transitionStatus: TransitionStatus }
 
 const PlayerSetup: FC<Props> = ({ transitionStatus }) => {
   const { goToStage } = useNavigation()
-  const { colour, shape, setColour, setShape } = useUserStore()
+  const { colour, shape, setColour, setShape, setHasSetupPlayer } = useUserStore()
+
+  const handleContinue = () => {
+    setHasSetupPlayer(true)
+    goToStage(Stage.Chat)
+  }
 
   useGSAP(() => {}, [transitionStatus])
 
@@ -53,7 +58,7 @@ const PlayerSetup: FC<Props> = ({ transitionStatus }) => {
         </div>
       </div>
 
-      <button className="p-10 text-xl" onClick={() => goToStage(Stage.Chat)}>
+      <button className="p-10 text-xl" onClick={handleContinue}>
         CONTINUE
       </button>
     </div>

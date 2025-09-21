@@ -1,17 +1,32 @@
 'use client'
-import { Suspense } from 'react'
+import { Suspense, useLayoutEffect } from 'react'
 
 import Main from '@/components/Main'
 import { useChatStore } from '@/hooks/useChatStore'
+import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 import { useUserStore } from '@/hooks/useUserStore'
 import { SoundProvider } from '@/stores/SoundProvider'
 
 // Metadata..
 
 function GamePage() {
-  const hasHydratedChat = useChatStore((s) => s._hasHydrated)
+  const { stage, goToStage } = useNavigation()
+  // Load user
+  const hasSetupPlayer = useUserStore((s) => s.hasSetupPlayer)
   const hasHydratedUser = useUserStore((s) => s._hasHydrated)
+  // Load Chats
+  const hasHydratedChat = useChatStore((s) => s._hasHydrated)
   const getInitialMessages = useChatStore((s) => s.getInitialMessages)
+
+  useLayoutEffect(() => {
+    // Redirect to player setup if user hasn't set up their player yet
+    if (!hasHydratedUser || !!stage) return
+    if (!hasSetupPlayer) {
+      goToStage(Stage.PlayerSetup)
+    } else {
+      goToStage(Stage.Chat)
+    }
+  }, [goToStage, stage, hasSetupPlayer, hasHydratedUser])
 
   if (!hasHydratedChat || !hasHydratedUser) return null
 
