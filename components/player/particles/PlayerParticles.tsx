@@ -7,6 +7,7 @@ import React, { type FC, type RefObject, useLayoutEffect, useMemo, useRef } from
 import { AdditiveBlending, Color, DataTexture, Points, Texture, Vector2 } from 'three'
 import { GPUComputationRenderer, type Variable } from 'three/addons/misc/GPUComputationRenderer.js'
 
+import { TEAL_PALETTE } from '@/model/player'
 import { type ScoreEvent } from '@/stores/LevelProvider'
 
 import particleFragment from './points/point.frag'
@@ -48,9 +49,10 @@ type PositionShaderUniforms = {
 const CustomShaderMaterial = shaderMaterial(INITIAL_POINTS_UNIFORMS, particleVertex, particleFragment)
 const FBOPointsShaderMaterial = extend(CustomShaderMaterial)
 
+// TODO: Pass in colour option (enum), body shape (enum)
 type Props = {
   isMobile: boolean // on mobile we use fewer particles
-  playerVelocity: Vector2 // player movement velocity for particle tail effects
+  movementVelocity: Vector2 // player movement velocity for particle tail effects
   isPlaying: boolean // whether the game is currently playing (not paused or in config)
   scoreEvents: ScoreEvent[]
   timeMultiplier: RefObject<number>
@@ -58,7 +60,7 @@ type Props = {
 
 export const ORB_RADIUS = 0.25 as const
 
-const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity, isPlaying, timeMultiplier, scoreEvents = [] }) => {
+const PlayerParticles: FC<Props> = ({ isMobile, movementVelocity, isPlaying, timeMultiplier, scoreEvents = [] }) => {
   const dpr = useThree((s) => s.viewport.dpr)
   const performance = useThree((s) => s.performance).current
   const renderer = useThree((s) => s.gl)
@@ -233,7 +235,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, playerVelocity, isPlaying, timeM
     velocityUniforms.current.uIsIdle.value = !isPlaying
     velocityUniforms.current.uTime.value = time
     velocityUniforms.current.uScoreAmount.value = emotionAmount.current.value
-    velocityUniforms.current.uPlayerVelocity.value.copy(playerVelocity)
+    velocityUniforms.current.uPlayerVelocity.value.copy(movementVelocity)
     velocityUniforms.current.uTimeMultiplier.value = timeMultiplier.current
 
     // Update position uniforms
@@ -338,47 +340,3 @@ const fillTextures = ({
   textureVelocity.needsUpdate = true
   textureSeed.needsUpdate = true
 }
-
-// TODO: palette will be conditional based on the player configuration (e.g colour chosen)
-const TEAL_PALETTE = [
-  '#00fcdf', // 0
-  '#00f0d0', // 1
-  '#00ffff', // 2
-  '#00ffff', // 3
-  '#00ecdc', // 4
-  '#00ffe2', // 5
-  '#00fff5', // 6
-  '#00ffff', // 7
-  '#00fff1', // 8
-  '#00ffff', // 9
-  '#00ffff', // 10
-  '#00fffa', // 11
-  '#00f2d5', // 12
-  '#00fff1', // 13
-  '#00ffff', // 14
-  '#00fff9', // 15
-  '#00eec7', // 16
-  '#00ffdd', // 17
-  '#00fffd', // 18
-  '#00fffb', // 19
-  '#caeae6', // 20
-  '#d6f1f2', // 21
-  '#e8f6f5', // 22
-  '#d8fcf9', // 23
-  '#d9fef4', // 24
-  '#d7e6e7', // 25
-  '#e4fffc', // 26
-  '#d0e8e4', // 27
-  '#c1efeb', // 28
-  '#d7ffff', // 29
-  '#3f918d', // 30
-  '#3f8985', // 31
-  '#52b1a8', // 32
-  '#5ca598', // 33
-  '#005b4e', // 34
-  '#005449', // 35
-  '#5aa39a', // 36
-  '#56aaa3', // 37
-  '#46978e', // 38
-  '#42a99f', // 39
-]

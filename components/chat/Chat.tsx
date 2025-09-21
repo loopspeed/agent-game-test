@@ -2,21 +2,20 @@
 
 import { useChat } from '@ai-sdk/react'
 import { usePrevious } from '@mantine/hooks'
-import { Canvas } from '@react-three/fiber'
 import { type FC, useEffect, useRef, useState } from 'react'
 import { type TransitionStatus } from 'react-transition-group'
 import { twJoin } from 'tailwind-merge'
 
 import { type MyUIMessage, type MyUITools } from '@/resources/chat'
 
-import { MemoizedMarkdown } from './Markdown'
-import ChatCanvas from './scene/ChatScene'
+import { MemoizedMarkdown } from './messages/Markdown'
 import {
   AuthorCourseToolMessage,
   DebuggingToolMessage,
   GetCoursesToolMessage,
   PlayChapterToolMessage,
-} from './ToolMessages'
+} from './messages/ToolMessages'
+import ChatCanvas from './scene/ChatScene'
 
 type Props = {
   transitionStatus: TransitionStatus
@@ -49,14 +48,16 @@ const Chat: FC<Props> = ({ transitionStatus, chat, onStartTestClick }) => {
 
       <div className="relative z-50 grid size-full grid-cols-1 grid-rows-[1fr_auto] justify-items-center overflow-hidden pb-10">
         {/* Messages container */}
-        <section ref={messagesContainer} className="h-full w-3xl max-w-full space-y-4 overflow-y-auto px-5 py-12">
+        <section
+          ref={messagesContainer}
+          className="flex h-full w-2xl max-w-full flex-col gap-4 overflow-y-auto px-4 py-12">
           {messages.map((message) => (
             // Message row
             <div
               key={message.id}
-              className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              className={twJoin(`message flex w-full`, message.role === 'user' ? 'justify-end' : 'justify-start')}>
               {/* Message bubble */}
-              <div className={twJoin('max-w-4/5')}>
+              <div className="max-w-4/5">
                 {message.parts.map((part, i) => {
                   if (part.type === 'reasoning') {
                     return (

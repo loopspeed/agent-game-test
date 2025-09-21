@@ -23,23 +23,17 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
   const playSoundFX = useSoundStore((s) => s.playSoundFX)
   const container = useRef<HTMLDivElement>(null)
 
-  // const course = useLevelStore(s => s.)
-
   // Configuration...
   const showOnboarding = useLevelConfigStore((s) => s.showOnboarding)
   const setShowOnboarding = useLevelConfigStore((s) => s.setShowOnboarding)
 
-  const obstacleSpeed = useLevelConfigStore((s) => s.obstacleSpeed)
-  const setObstacleSpeed = useLevelConfigStore((s) => s.setObstacleSpeed)
+  const setIncludeObstacles = useLevelConfigStore((s) => s.setIncludeObstacles)
 
-  const obstacleSpawnInterval = useLevelConfigStore((s) => s.obstacleSpawnInterval)
+  const setObstacleSpeed = useLevelConfigStore((s) => s.setObstacleSpeed)
   const setObstacleSpawnInterval = useLevelConfigStore((s) => s.setObstacleSpawnInterval)
 
-  const slowMoDuration = useLevelConfigStore((s) => s.answerTimeDuration)
-  const setSlowMoDuration = useLevelConfigStore((s) => s.setAnswerTimeDuration)
-
-  const phaseDurations = useLevelConfigStore((s) => s.phaseDurations)
-  const setPhaseDurations = useLevelConfigStore((s) => s.setPhaseDurations)
+  const answerTimeDuration = useLevelConfigStore((s) => s.answerTimeDuration)
+  const setAnswerTimeDuration = useLevelConfigStore((s) => s.setAnswerTimeDuration)
 
   const getLevelConfig = useLevelConfigStore((s) => s.getLevelConfig)
 
@@ -52,81 +46,29 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
           setShowOnboarding(value)
         },
       },
-
-      slowMoDuration: {
-        label: 'Question Answer Time (seconds)',
-        min: 1,
-        step: 0.5,
-        max: 20,
-        value: slowMoDuration,
-        onChange: (value) => setSlowMoDuration(value),
-      },
-
-      includeObstacles: {
-        label: 'Include Obstacles',
-        value: true,
-        onChange: (value) => {
-          if (!value) {
-            setPhaseDurations({ ...phaseDurations, OBSTACLES: 0 })
-          } else {
-            setPhaseDurations({ ...phaseDurations, OBSTACLES: 6 })
-          }
-        },
-      },
-
-      phaseDuration: {
-        label: 'Obstacles Duration',
-        min: 1,
+      answerTimeDuration: {
+        label: 'Answer Time (seconds)',
+        min: 5,
         step: 1,
         max: 30,
-        value: phaseDurations.OBSTACLES,
-        onChange: (value) => {
-          setPhaseDurations({ ...phaseDurations, OBSTACLES: value })
-        },
-        render: (get) => !!get('includeObstacles'),
+        value: answerTimeDuration,
+        onChange: (value) => setAnswerTimeDuration(value),
       },
-
       preset: {
-        label: 'Difficulty Preset',
+        label: 'Obstacles',
         value: 'Normal',
         options: Object.keys(OBSTACLE_PRESETS),
         transient: false,
         onChange: (value) => {
+          const includeObstacles = value !== 'Off'
           const preset = OBSTACLE_PRESETS[value]
           setObstacleSpawnInterval(preset.obstacleSpawnInterval)
           setObstacleSpeed(preset.obstacleSpeed)
+          setIncludeObstacles(includeObstacles)
         },
-        render: (get) => !!get('includeObstacles'),
-      },
-
-      spawnInterval: {
-        label: 'Spawn Interval (seconds)',
-        min: 0.5,
-        step: 0.25,
-        max: 3,
-        value: obstacleSpawnInterval,
-        onChange: (value) => setObstacleSpawnInterval(value),
-        render: (get) => !!get('includeObstacles'),
-      },
-      speed: {
-        label: 'Speed',
-        min: 5,
-        step: 0.5,
-        max: 30,
-        value: obstacleSpeed,
-        onChange: (value) => setObstacleSpeed(value),
-        render: (get) => !!get('includeObstacles'),
       },
     }
   })
-
-  useEffect(() => {
-    // Update controls when preset changes
-    setControls({
-      spawnInterval: OBSTACLE_PRESETS[preset].obstacleSpawnInterval,
-      speed: OBSTACLE_PRESETS[preset].obstacleSpeed,
-    })
-  }, [preset, setControls])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -162,7 +104,7 @@ const ConfigUI: FC<Props> = ({ transitionStatus }) => {
         <h2 className="text-xl font-semibold">{chapter.title}</h2>
       </header>
 
-      <div className="pointer-events-auto h-80 w-150">
+      <div className="pointer-events-auto h-80 w-160">
         <Leva
           theme={LEVA_CONTROLS_THEME}
           hideCopyButton={true}

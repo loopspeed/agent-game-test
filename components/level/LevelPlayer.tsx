@@ -141,7 +141,7 @@ const LevelPlayer: FC = () => {
           scoreEvents={scoreEvents}
           timeMultiplier={timeMultiplier}
           isMobile={false}
-          playerVelocity={playerVelocity.current}
+          movementVelocity={playerVelocity.current}
         />
       </RigidBody>
       <PlayerScoreIndicator />

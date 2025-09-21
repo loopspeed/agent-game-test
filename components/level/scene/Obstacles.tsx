@@ -3,17 +3,16 @@ import { useFrame } from '@react-three/fiber'
 import { InstancedRigidBodies, type InstancedRigidBodyProps, type RapierRigidBody } from '@react-three/rapier'
 import { type FC, useLayoutEffect as useEffect, useRef, useState } from 'react'
 
-import { useObstaclesSpawning } from '@/hooks/useObstaclesSpawning'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { LevelPhase, type ObstacleAvoidedUserData, type ObstacleUserData, RigidBodyType } from '@/model/game'
 import {
   GRID_SQUARE_SIZE_M,
   KILL_OBSTACLE_Z,
-  LANES_X,
   LANES_Y,
   type ObstacleSpawnData,
   SPAWN_OBSTACLE_Z,
   useLevelStore,
+  useLevelStoreAPI,
 } from '@/stores/LevelProvider'
 
 type ObstacleInstance = {
@@ -122,11 +121,8 @@ const Obstacles: FC = () => {
       // Mark this obstacle as spawned first to prevent duplicate spawning
       spawnedIds.current.push(spawnData.id)
 
-      // Determine spawn positions based on rhythm data
-      const spawnPositions = getObstacleSpawnPositions(spawnData)
-
       // Spawn obstacles at all specified positions
-      spawnPositions.forEach((spawnPos) => {
+      spawnData.spawnPositions.forEach((spawnPos) => {
         const deadObstacleIndex = obstaclesData.current.findIndex((o) => !o.isAlive)
         if (deadObstacleIndex === -1) return
 
@@ -250,16 +246,22 @@ const Obstacles: FC = () => {
   )
 }
 
-function getObstacleSpawnPositions(data: ObstacleSpawnData): { x: number; y: number; laneIndex: number }[] {
-  return data.lanes.map((laneIndex) => {
-    // Convert lane index to grid coordinates
-    const gridY = Math.floor(laneIndex / LANES_X.length)
-    const gridX = laneIndex % LANES_X.length
-    // Convert to world positions
-    const x = LANES_X[gridX] || 0
-    const y = LANES_Y[gridY] || 0
-    return { x, y, laneIndex }
-  })
-}
-
 export default Obstacles
+
+function useObstaclesSpawning() {
+  const storeAPI = useLevelStoreAPI()
+
+  const isObstaclesPhase = useLevelStore((s) => s.phase === LevelPhase.OBSTACLES)
+  const obstaclesToSpawn = useRef<ObstacleSpawnData[]>(storeAPI.getState().obstacles) // Fetch initial state
+
+  useEffect(
+    () =>
+      // Subscribe to state changes
+      storeAPI.subscribe((state) => {
+        obstaclesToSpawn.current = state.obstacles
+      }),
+    [storeAPI, isObstaclesPhase],
+  )
+
+  return { obstaclesToSpawn }
+}

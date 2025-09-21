@@ -24,6 +24,16 @@ type DebugInfo = {
   question: Question
 }
 
+const PHASE_DURATIONS: Record<LevelPhase, number> = {
+  CONFIG: 100000, // For level config - effectively infinite until player starts
+  INTRO: 1, // READONLY For entry animation and get-ready
+  ONBOARDING: 100000, // READONLY Effectively infinite until player completels onboarding - then phase is advanced manually
+  REST: 1, // READONLY Short rest before obstacles
+  OBSTACLES: 6, // EDITABLE Duration for obstacles phase (0 = No obstacles)
+  QUESTION: 100000, // READONLY Effectively infinite until question is answered and the gate is killed - then phase is advanced manually
+  OUTRO: 100000, // READONLY For showing "level complete" and other end of level stuff
+} as const
+
 // Cycle of phases for each question
 const OBSTACLE_QUESTION_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.OBSTACLES, LevelPhase.QUESTION] as const
 const QUESTION_ONLY_PHASE_CYCLE = [LevelPhase.REST, LevelPhase.QUESTION] as const
@@ -61,6 +71,7 @@ export type ObstacleSpawnData = {
   safeLanes: number[] // Which lanes are safe for the player to move into
   spawnTime: number // Game time when obstacle should spawn
   speed: number
+  spawnPositions: { x: number; y: number; laneIndex: number }[] // Pre-calculated spawn positions
 }
 
 // Score events track all game events: obstacle hits/avoids and answer hits
@@ -184,13 +195,6 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
 
   const questions = chapter.questions
 
-  const goToNextPhase = (get: any, set: any) => {
-    const state = get()
-    const newPhaseIndex = state.phaseIndex + 1
-    const newPhase = state.phases[newPhaseIndex]
-    console.warn('[LevelProvider] moving to next phase:', { newPhase })
-  }
-
   return createStore<LevelState>()((set, get) => ({
     // Configurable parameters set on load with default values
     ...INITIAL_STATE,
@@ -207,7 +211,7 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
       const phases = generatePhasesFromQuestions({
         questions,
         showOnboarding: config.showOnboarding,
-        withObstacles: config.phaseDurations.OBSTACLES > 0,
+        includeObstacles: config.includeObstacles,
       })
       answerTimeRemaining = { value: config.answerTimeDuration }
       console.warn('[LevelProvider] Starting level with config:', { config, phases })
@@ -222,7 +226,16 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
       })
     },
     onOnboardingCompleted: () => {
-      goToNextPhase(get, set)
+      const state = get()
+      const newPhaseIndex = state.phaseIndex + 1
+      const newPhase = state.phases[newPhaseIndex]
+      console.warn('[LevelProvider] Onboarding completed, moving to next phase:', { newPhase })
+
+      set({
+        phase: newPhase,
+        phaseIndex: newPhaseIndex,
+        phaseTime: 0,
+      })
     },
     onQuestionCompleted: () => {
       const phaseIndex = get().phaseIndex
@@ -283,8 +296,7 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
       let phaseIndex = state.phaseIndex
       let phaseTime = state.phaseTime + (gameTime - state.totalTime)
 
-      const { phaseDurations } = state.config
-      const shouldMoveToNextPhase = phaseTime >= phaseDurations[phase]
+      const shouldMoveToNextPhase = phaseTime >= PHASE_DURATIONS[phase]
 
       // Handle phase transitions
       if (shouldMoveToNextPhase) {
@@ -307,7 +319,6 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
           const obstacleSequence = generateObstacleSequence({
             phaseStartTime: gameTime,
             speed: state.config.obstacleSpeed,
-            phaseDurations: phaseDurations,
             obstacleSpawnInterval: state.config.obstacleSpawnInterval,
           })
           console.warn('[LevelProvider] Transitioning to new OBSTACLES phase', { obstacleSequence })
@@ -586,11 +597,11 @@ export function useLevelStoreAPI(): LevelStore {
 // Produces complete phase sequence based on number of questions and config options
 const generatePhasesFromQuestions = ({
   showOnboarding,
-  withObstacles,
+  includeObstacles,
   questions,
 }: {
   showOnboarding: boolean
-  withObstacles: boolean
+  includeObstacles: boolean
   questions: Question[]
 }): LevelPhase[] => {
   const phases = [LevelPhase.CONFIG, LevelPhase.INTRO]
@@ -598,7 +609,7 @@ const generatePhasesFromQuestions = ({
   if (showOnboarding) phases.push(LevelPhase.ONBOARDING)
 
   const questionPhases = questions.flatMap(() =>
-    withObstacles ? OBSTACLE_QUESTION_PHASE_CYCLE : QUESTION_ONLY_PHASE_CYCLE,
+    includeObstacles ? OBSTACLE_QUESTION_PHASE_CYCLE : QUESTION_ONLY_PHASE_CYCLE,
   )
 
   phases.push(...questionPhases)
@@ -627,20 +638,31 @@ const generateAnswerMapping = (answers: Answer[]): (Answer | null)[] => {
   return mapping
 }
 
+// Calculate spawn positions for given lane indices
+const calculateSpawnPositions = (laneIndices: number[]): { x: number; y: number; laneIndex: number }[] => {
+  return laneIndices.map((laneIndex) => {
+    // Convert lane index to grid coordinates
+    const gridY = Math.floor(laneIndex / LANES_X.length)
+    const gridX = laneIndex % LANES_X.length
+    // Convert to world positions
+    const x = LANES_X[gridX] || 0
+    const y = LANES_Y[gridY] || 0
+    return { x, y, laneIndex }
+  })
+}
+
 // Generate complete obstacle sequence for obstacles phase
 const generateObstacleSequence = ({
   phaseStartTime,
   speed,
-  phaseDurations,
   obstacleSpawnInterval,
 }: {
   phaseStartTime: number
   speed: number
-  phaseDurations: Record<LevelPhase, number>
   obstacleSpawnInterval: number
 }): ObstacleSpawnData[] => {
   const obstacles: ObstacleSpawnData[] = []
-  const phaseDuration = phaseDurations[LevelPhase.OBSTACLES]
+  const phaseDuration = PHASE_DURATIONS[LevelPhase.OBSTACLES]
   const obstacleCount = Math.floor(phaseDuration / obstacleSpawnInterval)
 
   // Add a small delay to the first obstacle to ensure proper spacing
@@ -705,6 +727,7 @@ const generateObstacleSequence = ({
       safeLanes,
       spawnTime,
       speed: obstacleSpeed,
+      spawnPositions: calculateSpawnPositions(occupiedLanes),
     }
 
     obstacles.push(obstacle)

@@ -16,7 +16,7 @@ const ChatCanvas: FC = () => {
         alpha: false,
         powerPreference: 'low-power',
       }}
-      camera={{ position: [0, 0, 5], fov: 70, far: 20 }}>
+      camera={{ position: [0, 0, 4], fov: 70, far: 20 }}>
       <color attach="background" args={['blue']} />
       <ChatScene />
     </Canvas>
@@ -30,13 +30,13 @@ const ChatScene: FC = () => {
     <Suspense fallback={null}>
       <ambientLight intensity={2} />
 
-      <group position={[2, 1, 0]}>
+      <group position={[2, -1, 0]}>
         <PlayerParticles
           isPlaying={false}
           isMobile={false}
           timeMultiplier={{ current: 1 }}
           scoreEvents={[]}
-          playerVelocity={playerVelocity.current}
+          movementVelocity={playerVelocity.current}
         />
       </group>
     </Suspense>
