@@ -9,7 +9,7 @@ import { LevelPhase } from '@/model/game'
 import { useLevelStore } from '@/stores/LevelProvider'
 
 import AnswerGates from './AnswerGates'
-import Obstacles from './Obstacles'
+import Obstacles from './obstacles/Obstacles'
 import Onboarding from './Onboarding'
 import Outro from './Outro'
 import Tunnel from './tunnel/Tunnel'

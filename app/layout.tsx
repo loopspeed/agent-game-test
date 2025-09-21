@@ -2,13 +2,13 @@ import './globals.css'
 
 import type { ReactNode } from 'react'
 
-import { CourseProvider } from '@/stores/CourseProvider'
+import { CoursesProvider } from '@/stores/CoursesProvider'
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <CourseProvider>{children}</CourseProvider>
+        <CoursesProvider>{children}</CoursesProvider>
       </body>
     </html>
   )

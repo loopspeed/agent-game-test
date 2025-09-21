@@ -10,7 +10,7 @@ import LevelUI from '@/components/level/ui/LevelUI'
 import useKeypadInput from '@/hooks/useKeypadInput'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { type ChapterRun } from '@/model/game'
-import { useCourseStore } from '@/stores/CourseProvider'
+import { useCourseStore } from '@/stores/CoursesProvider'
 import { CAMERA_FAR, LevelProvider } from '@/stores/LevelProvider'
 import { useSoundStore } from '@/stores/SoundProvider'
 

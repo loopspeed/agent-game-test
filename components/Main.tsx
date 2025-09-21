@@ -15,8 +15,7 @@ import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 import { CourseSchema } from '@/model/content'
 import { type ChapterRun } from '@/model/game'
 import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus } from '@/resources/chat'
-import { useCourseStore } from '@/stores/CourseProvider'
-import { useHistoryStore } from '@/stores/useHistoryStore'
+import { useCourseStore } from '@/stores/CoursesProvider'
 
 gsap.registerPlugin(useGSAP)
 
@@ -32,7 +31,7 @@ const Main: FC<Props> = ({ initialMessages = [] }) => {
   const storeCourse = useCourseStore((s) => s.storeCourse)
   const getCourseSummaries = useCourseStore((s) => s.getCourseSummaries)
   const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
-  const addChapterRunToHistory = useHistoryStore((s) => s.addChapterRun)
+  const insertRun = useCourseStore((s) => s.insertRun)
 
   const container = useRef<HTMLDivElement>(null)
 
@@ -145,7 +144,7 @@ const Main: FC<Props> = ({ initialMessages = [] }) => {
 
   const onChapterLevelComplete = (run: ChapterRun) => {
     console.warn('[DEBUG] Chapter level complete', run)
-    addChapterRunToHistory(run)
+    insertRun(run)
     goToStage(Stage.Chat)
 
     // If there's a pending playChapter tool call, resolve it now

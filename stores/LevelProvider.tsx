@@ -208,7 +208,7 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
     chapter,
 
     onConfigCompleted: (config: LevelConfig) => {
-      const phases = generatePhasesFromQuestions({
+      const phases = createPhasesFromQuestions({
         questions,
         showOnboarding: config.showOnboarding,
         includeObstacles: config.includeObstacles,
@@ -595,7 +595,7 @@ export function useLevelStoreAPI(): LevelStore {
 }
 
 // Produces complete phase sequence based on number of questions and config options
-const generatePhasesFromQuestions = ({
+const createPhasesFromQuestions = ({
   showOnboarding,
   includeObstacles,
   questions,
@@ -623,6 +623,7 @@ const generateAnswerMapping = (answers: Answer[]): (Answer | null)[] => {
 
   // Shuffle positions
   const availablePositions = Array.from({ length: 9 }, (_, i) => i)
+
   for (let i = availablePositions.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[availablePositions[i], availablePositions[j]] = [availablePositions[j], availablePositions[i]]

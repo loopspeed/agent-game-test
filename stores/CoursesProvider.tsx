@@ -5,8 +5,10 @@ import { createStore, type StoreApi, useStore } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
 import type { Chapter, ChapterSummary, Course, CourseSummary } from '@/model/content'
+import { ChapterRun } from '@/model/game'
+import { generateUUID } from '@/utils/helpers'
 
-interface CourseState {
+type State = {
   // Course data
   courses: Record<string, Course>
   activeCourseId: string | null
@@ -21,26 +23,33 @@ interface CourseState {
   getCurrentChapter: () => Chapter | null
   getCurrentCourse: () => Course | null
 
-  // Hydration state
-  _hasHydrated: boolean
-  setHasHydrated: (state: boolean) => void
+  // History..
+  // courseId -> chapterId -> ChapterRun[]
+  runs: Record<string, Record<string, ChapterRun[]>>
+  insertRun: (chapterRun: Omit<ChapterRun, 'id'>) => void
+  getRunsForCourseChapter: (courseId: string, chapterId: string) => ChapterRun[] | null
 
   // Utility methods
   getCourseSummaries: () => CourseSummary[]
   getAllCourses: () => Course[]
+
+  // Hydration state
+  _hasHydrated: boolean
+  setHasHydrated: (state: boolean) => void
 }
 
-type CourseStore = StoreApi<CourseState>
-const CourseContext = createContext<CourseStore>(undefined!)
+type CourseStore = StoreApi<State>
+const CoursesContext = createContext<CourseStore>(undefined!)
 
-const createCourseStore = () => {
-  return createStore<CourseState>()(
+const createCoursesStore = () => {
+  return createStore<State>()(
     persist(
       (set, get) => ({
         // Initial state
         courses: {},
         activeCourseId: null,
         activeChapterId: null,
+        runs: {},
 
         // Hydration state
         _hasHydrated: false,
@@ -131,13 +140,53 @@ const createCourseStore = () => {
         getAllCourses: (): Course[] => {
           return Object.values(get().courses)
         },
+
+        // Runs management
+        insertRun: (chapterRunData: Omit<ChapterRun, 'id'>) => {
+          const chapterRun: ChapterRun = {
+            ...chapterRunData,
+            id: generateUUID(),
+          }
+
+          set((state) => {
+            const { courseId, chapterId } = chapterRun
+            const newRuns = { ...state.runs }
+
+            // Initialize course runs if not exists
+            if (!newRuns[courseId]) {
+              newRuns[courseId] = {}
+            }
+
+            // Initialize chapter runs if not exists
+            if (!newRuns[courseId][chapterId]) {
+              newRuns[courseId][chapterId] = []
+            }
+
+            // Add the new run
+            newRuns[courseId][chapterId] = [...newRuns[courseId][chapterId], chapterRun]
+
+            return {
+              ...state,
+              runs: newRuns,
+            }
+          })
+        },
+
+        // Return runs for specific course and chapter
+        getRunsForCourseChapter: (courseId: string, chapterId: string): ChapterRun[] | null => {
+          const allRuns = get().runs
+          const courseRuns = allRuns[courseId]
+          if (!courseRuns) return null
+          return courseRuns[chapterId] ?? null
+        },
       }),
       {
         name: 'course-storage', // unique name for localStorage key
         storage: createJSONStorage(() => localStorage),
         partialize: (state) => ({
-          // Only persist the courses and active IDs, not hydration state
+          // Only persist the courses, runs, and active IDs, not hydration state
           courses: state.courses,
+          runs: state.runs,
           activeCourseId: state.activeCourseId,
           activeChapterId: state.activeChapterId,
         }),
@@ -155,20 +204,20 @@ const createCourseStore = () => {
   )
 }
 
-export const CourseProvider: FC<PropsWithChildren> = ({ children }) => {
-  const courseStore = useRef<CourseStore>(createCourseStore())
+export const CoursesProvider: FC<PropsWithChildren> = ({ children }) => {
+  const courseStore = useRef<CourseStore>(createCoursesStore())
 
-  return <CourseContext.Provider value={courseStore.current}>{children}</CourseContext.Provider>
+  return <CoursesContext.Provider value={courseStore.current}>{children}</CoursesContext.Provider>
 }
 
-export function useCourseStore<T>(selector: (state: CourseState) => T): T {
-  const courseStore = useContext(CourseContext)
-  if (!courseStore) throw new Error('Missing CourseContext.Provider in the tree')
+export function useCourseStore<T>(selector: (state: State) => T): T {
+  const courseStore = useContext(CoursesContext)
+  if (!courseStore) throw new Error('Missing CoursesContext.Provider in the tree')
   return useStore(courseStore, selector)
 }
 
 export function useCourseStoreAPI(): CourseStore {
-  const courseStore = useContext(CourseContext)
-  if (!courseStore) throw new Error('Missing CourseContext.Provider in the tree')
+  const courseStore = useContext(CoursesContext)
+  if (!courseStore) throw new Error('Missing CoursesContext.Provider in the tree')
   return courseStore
 }
