@@ -18,6 +18,12 @@ import { ChapterRunSchema } from '@/model/game'
 
 const AVATAR_NAME = 'TestOwl' // TODO: this will change
 
+export enum PlayChapterOutputStatus {
+  Cancelled = 'cancelled',
+  Completed = 'completed',
+  Error = 'error',
+}
+
 export const SYSTEM_PROMPT = `
 You are ${AVATAR_NAME} - An quiz game assitant - you test students knowledge on anything that they want to learn about.
 Your content is always based on the material provided by the user, and you never make up content.
@@ -28,7 +34,7 @@ MISSION
 TOOL USAGE
   1) extractContentFromWebsite(url) — fetches and cleans HTML text, returns { title, text, wordCount }.
   2) authorTestMarkdown({ title, sourceText }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown test outline with chapters, summaries, questions, answers and source passages.
-  3a) formatTestForGame({ title, courseMarkdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
+  3a) formatTestForGame({ markdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
   3b) storeCourse({ course }) — saves the Course JSON to the frontend state - always call this immediately after formatting the course.
   4) playChapter({ courseId, chapterId }) — passes the Course JSON to the frontend to set state and begin the test (playable as a game). On completion it returns a status and a summary of the run.
   5) getCourses() — tool that retrieves stored courses in an array of CourseSummary. These are already prepared and validated, and are ready to be played. Do NOT summarize the output.
@@ -184,14 +190,7 @@ async function formatTestForGame({ markdown, writer }: { markdown: string; write
     delta: 'Converting Markdown into structured JSON for the game...',
     id: reasoningId,
   })
-
-  setTimeout(() => {
-    writer.write({
-      type: 'reasoning-delta',
-      delta: '\nAlmost there...',
-      id: reasoningId,
-    })
-  }, 2000)
+  writer.write({ type: 'reasoning-end', id: reasoningId })
 
   const FORMAT_COURSE_SYSTEM_PROMPT = `Convert the content into a JSON object that validates CourseSchema.
   Remove any numbers (e.g "1.") or letters (e.g "a.") that sit in front of questions and answers.
@@ -212,7 +211,6 @@ async function formatTestForGame({ markdown, writer }: { markdown: string; write
     ],
   })
 
-  writer.write({ type: 'reasoning-end', id: reasoningId })
   return { course }
 }
 
@@ -243,6 +241,7 @@ export const tools = (writer: UIMessageStreamWriter) => ({
   formatTestForGame: tool({
     description: 'Convert Markdown into a Course JSON object conforming to CourseSchema.',
     inputSchema: z.object({ markdown: z.string() }),
+    outputSchema: z.object({ course: CourseSchema }),
     execute: async ({ markdown }: { markdown: string }) => {
       return formatTestForGame({ markdown, writer })
     },
@@ -278,17 +277,11 @@ export const tools = (writer: UIMessageStreamWriter) => ({
     description: 'Retrieve all previously prepared courses as an array of CourseSummary objects.',
     inputSchema: z.object({}),
     outputSchema: z.object({
-      status: z.string('success').or(z.string('error')),
+      status: z.enum(['success', 'error']),
       courses: z.array(CourseSummarySchema),
     }),
   }),
 })
-
-export enum PlayChapterOutputStatus {
-  Cancelled = 'cancelled',
-  Completed = 'completed',
-  Error = 'error',
-}
 
 type Tools = ReturnType<typeof tools>
 

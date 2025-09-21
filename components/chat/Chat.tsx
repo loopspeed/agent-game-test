@@ -9,13 +9,9 @@ import { twJoin } from 'tailwind-merge'
 import { type MyUIMessage, type MyUITools } from '@/resources/chat'
 
 import { MemoizedMarkdown } from './messages/Markdown'
-import {
-  AuthorCourseToolMessage,
-  DebuggingToolMessage,
-  GetCoursesToolMessage,
-  PlayChapterToolMessage,
-} from './messages/ToolMessages'
+import { AuthorCourseToolMessage, DebuggingToolMessage, GetCoursesToolMessage } from './messages/ToolMessages'
 import ChatCanvas from './scene/ChatScene'
+import { PlayChapterToolMessage } from './messages/PlayChapterToolMessage'
 
 type Props = {
   transitionStatus: TransitionStatus

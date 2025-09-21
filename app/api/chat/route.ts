@@ -41,7 +41,7 @@ export async function POST(req: Request) {
         system: SYSTEM_PROMPT,
         messages: convertToModelMessages(messages),
         tools: tools(writer), // pass message writer into tools for writing custom data parts
-        stopWhen: [stepCountIs(4), hasToolCall('getCourses')], // or when fetched courses (e.g getCourses tool returns results)
+        stopWhen: [stepCountIs(4)], // or when fetched courses (e.g getCourses tool returns results)
 
         // Log each step of the agentic loop for debugging
         async onStepFinish(event) {

@@ -9,115 +9,9 @@ import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus } from '@/res
 import { useCourseStore } from '@/stores/CoursesProvider'
 
 import { MemoizedMarkdown } from './Markdown'
+import { ToolMessageContainer } from './ToolMessageContainer'
 
-// TODO: Create wrapper components for loading/error/success states for tool messages
 // TODO: Create course card component for GetCoursesToolMessage
-
-type ChapterRunSummaryProps = {
-  run: ChapterRun
-}
-
-const ChapterRunSummary: FC<ChapterRunSummaryProps> = memo(
-  ({ run }) => {
-    const courses = useCourseStore((state) => state.courses)
-
-    // Find the course and chapter for this run
-    const course = courses[run.courseId]
-    const chapter = course?.chapters.find((ch) => ch.id === run.chapterId)
-
-    if (!course || !chapter) {
-      return <div className="text-red-500">Course or chapter not found for this run.</div>
-    }
-
-    // Map answers to questions
-    const questionResults = run.answers.map((answerHit) => {
-      const question = chapter.questions.find((q) => q.id === answerHit.questionId)
-      const selectedAnswer = question?.answers.find((a) => a.id === answerHit.answerId)
-      const correctAnswer = question?.answers.find((a) => a.isCorrect)
-
-      return {
-        question: question?.question || 'Unknown question',
-        selectedAnswer: selectedAnswer?.label || 'No answer selected',
-        correctAnswer: correctAnswer?.label || 'Unknown',
-        isCorrect: answerHit.isCorrect,
-        questionId: answerHit.questionId,
-      }
-    })
-
-    const totalQuestions = questionResults.length
-    const correctAnswers = questionResults.filter((r) => r.isCorrect).length
-    const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0
-    const completionTimeMinutes = Math.floor(run.completionTime / 60000)
-    const completionTimeSeconds = Math.floor((run.completionTime % 60000) / 1000)
-
-    return (
-      <div className="rounded-lg border border-green-200 bg-white p-6 text-green-900">
-        <div className="mb-4">
-          <h3 className="flex items-center gap-2 text-xl font-bold text-green-800">
-            <Trophy className="size-6" />
-            Chapter Completed!
-          </h3>
-          <p className="text-green-700">
-            {course.title} - {chapter.title}
-          </p>
-        </div>
-
-        {/* Overall Stats */}
-        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="rounded bg-white p-2 text-center">
-            <div className="text-2xl font-bold text-green-600">{run.points}</div>
-            <div className="text-sm text-green-600">Points</div>
-          </div>
-          <div className="rounded bg-white p-2 text-center">
-            <div className="text-2xl font-bold text-green-600">{accuracy}%</div>
-            <div className="text-sm text-green-600">Accuracy</div>
-          </div>
-          <div className="rounded bg-white p-2 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {correctAnswers}/{totalQuestions}
-            </div>
-            <div className="text-sm text-green-600">Correct</div>
-          </div>
-          <div className="rounded bg-white p-2 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {completionTimeMinutes}:{completionTimeSeconds.toString().padStart(2, '0')}
-            </div>
-            <div className="text-sm text-green-600">Time</div>
-          </div>
-        </div>
-
-        {/* Question Results */}
-        <div className="space-y-2.5">
-          {questionResults.map((result, index) => (
-            <div
-              key={result.questionId}
-              className={`rounded-lg border p-4 ${
-                result.isCorrect ? 'border-green-300 bg-green-50' : 'border-red-200 bg-red-50'
-              }`}>
-              <div className="mb-2 flex items-start justify-between">
-                <span className="font-medium text-gray-800">
-                  Q{index + 1}: {result.question}
-                </span>
-                <div className={`ml-2 ${result.isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                  {result.isCorrect ? <Check className="h-5 w-5" /> : <X className="h-5 w-5" />}
-                </div>
-              </div>
-              <div className="text-sm text-gray-700">
-                Your answer: <span className="font-medium">{result.selectedAnswer}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  },
-  (prevProps, nextProps) => {
-    // Only re-render if the run.id changes
-    return prevProps.run.id === nextProps.run.id
-  },
-)
-
-ChapterRunSummary.displayName = 'ChapterRunSummary'
 
 type AddToolResult = ReturnType<typeof useChat<MyUIMessage>>['addToolResult']
 type SendMessage = ReturnType<typeof useChat<MyUIMessage>>['sendMessage']
@@ -127,8 +21,8 @@ type AuthorCourseToolMessageProps = {
 }
 
 export const AuthorCourseToolMessage: FC<AuthorCourseToolMessageProps> = ({ part }) => {
-  console.log('Rendering AuthorCourseToolMessage for part:', part)
-  if (part.state === 'input-streaming' || part.state === 'input-available') return null
+  if (part.state === 'input-streaming' || part.state === 'input-available')
+    return <ToolMessageContainer state="waiting" title="Authoring course content..." />
 
   if (part.state === 'output-available') {
     const output = part.output as MyUITools['authorTestMarkdown']['output']
@@ -138,57 +32,15 @@ export const AuthorCourseToolMessage: FC<AuthorCourseToolMessageProps> = ({ part
           <MemoizedMarkdown id={`${part.toolCallId}`} content={output} />
         </div>
       )
-    return <div>No content...</div>
+    return null
   }
 
   if (part.state === 'output-error') {
-    return <div key={part.toolCallId}>Error: {part.errorText}</div>
-  }
-  return null
-}
-
-type PlayChapterToolMessageProps = {
-  part: ToolUIPart<MyUITools>
-  addToolResult: AddToolResult
-}
-
-export const PlayChapterToolMessage: FC<PlayChapterToolMessageProps> = ({ part, addToolResult }) => {
-  const onCancelClick = () => {
-    addToolResult({
-      tool: 'playChapter',
-      toolCallId: part.toolCallId,
-      output: { status: PlayChapterOutputStatus.Cancelled },
-    })
-  }
-  if (part.state === 'input-available')
     return (
-      <div>
-        Running the test...
-        <button className="text-xl" onClick={onCancelClick}>
-          Cancel
-        </button>
-      </div>
+      <ToolMessageContainer state="error" title="Failed to author course content">
+        <div className="mt-2 text-xs text-red-600">Error: {part.errorText}</div>
+      </ToolMessageContainer>
     )
-
-  if (part.state === 'output-available') {
-    const output = part.output as MyUITools['playChapter']['output']
-
-    // Handle ERROR status..
-    if (output.status === PlayChapterOutputStatus.Error) {
-      return <div>There was an error starting the test (retry).</div>
-    }
-
-    if (output.status === PlayChapterOutputStatus.Completed) {
-      const run = output.run as ChapterRun
-      return <ChapterRunSummary run={run} />
-    }
-    if (output.status === PlayChapterOutputStatus.Cancelled) {
-      return <div>Chapter run cancelled.</div>
-    }
-  }
-
-  if (part.state === 'output-error') {
-    return <div key={part.toolCallId}>Error: {part.errorText}</div>
   }
   return null
 }
@@ -203,12 +55,7 @@ export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = memo(
     const getRunsForCourseChapter = useCourseStore((state) => state.getRunsForCourseChapter)
 
     if (part.state === 'input-streaming' || part.state === 'input-available')
-      return (
-        <div className="flex items-center gap-2 rounded-lg bg-blue-50 p-4 text-blue-700">
-          <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-blue-500"></div>
-          <span>Loading courses...</span>
-        </div>
-      )
+      return <ToolMessageContainer state="waiting" title="Loading courses..." />
 
     if (part.state === 'output-available') {
       const output = part.output as MyUITools['getCourses']['output']
@@ -288,10 +135,9 @@ export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = memo(
 
     if (part.state === 'output-error') {
       return (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-          <div className="font-medium">Error loading courses</div>
-          <div className="text-sm">{part.errorText}</div>
-        </div>
+        <ToolMessageContainer state="error" title="Error loading courses">
+          <div className="mt-2 text-xs text-red-600">{part.errorText}</div>
+        </ToolMessageContainer>
       )
     }
 
@@ -311,7 +157,6 @@ type ToolMessageProps = {
 
 // Renders a message for any tool, showing its state (input available, output available, error)
 export const DebuggingToolMessage: FC<ToolMessageProps> = ({ part }) => {
-  console.log('Rendering ToolMessage for part:', part)
   // Safely extract properties from the part
   const toolCallId = part.toolCallId || 'unknown-id'
   const toolName = part.toolName || extractToolNameFromType(part.type)
@@ -324,47 +169,33 @@ export const DebuggingToolMessage: FC<ToolMessageProps> = ({ part }) => {
   switch (state) {
     case 'input-available':
       return (
-        <div className="my-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-yellow-500"></div>
-            <span className="text-sm font-medium text-yellow-700">{toolName}...</span>
-          </div>
-          {input ? (
-            <details className="text-xs text-yellow-600">
-              <summary className="cursor-pointer hover:text-yellow-800">View parameters</summary>
-              <pre className="mt-1 whitespace-pre-wrap">{JSON.stringify(input, null, 2)}</pre>
-            </details>
-          ) : null}
-        </div>
+        <ToolMessageContainer
+          state="waiting"
+          title={`${toolName}...`}
+          details={input ? <pre className="whitespace-pre-wrap">{JSON.stringify(input, null, 2)}</pre> : undefined}
+        />
       )
 
     case 'output-available':
       return (
-        <div className="my-3 rounded-lg border border-green-200 bg-green-50 p-4">
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded-full bg-green-500"></div>
-            <span className="text-sm font-medium text-green-700">✓ {toolName} completed</span>
-          </div>
-          {output ? (
-            <details className="text-xs text-green-600">
-              <summary className="cursor-pointer hover:text-green-800">View results</summary>
-              <pre className="mt-1 whitespace-pre-wrap">
+        <ToolMessageContainer
+          state="success"
+          title={`${toolName} completed`}
+          details={
+            output ? (
+              <pre className="whitespace-pre-wrap">
                 {typeof output === 'string' ? output : JSON.stringify(output, null, 2)}
               </pre>
-            </details>
-          ) : null}
-        </div>
+            ) : undefined
+          }
+        />
       )
 
     case 'output-error':
       return (
-        <div className="my-3 rounded-lg border border-red-200 bg-red-50 p-4">
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded-full bg-red-500"></div>
-            <span className="text-sm font-medium text-red-700">✗ {toolName} failed</span>
-          </div>
+        <ToolMessageContainer state="error" title={`${toolName} failed`}>
           <div className="mt-2 text-xs text-red-600">Error: {errorText || 'Unknown error occurred'}</div>
-        </div>
+        </ToolMessageContainer>
       )
 
     default:

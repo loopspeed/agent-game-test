@@ -17,7 +17,7 @@ const ChatCanvas: FC = () => {
         powerPreference: 'low-power',
       }}
       camera={{ position: [0, 0, 4], fov: 70, far: 20 }}>
-      <color attach="background" args={['blue']} />
+      <color attach="background" args={['grey']} />
       <ChatScene />
     </Canvas>
   )
