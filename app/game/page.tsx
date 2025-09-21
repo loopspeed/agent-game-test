@@ -9,7 +9,7 @@ import { SoundProvider } from '@/stores/SoundProvider'
 
 // Metadata..
 
-function GamePage() {
+function GameContent() {
   const { stage, goToStage } = useNavigation()
   // Load user
   const hasSetupPlayer = useUserStore((s) => s.hasSetupPlayer)
@@ -33,10 +33,16 @@ function GamePage() {
   const initialMessages = getInitialMessages()
 
   return (
-    <Suspense>
-      <SoundProvider>
-        <Main initialMessages={initialMessages} />
-      </SoundProvider>
+    <SoundProvider>
+      <Main initialMessages={initialMessages} />
+    </SoundProvider>
+  )
+}
+
+function GamePage() {
+  return (
+    <Suspense fallback={null}>
+      <GameContent />
     </Suspense>
   )
 }

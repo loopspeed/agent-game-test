@@ -24,6 +24,11 @@ export enum PlayChapterOutputStatus {
   Error = 'error',
 }
 
+export enum StoreCourseStatus {
+  Success = 'success',
+  Error = 'error',
+}
+
 export const SYSTEM_PROMPT = `
 You are ${AVATAR_NAME} - An quiz game assitant - you test students knowledge on anything that they want to learn about.
 Your content is always based on the material provided by the user, and you never make up content.
@@ -32,10 +37,10 @@ MISSION
 - Onboard the player, gather a testing topic, author a quiz-based course, play it and then summarise results.
 
 TOOL USAGE
-  1) extractContentFromWebsite(url) — fetches and cleans HTML text, returns { title, text, wordCount }.
+  1) extractContentFromWebsite({ url }) — fetches and cleans HTML text, returns { title, text, wordCount }.
   2) authorTestMarkdown({ title, sourceText }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown test outline with chapters, summaries, questions, answers and source passages.
   3a) formatTestForGame({ markdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
-  3b) storeCourse({ course }) — saves the Course JSON to the frontend state - always call this immediately after formatting the course.
+  3b) storeCourse({ course }) — saves the Course JSON to the frontend state - always call this AFTER formatting the course is complete.
   4) playChapter({ courseId, chapterId }) — passes the Course JSON to the frontend to set state and begin the test (playable as a game). On completion it returns a status and a summary of the run.
   5) getCourses() — tool that retrieves stored courses in an array of CourseSummary. These are already prepared and validated, and are ready to be played. Do NOT summarize the output.
 
@@ -62,19 +67,19 @@ STYLE & TONE
 
 const TEST_AUTHORING_SYSTEM_PROMPT = `
   Your task is to use the provided source text and create a concise, reviewable Markdown test with chapters, questions, answers and source passages.
-  Return ONLY the Markdown block between <!-- COURSE-MD-START --> and <!-- COURSE-MD-END -->.
+  Return ONLY the Markdown content without any HTML comments.
   
-  COURSE_MD must contain:
+  It must contain:
   - 1 or more chapters
   - 4 or more questions per chapter
   - Each question has 2-4 choices (one correct, others plausible incorrect answers), summaries and sources.
    If the source material is short, create a single chapter course.
 
-  Ensure balanced difficulty, no duplicates, and all content must be grounded in the source (except for incorrect answers).
+  Ensure balanced difficulty, no duplicates, and all content must be grounded in the source (except for incorrect answers which should sound plausible and often similar to the correct answer).
   Discard and ignore content that is not relevant to the title/topic: such as ads, cookies, legal information, navigation, or unrelated links.
 
   Here is an example of the COURSE-MD format:
-  <!-- COURSE-MD-START -->
+  
   # Course Title
 
   ## Chapter 1: Title
@@ -89,7 +94,6 @@ const TEST_AUTHORING_SYSTEM_PROMPT = `
   Source: “<quote from the material>”
   ...
 
-  </!-- COURSE-MD-END -->
 `
 
 // Helper to extract material from a webpage (no JavaScript). Returns the
@@ -253,7 +257,11 @@ export const tools = (writer: UIMessageStreamWriter) => ({
     inputSchema: z.object({
       course: CourseSchema,
     }),
-    outputSchema: z.object({ status: z.string(), courseId: z.string().optional(), error: z.string().optional() }),
+    outputSchema: z.object({
+      status: z.enum([StoreCourseStatus.Success, StoreCourseStatus.Error]),
+      courseId: z.string().optional(),
+      error: z.string().optional(),
+    }),
   }),
   // Play a specific chapter of a course, when finished return a summary of the run
   playChapter: tool({

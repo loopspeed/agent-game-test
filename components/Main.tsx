@@ -14,7 +14,7 @@ import { useChatStore } from '@/hooks/useChatStore'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 import { CourseSchema } from '@/model/content'
 import { type ChapterRun } from '@/model/game'
-import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus } from '@/resources/chat'
+import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus, StoreCourseStatus } from '@/resources/chat'
 import { useCourseStore } from '@/stores/CoursesProvider'
 
 gsap.registerPlugin(useGSAP)
@@ -65,13 +65,13 @@ const Main: FC<Props> = ({ initialMessages = [] }) => {
           chat.addToolResult({
             tool: 'storeCourse',
             toolCallId: toolCall.toolCallId,
-            output: { status: 'ready to play', courseId: parsedCourse.id },
+            output: { status: StoreCourseStatus.Success, courseId: parsedCourse.id },
           })
         } catch (error) {
           chat.addToolResult({
             tool: 'storeCourse',
             toolCallId: toolCall.toolCallId,
-            output: { status: 'error', error: (error as Error).message },
+            output: { status: StoreCourseStatus.Error, error: (error as Error).message },
           })
         }
         return

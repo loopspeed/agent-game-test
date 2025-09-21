@@ -1,49 +1,11 @@
-import { useChat } from '@ai-sdk/react'
 import { type ToolUIPart } from 'ai'
-import { Check, Trophy, X } from 'lucide-react'
 import { type FC, memo } from 'react'
 
 import { type CourseSummary } from '@/model/content'
-import { ChapterRun } from '@/model/game'
-import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus } from '@/resources/chat'
+import { type MyUITools } from '@/resources/chat'
 import { useCourseStore } from '@/stores/CoursesProvider'
 
-import { MemoizedMarkdown } from './Markdown'
 import { ToolMessageContainer } from './ToolMessageContainer'
-
-// TODO: Create course card component for GetCoursesToolMessage
-
-type AddToolResult = ReturnType<typeof useChat<MyUIMessage>>['addToolResult']
-type SendMessage = ReturnType<typeof useChat<MyUIMessage>>['sendMessage']
-
-type AuthorCourseToolMessageProps = {
-  part: ToolUIPart<MyUITools>
-}
-
-export const AuthorCourseToolMessage: FC<AuthorCourseToolMessageProps> = ({ part }) => {
-  if (part.state === 'input-streaming' || part.state === 'input-available')
-    return <ToolMessageContainer state="waiting" title="Authoring course content..." />
-
-  if (part.state === 'output-available') {
-    const output = part.output as MyUITools['authorTestMarkdown']['output']
-    if (!!output)
-      return (
-        <div className="prose-sm lg:prose rounded-lg bg-white p-4 !text-black">
-          <MemoizedMarkdown id={`${part.toolCallId}`} content={output} />
-        </div>
-      )
-    return null
-  }
-
-  if (part.state === 'output-error') {
-    return (
-      <ToolMessageContainer state="error" title="Failed to author course content">
-        <div className="mt-2 text-xs text-red-600">Error: {part.errorText}</div>
-      </ToolMessageContainer>
-    )
-  }
-  return null
-}
 
 type GetCoursesToolMessageProps = {
   part: ToolUIPart<MyUITools>
@@ -55,7 +17,7 @@ export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = memo(
     const getRunsForCourseChapter = useCourseStore((state) => state.getRunsForCourseChapter)
 
     if (part.state === 'input-streaming' || part.state === 'input-available')
-      return <ToolMessageContainer state="waiting" title="Loading courses..." />
+      return <ToolMessageContainer status="waiting" title="Loading courses..." />
 
     if (part.state === 'output-available') {
       const output = part.output as MyUITools['getCourses']['output']
@@ -135,7 +97,7 @@ export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = memo(
 
     if (part.state === 'output-error') {
       return (
-        <ToolMessageContainer state="error" title="Error loading courses">
+        <ToolMessageContainer status="error" title="Error loading courses">
           <div className="mt-2 text-xs text-red-600">{part.errorText}</div>
         </ToolMessageContainer>
       )
@@ -150,69 +112,3 @@ export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = memo(
 )
 
 GetCoursesToolMessage.displayName = 'GetCoursesToolMessage'
-
-type ToolMessageProps = {
-  part: any
-}
-
-// Renders a message for any tool, showing its state (input available, output available, error)
-export const DebuggingToolMessage: FC<ToolMessageProps> = ({ part }) => {
-  // Safely extract properties from the part
-  const toolCallId = part.toolCallId || 'unknown-id'
-  const toolName = part.toolName || extractToolNameFromType(part.type)
-  const state = part.state
-  const input = part.input
-  const output = part.output
-  const errorText = part.errorText
-
-  // Render different states of tool execution
-  switch (state) {
-    case 'input-available':
-      return (
-        <ToolMessageContainer
-          state="waiting"
-          title={`${toolName}...`}
-          details={input ? <pre className="whitespace-pre-wrap">{JSON.stringify(input, null, 2)}</pre> : undefined}
-        />
-      )
-
-    case 'output-available':
-      return (
-        <ToolMessageContainer
-          state="success"
-          title={`${toolName} completed`}
-          details={
-            output ? (
-              <pre className="whitespace-pre-wrap">
-                {typeof output === 'string' ? output : JSON.stringify(output, null, 2)}
-              </pre>
-            ) : undefined
-          }
-        />
-      )
-
-    case 'output-error':
-      return (
-        <ToolMessageContainer state="error" title={`${toolName} failed`}>
-          <div className="mt-2 text-xs text-red-600">Error: {errorText || 'Unknown error occurred'}</div>
-        </ToolMessageContainer>
-      )
-
-    default:
-      return (
-        <div className="my-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <div className="text-sm text-gray-600">
-            Tool: {toolName} (State: {state || 'unknown'}) - ID: {toolCallId}
-          </div>
-        </div>
-      )
-  }
-}
-
-// Helper function to extract tool name from type when toolName is not available
-function extractToolNameFromType(type: string): string {
-  if (type.startsWith('tool-')) {
-    return type.replace('tool-', '').replace(/-/g, ' ')
-  }
-  return type
-}

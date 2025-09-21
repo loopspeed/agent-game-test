@@ -3,11 +3,9 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  hasToolCall,
   stepCountIs,
   streamText,
   type UIMessage,
-  type UIMessageStreamWriter,
 } from 'ai'
 import z from 'zod'
 
@@ -33,9 +31,6 @@ export async function POST(req: Request) {
 
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
-      // test persisting different chunk types
-      randomlyWriteChunks(writer)
-
       const result = streamText({
         model: openai('gpt-4o'),
         system: SYSTEM_PROMPT,
@@ -79,24 +74,4 @@ export async function POST(req: Request) {
     },
   })
   return createUIMessageStreamResponse({ stream })
-}
-
-// Example function to randomly write different chunk types
-const randomlyWriteChunks = (writer: UIMessageStreamWriter) => {
-  if (Math.random() > 0.5) {
-    writer.write({
-      type: 'source-url',
-      sourceId: 'https://example.com',
-      url: 'https://example.com',
-    })
-  }
-
-  if (Math.random() > 0.5) {
-    writer.write({
-      type: 'source-document',
-      sourceId: 'https://example.com',
-      mediaType: 'file',
-      title: 'Title',
-    })
-  }
 }

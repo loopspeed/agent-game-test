@@ -9,9 +9,14 @@ import { twJoin } from 'tailwind-merge'
 import { type MyUIMessage, type MyUITools } from '@/resources/chat'
 
 import { MemoizedMarkdown } from './messages/Markdown'
-import { AuthorCourseToolMessage, DebuggingToolMessage, GetCoursesToolMessage } from './messages/ToolMessages'
+import { AuthorCourseToolMessage } from './messages/tools/AuthorCourse'
+import { DebuggingToolMessage } from './messages/tools/Debugging'
+import { ExtractContentFromWebsiteToolMessage } from './messages/tools/ExtractContentFromWebsite'
+import { FormatTestForGameToolMessage } from './messages/tools/FormatTestForGame'
+import { GetCoursesToolMessage } from './messages/tools/GetCourses'
+import { PlayChapterToolMessage } from './messages/tools/PlayChapter'
+import { StoreCourseToolMessage } from './messages/tools/StoreCourse'
 import ChatCanvas from './scene/ChatScene'
-import { PlayChapterToolMessage } from './messages/PlayChapterToolMessage'
 
 type Props = {
   transitionStatus: TransitionStatus
@@ -57,7 +62,7 @@ const Chat: FC<Props> = ({ transitionStatus, chat, onStartTestClick }) => {
                 {message.parts.map((part, i) => {
                   if (part.type === 'reasoning') {
                     return (
-                      <div key={message.id + '-part-' + i} className="text-yellow-600">
+                      <div key={message.id + '-part-' + i} className="animate-pulse text-white/50">
                         <MemoizedMarkdown id={message.id} content={part.text} />
                       </div>
                     )
@@ -75,7 +80,18 @@ const Chat: FC<Props> = ({ transitionStatus, chat, onStartTestClick }) => {
 
                   if (part.type === 'dynamic-tool') return null // Skip dynamic-tool parts
 
-                  // TODO: implement UI for the following tools: 'extractContentFromWebsite', 'formatTestForGame'
+                  // Custom UI for specific tools
+                  if (part.type === 'tool-extractContentFromWebsite') {
+                    return <ExtractContentFromWebsiteToolMessage key={`${message.id}-${i}`} part={part} />
+                  }
+
+                  if (part.type === 'tool-formatTestForGame') {
+                    return <FormatTestForGameToolMessage key={`${message.id}-${i}`} part={part} />
+                  }
+
+                  if (part.type === 'tool-storeCourse') {
+                    return <StoreCourseToolMessage key={`${message.id}-${i}`} part={part} />
+                  }
 
                   if (part.type === 'tool-authorTestMarkdown') {
                     return <AuthorCourseToolMessage key={`${message.id}-${i}`} part={part} />
@@ -106,7 +122,6 @@ const Chat: FC<Props> = ({ transitionStatus, chat, onStartTestClick }) => {
               </div>
             </div>
           ))}
-          {status !== 'ready' && <Spinner />}
         </section>
 
         {/* Input form */}

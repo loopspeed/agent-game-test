@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 // Zod schemas for our content types
 export const QuestionSourceSchema = z.object({
-  url: z.string().url().describe('Canonical source link'),
+  url: z.string().describe('Canonical source link'),
   passage: z.string().describe('Short paragraph shown before test phase'),
 })
 
