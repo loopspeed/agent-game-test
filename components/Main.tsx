@@ -162,6 +162,22 @@ const Main: FC<Props> = ({ initialMessages = [] }) => {
     pendingPlayTestToolCall.current = null
   }
 
+  const onLevelExit = () => {
+    console.warn('[DEBUG] Level exit requested')
+    goToStage(Stage.Chat)
+
+    // If there's a pending playChapter tool call, cancel it
+    if (!pendingPlayTestToolCall.current) return
+    const { toolCallId } = pendingPlayTestToolCall.current
+
+    chat.addToolResult({
+      tool: 'playChapter',
+      toolCallId,
+      output: { status: PlayChapterOutputStatus.Cancelled },
+    })
+    pendingPlayTestToolCall.current = null
+  }
+
   useEffect(() => {
     return () => {
       //  Clear any pending tool call on unmount
@@ -202,7 +218,11 @@ const Main: FC<Props> = ({ initialMessages = [] }) => {
                 )}
                 {stage === Stage.Level && (
                   <ErrorBoundary errorComponent={Error}>
-                    <Level transitionStatus={transitionStatus} onChapterLevelComplete={onChapterLevelComplete} />
+                    <Level
+                      transitionStatus={transitionStatus}
+                      onChapterLevelComplete={onChapterLevelComplete}
+                      onExit={onLevelExit}
+                    />
                   </ErrorBoundary>
                 )}
               </div>

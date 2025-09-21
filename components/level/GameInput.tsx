@@ -1,9 +1,15 @@
-import { useEffect } from 'react'
+'use client'
 
+import { type FC, useEffect } from 'react'
+
+import { useLevelStore } from '@/stores/LevelProvider'
 import { useInputStore } from '@/stores/useInputStore'
 
-function useKeypadInput() {
+const GameInput: FC = () => {
   const { setKey } = useInputStore()
+  const pause = useLevelStore((s) => s.pause)
+  const resume = useLevelStore((s) => s.resume)
+  const isPaused = useLevelStore((s) => s.isPaused)
 
   // Attach keyboard listeners for 4-way movement
   useEffect(() => {
@@ -36,6 +42,15 @@ function useKeypadInput() {
         case 'Space':
         case 'Enter': {
           console.warn('[DEBUG] User hit space or enter')
+          break
+        }
+        case 'Escape': {
+          if (!isPaused) {
+            console.warn('[DEBUG] User paused game with Escape')
+            pause()
+          } else {
+            resume()
+          }
           break
         }
         default:
@@ -74,7 +89,10 @@ function useKeypadInput() {
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
     }
-  }, [setKey])
+  }, [setKey, pause, resume, isPaused])
+
+  // This component doesn't render anything, it just handles input
+  return null
 }
 
-export default useKeypadInput
+export default GameInput

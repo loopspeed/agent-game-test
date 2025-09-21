@@ -5,9 +5,9 @@ import { type FC, useRef } from 'react'
 import React from 'react'
 import { type TransitionStatus } from 'react-transition-group'
 
+import GameInput from '@/components/level/GameInput'
 import LevelScene from '@/components/level/scene/LevelScene'
 import LevelUI from '@/components/level/ui/LevelUI'
-import useKeypadInput from '@/hooks/useKeypadInput'
 import { useTimeSubscription } from '@/hooks/useTimeSubscription'
 import { type ChapterRun } from '@/model/game'
 import { useCourseStore } from '@/stores/CoursesProvider'
@@ -19,15 +19,14 @@ import { useSoundStore } from '@/stores/SoundProvider'
 type Props = {
   transitionStatus: TransitionStatus
   onChapterLevelComplete: (run: ChapterRun) => void
+  onExit?: () => void
 }
 
-const Level: FC<Props> = ({ transitionStatus, onChapterLevelComplete }) => {
+const Level: FC<Props> = ({ transitionStatus, onChapterLevelComplete, onExit }) => {
   const playSoundFX = useSoundStore((s) => s.playSoundFX)
   const hasHydrated = useCourseStore((s) => s._hasHydrated)
   const course = useCourseStore((s) => s.getCurrentCourse())
   const chapter = useCourseStore((s) => s.getCurrentChapter())
-
-  useKeypadInput()
 
   if (!hasHydrated) return null
 
@@ -37,6 +36,7 @@ const Level: FC<Props> = ({ transitionStatus, onChapterLevelComplete }) => {
 
   return (
     <LevelProvider course={course} chapter={chapter} onComplete={onChapterLevelComplete} playSoundFX={playSoundFX}>
+      <GameInput />
       <Canvas
         className="!fixed inset-0 !h-lvh"
         performance={{ min: 0.2, debounce: 300 }}
@@ -50,7 +50,7 @@ const Level: FC<Props> = ({ transitionStatus, onChapterLevelComplete }) => {
         <LevelScene />
       </Canvas>
 
-      <LevelUI transitionStatus={transitionStatus} />
+      <LevelUI transitionStatus={transitionStatus} onExit={onExit || (() => {})} />
     </LevelProvider>
   )
 }

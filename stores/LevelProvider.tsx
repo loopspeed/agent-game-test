@@ -94,6 +94,9 @@ type LevelState = {
   setTimeMultiplier: (value: number) => void
   slowMoTimeRemaining: number
   isSlowMo: boolean
+  isPaused: boolean
+  pause: () => void
+  resume: () => void
   goSlowMo: () => void
   goFullSpeed: () => void
 
@@ -150,6 +153,7 @@ const INITIAL_STATE: Pick<
   | 'phase'
   | 'phaseTime'
   | 'isSlowMo'
+  | 'isPaused'
   | 'playerPosition'
   | 'currentPlayerLane'
   | 'timeMultiplier'
@@ -167,6 +171,7 @@ const INITIAL_STATE: Pick<
   phase: LevelPhase.CONFIG,
   phaseTime: 0,
   isSlowMo: false,
+  isPaused: false,
   timeMultiplier: 1,
   slowMoTimeRemaining: 0,
   playerPosition: [0, 0, 0],
@@ -290,6 +295,8 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
     },
     update: (gameTime: number) => {
       const state = get()
+      if (state.isPaused) return // Don't advance time when paused
+
       let phase = state.phase
       if (phase === LevelPhase.CONFIG) return // Don't advance time in config phase
 
@@ -353,6 +360,8 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
       }
     },
     setTimeMultiplier: (timeMultiplier: number) => set({ timeMultiplier }),
+    pause: () => set({ isPaused: true }),
+    resume: () => set({ isPaused: false }),
     goSlowMo: () => {
       if (get().isSlowMo) return
       set({ isSlowMo: true })
