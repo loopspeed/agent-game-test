@@ -167,10 +167,11 @@ const QuestionTimer: FC = () => {
       mountOnEnter={true}
       unmountOnExit={true}
       onEnter={contextSafe(() => {
-        gsap.fromTo(container.current, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3 })
+        gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 1 })
+        gsap.fromTo(container.current, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.3, ease: 'power3.out' })
       })}
       onExit={contextSafe(() => {
-        gsap.to(container.current, { opacity: 0, y: 12, duration: 0.2 })
+        gsap.to(container.current, { opacity: 0, y: 24, duration: 0.2 })
       })}>
       <div ref={container} id="timer" className="absolute bottom-12 flex items-center gap-4 opacity-0">
         <TimerIcon size={32} strokeWidth={2} />

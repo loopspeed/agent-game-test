@@ -28,8 +28,8 @@ const PHASE_DURATIONS: Record<LevelPhase, number> = {
   CONFIG: 100000, // For level config - effectively infinite until player starts
   INTRO: 1, // READONLY For entry animation and get-ready
   ONBOARDING: 100000, // READONLY Effectively infinite until player completels onboarding - then phase is advanced manually
-  REST: 1, // READONLY Short rest before obstacles
-  OBSTACLES: 6, // EDITABLE Duration for obstacles phase (0 = No obstacles)
+  REST: 0.5, // READONLY Short rest before obstacles
+  OBSTACLES: 4, // EDITABLE Duration for obstacles phase (0 = No obstacles)
   QUESTION: 100000, // READONLY Effectively infinite until question is answered and the gate is killed - then phase is advanced manually
   OUTRO: 100000, // READONLY For showing "level complete" and other end of level stuff
 } as const
@@ -365,7 +365,6 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
     goSlowMo: () => {
       if (get().isSlowMo) return
       set({ isSlowMo: true })
-      gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 1 })
 
       const goFullSpeed = get().goFullSpeed
 
@@ -399,7 +398,6 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
         .timeline({
           onComplete: () => {
             set({ isSlowMo: false, slowMoTimeRemaining: answerTimeDuration })
-            gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 0 })
             window.removeEventListener('keypress', onKeyPress)
           },
         })
@@ -462,7 +460,6 @@ const createLevelStore = ({ course, chapter, onComplete, playSoundFX }: CreateSt
         .timeline({
           onComplete: () => {
             set({ isSlowMo: false, slowMoTimeRemaining: answerTimeDuration })
-            gsap.set('#slow-mo-bar', { scaleX: 0, opacity: 0 })
           },
         })
         .to('#slow-mo-bar', {
@@ -676,7 +673,7 @@ const generateObstacleSequence = ({
   const obstacleCount = Math.floor(phaseDuration / obstacleSpawnInterval)
 
   // Add a small delay to the first obstacle to ensure proper spacing
-  const INITIAL_DELAY = 0.5 // Half second delay before first obstacle
+  const INITIAL_DELAY = 0.0 // No delay before first obstacle
 
   // Define lane groups for strategic coverage
   const middleLane = [4]
