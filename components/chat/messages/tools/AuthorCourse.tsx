@@ -27,7 +27,7 @@ export const AuthorCourseToolMessage: FC<AuthorCourseToolMessageProps> = ({ part
       return (
         <ToolMessageContainer
           status="success"
-          title="Prepared test content:"
+          title="Prepared test content!"
           details={
             <div className="prose-sm lg:prose rounded-lg bg-white p-2 !text-black">
               <MemoizedMarkdown id={`${part.toolCallId}`} content={output} />

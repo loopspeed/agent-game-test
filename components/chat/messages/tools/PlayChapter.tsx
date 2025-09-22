@@ -6,6 +6,7 @@ import { type FC, memo } from 'react'
 import { ChapterRun } from '@/model/game'
 import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus } from '@/resources/chat'
 import { useCourseStore } from '@/stores/CoursesProvider'
+
 import { ToolMessageContainer } from './ToolMessageContainer'
 
 type AddToolResult = ReturnType<typeof useChat<MyUIMessage>>['addToolResult']

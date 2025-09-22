@@ -22,7 +22,7 @@ export const StoreCourseToolMessage: FC<StoreCourseToolMessageProps> = memo(({ p
 
     return (
       <ToolMessageContainer status="error" title="Failed to save course">
-        <div className="text-xs text-red-600">{output?.error || 'Unknown error'}</div>
+        {output?.error || 'Unknown error'}
       </ToolMessageContainer>
     )
   }
@@ -30,7 +30,7 @@ export const StoreCourseToolMessage: FC<StoreCourseToolMessageProps> = memo(({ p
   if (part.state === 'output-error') {
     return (
       <ToolMessageContainer status="error" title="Failed to save course">
-        <div className="text-xs text-red-600">{part.errorText}</div>
+        {part.errorText}
       </ToolMessageContainer>
     )
   }

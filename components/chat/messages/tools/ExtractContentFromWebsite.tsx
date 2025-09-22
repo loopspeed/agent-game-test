@@ -16,13 +16,13 @@ export const ExtractContentFromWebsiteToolMessage: FC<ExtractContentToolMessageP
     const output = part.output as MyUITools['extractContentFromWebsite']['output']
     const title = output?.title ?? 'Untitled'
 
-    return <ToolMessageContainer status="success" title={`Successfully extracted content for: ${title}`} />
+    return <ToolMessageContainer status="success" title={`Successfully extracted content for "${title}"`} />
   }
 
   if (part.state === 'output-error') {
     return (
       <ToolMessageContainer status="error" title="Failed to extract content">
-        <div className="mt-2 text-sm text-red-600">{part.errorText}</div>
+        {part.errorText}
       </ToolMessageContainer>
     )
   }

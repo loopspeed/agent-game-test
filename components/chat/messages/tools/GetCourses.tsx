@@ -98,7 +98,7 @@ export const GetCoursesToolMessage: FC<GetCoursesToolMessageProps> = memo(
     if (part.state === 'output-error') {
       return (
         <ToolMessageContainer status="error" title="Error loading courses">
-          <div className="mt-2 text-xs text-red-600">{part.errorText}</div>
+          {part.errorText}
         </ToolMessageContainer>
       )
     }
