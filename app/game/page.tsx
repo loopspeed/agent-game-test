@@ -1,50 +1,41 @@
-'use client'
-import { Suspense, useLayoutEffect } from 'react'
+// No explicit tag revalidation here; handled in DB layer
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 
-import Main from '@/components/Main'
-import { useChatStore } from '@/hooks/useChatStore'
-import useNavigation, { Stage } from '@/hooks/useGameNavigation'
-import { useUserStore } from '@/hooks/useUserStore'
-import { SoundProvider } from '@/stores/SoundProvider'
+import { auth } from '@/app/(auth)/auth'
+import GameClient from '@/components/game/GameClient'
+import { getCachedUserById, updateUser } from '@/lib/db/queries'
+import type { UserUpdate } from '@/lib/db/schema'
 
-// Metadata..
+export default async function GamePage() {
+  const session = await auth()
+  if (!session) {
+    redirect('/api/auth/guest?redirectUrl=/game')
+  }
+  console.warn('[AUTH] /game session', { session })
 
-function GameContent() {
-  const { stage, goToStage } = useNavigation()
-  // Load user
-  const hasSetupPlayer = useUserStore((s) => s.hasSetupPlayer)
-  const hasHydratedUser = useUserStore((s) => s._hasHydrated)
-  // Load Chats
-  const hasHydratedChat = useChatStore((s) => s._hasHydrated)
-  const getInitialMessages = useChatStore((s) => s.getInitialMessages)
+  const user = await getCachedUserById(session.user!.id)
 
-  useLayoutEffect(() => {
-    // Redirect to player setup if user hasn't set up their player yet
-    if (!hasHydratedUser) return
-    if (!hasSetupPlayer) goToStage(Stage.PlayerSetup)
+  if (!user) {
+    throw new Error('User not found')
+  }
 
-    if (!!stage) return
-    // If user has setup player, go to chat stage
-    if (hasSetupPlayer) goToStage(Stage.Chat)
-  }, [goToStage, stage, hasSetupPlayer, hasHydratedUser])
+  console.warn('[USER]', { user })
 
-  if (!hasHydratedChat || !hasHydratedUser) return null
-
-  const initialMessages = getInitialMessages()
+  async function updateUserServer(updates: UserUpdate, onComplete?: () => void) {
+    'use server'
+    const session = await auth()
+    if (!session?.user?.id) throw new Error('No session')
+    console.warn('[ACTION] updateUser', { id: session.user.id, fields: Object.keys(updates) })
+    await updateUser(session.user.id, updates)
+    revalidatePath('/game')
+    onComplete?.()
+  }
 
   return (
-    <SoundProvider>
-      <Main initialMessages={initialMessages} />
-    </SoundProvider>
-  )
-}
-
-function GamePage() {
-  return (
-    <Suspense fallback={null}>
-      <GameContent />
+    <Suspense fallback={<div>Loading...</div>}>
+      <GameClient updateUser={updateUserServer} user={user} />
     </Suspense>
   )
 }
-
-export default GamePage

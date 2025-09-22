@@ -1,20 +1,30 @@
 import { useGSAP } from '@gsap/react'
 import { type FC } from 'react'
+import { useState } from 'react'
 import { type TransitionStatus } from 'react-transition-group'
 
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
-import { useUserStore } from '@/hooks/useUserStore'
-import { PlayerColour, PlayerShape } from '@/model/player'
+import type { User, UserUpdate } from '@/lib/db/schema'
+import { PlayerColour, PlayerShape } from '@/lib/types/player'
 
-type Props = { transitionStatus: TransitionStatus }
+type Props = {
+  transitionStatus: TransitionStatus
+  updateUser: (updates: UserUpdate) => Promise<void>
+  user: User
+}
 
-const PlayerSetup: FC<Props> = ({ transitionStatus }) => {
+const PlayerSetup: FC<Props> = ({ transitionStatus, updateUser, user }) => {
   const { goToStage } = useNavigation()
-  const { colour, shape, setColour, setShape, setHasSetupPlayer } = useUserStore()
+  const [colour, setColour] = useState<PlayerColour>(user.colour)
+  const [shape, setShape] = useState<PlayerShape>(user.shape)
 
-  const handleContinue = () => {
-    setHasSetupPlayer(true)
-    goToStage(Stage.Chat)
+  const onContinueClick = async () => {
+    try {
+      await updateUser({ colour, shape, hasSetupPlayer: true })
+      goToStage(Stage.Chat)
+    } catch (e) {
+      console.error('Failed to save player setup', e)
+    }
   }
 
   useGSAP(() => {}, [transitionStatus])
@@ -58,7 +68,7 @@ const PlayerSetup: FC<Props> = ({ transitionStatus }) => {
         </div>
       </div>
 
-      <button className="p-10 text-xl" onClick={handleContinue}>
+      <button className="p-10 text-xl" onClick={onContinueClick}>
         CONTINUE
       </button>
     </div>

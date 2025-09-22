@@ -9,6 +9,7 @@ import {
 } from 'ai'
 import z from 'zod'
 
+import { auth } from '@/app/(auth)/auth'
 import { SYSTEM_PROMPT, tools } from '@/resources/chat'
 
 export const dynamic = 'force-dynamic'
@@ -22,6 +23,14 @@ const RequestSchema = z.object({
 })
 
 export async function POST(req: Request) {
+  const session = await auth()
+  if (!session) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+  console.warn('[API] /api/chat POST by user', {
+    id: session.user?.id,
+    type: (session.user as any)?.type,
+  })
   console.warn('[DEBUG] Chat API: POST request received')
   const json = await req.json()
 

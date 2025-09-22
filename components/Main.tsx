@@ -12,6 +12,7 @@ import Level from '@/components/level/Level'
 import PlayerSetup from '@/components/playerSetup/PlayerSetup'
 import { useChatStore } from '@/hooks/useChatStore'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
+import type { User, UserUpdate } from '@/lib/db/schema'
 import { CourseSchema } from '@/model/content'
 import { type ChapterRun } from '@/model/game'
 import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus, StoreCourseStatus } from '@/resources/chat'
@@ -21,9 +22,11 @@ gsap.registerPlugin(useGSAP)
 
 type Props = {
   initialMessages: MyUIMessage[]
+  updateUser: (updates: UserUpdate) => Promise<void>
+  user: User
 }
 
-const Main: FC<Props> = ({ initialMessages = [] }) => {
+const Main: FC<Props> = ({ initialMessages = [], updateUser, user }) => {
   const { stage, goToStage } = useNavigation()
 
   // Currently all done client side but should be moved to database
@@ -209,7 +212,7 @@ const Main: FC<Props> = ({ initialMessages = [] }) => {
               <div ref={container} className="size-full">
                 {stage === Stage.PlayerSetup && (
                   <ErrorBoundary errorComponent={Error}>
-                    <PlayerSetup transitionStatus={transitionStatus} />
+                    <PlayerSetup transitionStatus={transitionStatus} updateUser={updateUser} user={user} />
                   </ErrorBoundary>
                 )}
                 {stage === Stage.Chat && (

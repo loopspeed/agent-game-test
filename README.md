@@ -1,33 +1,154 @@
-# Simplified Event-Based Level Generation System
+# Educational 3D Runner Game with AI-Powered Content Generation
 
 ## Architecture Overview
 
-The level generation system has been dramatically simplified to use a single event-based approach. All complex state management around segments, rhythm notes, and the RhythmLevelGenerator has been removed in favor of a straightforward event queue managed directly in the WorldProvider store.
+This educational game combines a 3D runner experience with an intelligent AI agent that creates, manages, and facilitates quiz-based learning. The system is built with Next.js, React Three Fiber, and Rapier physics, featuring an LLM-powered assistant that handles the complete learning workflow from content creation to gameplay assessment.
+
+## AI Agent System
+
+### Core Agent Architecture
+
+The game features **TestOwl**, an AI assistant powered by OpenAI's GPT models that serves as the primary interface for content creation and game management. The agent operates through a sophisticated tool-calling system that bridges conversational AI with game mechanics.
+
+#### Agent Capabilities
+
+- **Content Extraction**: Fetches and processes educational content from web URLs
+- **Quiz Generation**: Transforms source material into structured quiz questions with multiple choice answers
+- **Course Management**: Creates, stores, and organizes educational courses with chapters
+- **Game Integration**: Launches and monitors gameplay sessions
+- **Performance Analysis**: Provides detailed feedback on player performance
+
+### Tool Integration System
+
+The AI agent uses a comprehensive set of tools to manage the educational experience:
+
+#### Content Creation Tools
+
+- `extractContentFromWebsite({ url })`: Fetches and cleans text content from web pages
+- `authorTestMarkdown({ title, text, url })`: Generates quiz content in structured Markdown format
+- `formatTestForGame({ markdown, url })`: Converts Markdown to validated Course JSON objects
+
+#### Game Management Tools
+
+- `storeCourse({ course })`: Saves courses to client-side storage
+- `playChapter({ courseId, chapterId })`: Initiates gameplay for specific chapters
+- `getCourses({})`: Retrieves all saved courses for selection
+
+### Conversational Workflow
+
+The agent follows a structured conversation flow:
+
+1. **Onboarding**: Greets users and identifies learning topics
+2. **Content Gathering**: Accepts URLs or pasted text for quiz creation
+3. **Course Generation**: Creates structured educational content with explanations
+4. **Game Launch**: Initiates 3D runner gameplay with generated questions
+5. **Performance Review**: Provides detailed feedback and suggests next steps
+
+### Data Flow Architecture
+
+```typescript
+User Input → AI Agent → Tool Execution → Game State Update → 3D Gameplay → Results Analysis
+```
+
+#### Content Generation Pipeline
+
+1. **Source Material**: User provides URL or text content
+2. **AI Processing**: GPT model creates quiz questions following strict templates
+3. **Validation**: Content validates against CourseSchema for game compatibility
+4. **Storage**: Courses saved to browser localStorage via Zustand stores
+5. **Gameplay**: 3D runner integrates quiz questions as interactive gate mechanics
+
+### Game Integration
+
+The AI agent seamlessly integrates with the 3D runner mechanics:
+
+- **Phase Management**: Controls game phases (intro, obstacles, questions, outro)
+- **Question Timing**: Triggers question gates at appropriate gameplay moments
+- **Answer Validation**: Processes player responses and calculates scores
+- **Performance Tracking**: Records completion times, accuracy, and point totals
+
+## Level Generation System
+
+The level generation system has been dramatically simplified to use a single event-based approach. All complex state management around segments, rhythm notes, and the RhythmLevelGenerator has been removed in favor of a straightforward event queue managed directly in the LevelProvider store.
 
 ### Simplified Design
 
-The system now works as follows:
+The level system now works as follows:
 
-1. **Single Function Generation**: When the WorldProvider store is created, one function (`generateLevelEvents`) creates the entire sequence of events for the level
-2. **Event-Based Pattern**: Events follow a fixed repeating pattern: **LANE_CHANGE → CLUSTER → LANE_CHANGE → CLUSTER → REST → ANSWER_GATE**
-3. **Direct State Management**: All necessary state lives directly in the WorldProvider store, with no separate generator class
+1. **AI-Generated Content**: TestOwl creates educational courses from user-provided materials
+2. **Phase-Based Gameplay**: Fixed repeating pattern provides consistent 3D runner experience
+3. **Question Integration**: AI-generated quiz questions appear as interactive gates during gameplay
+4. **Real-time Assessment**: Player responses are evaluated and fed back to the AI agent
 
 ### Core Benefits
 
-- **Simplicity**: Single function generates all events upfront
-- **Predictability**: Fixed pattern provides consistent gameplay
-- **Performance**: No runtime generation or complex state management
-- **Maintainability**: All logic in one place with minimal abstraction
+- **Intelligent Content Creation**: AI generates contextually relevant quiz questions from any source material
+- **Seamless Integration**: Conversational interface bridges content creation and gameplay
+- **Personalized Learning**: AI adapts content difficulty and provides targeted feedback
+- **Performance Analytics**: Detailed tracking of learning progress and game performance
+- **Simplified Architecture**: Single function generates all events upfront with AI-powered content
 
 ### Data Flow
 
-1. **generateLevelEvents()** creates complete event sequence during store initialization
-2. **WorldProvider.update()** processes events at runtime based on game time
-3. **Components** consume spawn data directly from store state
+1. **AI Agent** initiates conversation and gathers learning requirements
+2. **Content Processing** extracts and structures educational material into quiz format
+3. **Course Storage** validates and saves generated courses to client-side store
+4. **Game Launch** triggers 3D runner with AI-generated questions as gameplay elements
+5. **Performance Analysis** feeds results back to AI agent for personalized feedback
 
-## Core Types
+## AI-Powered Educational Content
 
-### Event System
+### Question Generation System
+
+The AI agent uses advanced prompt engineering to create high-quality educational content:
+
+#### Content Standards
+
+- **Source Fidelity**: All questions must be grounded in provided source material
+- **UK English**: Consistent language and spelling conventions
+- **Quality Assurance**: Avoids trick questions, ambiguous phrasing, and "all/none of the above" options
+- **Balanced Difficulty**: Includes recall, understanding, and application-level questions
+
+#### Structured Output Format
+
+```markdown
+# Course Title
+
+## Chapter: Chapter Title
+
+Summary: Brief overview from source material
+
+Q1. Clear question stem
+
+- a) Option one
+- b) Option two
+- c) Correct answer (correct)
+- d) Option four
+
+Explanation: Grounded explanation with source citation
+Source: "Verbatim excerpt from source material" — URL
+```
+
+#### Validation Pipeline
+
+1. **Schema Validation**: Generated content validates against strict TypeScript schemas
+2. **Content Verification**: Ensures all questions derive from source material
+3. **Format Consistency**: Maintains uniform structure for game integration
+4. **Answer Distribution**: Randomizes correct answers across choice positions
+
+### Learning Analytics
+
+The system tracks comprehensive learning metrics:
+
+- **Response Accuracy**: Correct/incorrect answer tracking per question
+- **Completion Time**: Time spent on each chapter and overall course
+- **Point Scoring**: Game-based scoring system with obstacle avoidance bonuses
+- **Streak Tracking**: Consecutive correct answers and performance patterns
+- **Progress History**: Persistent storage of all learning sessions
+
+## Core Game Systems
+
+### Event System Types
 
 ```typescript
 export enum EventType {
