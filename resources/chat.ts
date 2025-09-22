@@ -37,18 +37,18 @@ MISSION
 - Onboard the player, gather a testing topic, author a quiz-based course, play it and then summarise results.
 
 TOOL USAGE
-  1) extractContentFromWebsite({ url }) — fetches and cleans HTML text, returns { title, text, wordCount }.
+  1) extractContentFromWebsite({ url }) — fetches and cleans HTML text, returns { title, text }.
   2) authorTestMarkdown({ title, sourceText }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown test outline with chapters, summaries, questions, answers and source passages.
   3a) formatTestForGame({ markdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
   3b) storeCourse({ course }) — saves the Course JSON to the frontend state - always call this AFTER formatting the course is complete.
   4) playChapter({ courseId, chapterId }) — passes the Course JSON to the frontend to set state and begin the test (playable as a game). On completion it returns a status and a summary of the run.
-  5) getCourses() — tool that retrieves stored courses in an array of CourseSummary. These are already prepared and validated, and are ready to be played. Do NOT summarize the output.
+  5) getCourses() — tool that retrieves stored courses. Returns array of CourseSummary. These are presented the the user in the UI and can be interacted with. After calling 'getCourses', wait for the user to select a course or create a new one. Do NOT summarize the output.
 
 FLOW
 1) Greet the player and ask how they want to test their knowledge (e.g., provide a URL for extraction or content directly).
-2) If the player provides a URL, confirm the detected topic before authoring. If they provide raw text, confirm the title if known.
-3) After extraction/authoring/formatting/storing then ask the player if they're ready to begin.
-4) When the user is ready to play a test, call playChapter({ courseId, chapterId }) exactly once with the course details.
+2) If the player provides a URL, use 'extractContentFromWebsite' to fetch the content.
+3) After extraction -> authoring -> formatting -> storing then ask the player if they're ready to begin with the first chapter.
+4) When the user is ready to play a test, call playChapter({ courseId, chapterId }) with the course details.
 5) After the play is complete, congratulate the player, summarise their performance in a few words (full summary will be displayed in the UI). Then based on performance, suggest that they move onto the next chapter or re-test.
 
 ERROR HANDLING
@@ -99,7 +99,7 @@ const TEST_AUTHORING_SYSTEM_PROMPT = `
 // Helper to extract material from a webpage (no JavaScript). Returns the
 // cleaned text, page title and word count.  Truncates very long pages to
 // prevent overloading subsequent steps.
-async function extractContentFromUrl(url: string): Promise<{ title: string; text: string; wordCount: number }> {
+async function extractContentFromUrl(url: string): Promise<{ title: string; text: string }> {
   const res = await fetch(url, { redirect: 'follow' })
   if (!res.ok) throw new Error(`Fetch failed: ${res.status}`)
   const html = await res.text()
@@ -112,9 +112,8 @@ async function extractContentFromUrl(url: string): Promise<{ title: string; text
   const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
   const title = (titleMatch?.[1] ?? new URL(url).hostname).trim()
   const wordCount = text.split(/\s+/).length
-  const MAX_CHARS = 50_000
-  const trimmed = text.length > MAX_CHARS ? text.slice(0, MAX_CHARS) : text
-  return { title, text: trimmed, wordCount }
+  console.warn('[DEBUG] extractContentFromUrl: wordCount', wordCount)
+  return { title, text }
 }
 
 async function authorTest({
@@ -126,7 +125,6 @@ async function authorTest({
   sourceText: string
   writer: UIMessageStreamWriter
 }): Promise<string> {
-  // Summarise if source text is too long (> 12k chars)
   const reasoningId = generateId()
   writer.write({ type: 'reasoning-start', id: reasoningId })
 
@@ -137,7 +135,9 @@ async function authorTest({
   })
 
   let input = sourceText
-  if (input.length > 24_000) {
+
+  // Summarise if source text is very long
+  if (input.length > 50_000) {
     writer.write({
       type: 'reasoning-delta',
       delta: '\nShortening long text...',
@@ -166,7 +166,7 @@ async function authorTest({
     })
   }, 2000)
 
-  // Generate Markdown following the COURSE-MD spec
+  // Generate Markdown test
   const { text: courseMarkdown } = await generateText({
     model: openai('gpt-5'),
     temperature: 0.2,
@@ -222,9 +222,9 @@ async function formatTestForGame({ markdown, writer }: { markdown: string; write
 export const tools = (writer: UIMessageStreamWriter) => ({
   // Server-side tool: fetches HTML and extracts text
   extractContentFromWebsite: tool({
-    description: 'Fetch textual content from a webpage. Returns title, clean text, and word count.',
+    description: 'Fetch textual content from a webpage. Returns title and text.',
     inputSchema: z.object({ url: z.url() }),
-    outputSchema: z.object({ title: z.string(), text: z.string(), wordCount: z.number() }),
+    outputSchema: z.object({ title: z.string(), text: z.string() }),
     execute: async ({ url }: { url: string }) => {
       return extractContentFromUrl(url)
     },

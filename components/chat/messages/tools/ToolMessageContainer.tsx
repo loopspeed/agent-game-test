@@ -1,6 +1,6 @@
-import { CheckCircle, CheckIcon, Loader2, XCircle } from 'lucide-react'
+import { CheckIcon, Loader2, XCircle } from 'lucide-react'
 import { type FC, type PropsWithChildren, type ReactNode } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { twJoin, twMerge } from 'tailwind-merge'
 
 type Status = 'waiting' | 'success' | 'error'
 
@@ -41,22 +41,20 @@ const ICONS: Record<Status, ReactNode> = {
   error: <XCircle className="size-5 text-red-500" />,
 }
 
-// TODO: this needs work..
-
 export const ToolMessageContainer: FC<ToolMessageContainerProps> = ({ children, status: state, title, details }) => {
   const { container: containerClass, title: titleClass, details: detailsClass } = CLASSNAMES[state]
   const icon = ICONS[state]
 
   return (
-    <div className={twMerge(`my-3 rounded-lg border p-4`, containerClass)}>
+    <div className={twMerge('my-2 space-y-2 rounded-lg border p-3', containerClass)}>
       <div className="flex items-center gap-2">
         {icon}
-        <span className={`text-sm font-medium ${titleClass}`}>{title}</span>
+        <span className={twJoin('text-sm font-medium', titleClass)}>{title}</span>
       </div>
-      {children}
+      {!!children && <div className="text-sm text-black">{children}</div>}
       {!!details && (
-        <details className={`text-xs ${detailsClass}`}>
-          <summary className="cursor-pointer hover:opacity-80">View details</summary>
+        <details className={twJoin('text-sm', detailsClass)}>
+          <summary className="cursor-pointer select-none hover:opacity-80">View details</summary>
           <div className="mt-1">{details}</div>
         </details>
       )}

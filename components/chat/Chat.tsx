@@ -45,7 +45,7 @@ const Chat: FC<Props> = ({ transitionStatus, chat, onStartTestClick }) => {
 
   return (
     <>
-      <ChatCanvas />
+      {/* <ChatCanvas /> */}
 
       <div className="relative z-50 grid size-full grid-cols-1 grid-rows-[1fr_auto] justify-items-center overflow-hidden pb-10">
         {/* Messages container */}
@@ -116,6 +116,7 @@ const Chat: FC<Props> = ({ transitionStatus, chat, onStartTestClick }) => {
                       />
                     )
 
+                  // Catch-all for any other tool messages
                   if (part.type.includes('tool-'))
                     return <DebuggingToolMessage key={`${message.id}-${i}`} part={part} />
                 })}
@@ -125,10 +126,10 @@ const Chat: FC<Props> = ({ transitionStatus, chat, onStartTestClick }) => {
         </section>
 
         {/* Input form */}
-        <div className="w-lg max-w-full rounded-xl bg-white p-5 text-black shadow-lg">
+        <div className="w-lg max-w-full rounded-xl bg-white p-3 text-black shadow-lg">
           {/* TODO: better and smarter empty state.. */}
           {showEmptyState && (
-            <div>
+            <div className="flex gap-3">
               <button className="border p-5" onClick={() => onPromptSuggestionClick('Hi!')}>
                 Say Hi!
               </button>

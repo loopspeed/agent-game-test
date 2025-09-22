@@ -6,6 +6,7 @@ import { type FC, memo } from 'react'
 import { ChapterRun } from '@/model/game'
 import { type MyUIMessage, type MyUITools, PlayChapterOutputStatus } from '@/resources/chat'
 import { useCourseStore } from '@/stores/CoursesProvider'
+import { ToolMessageContainer } from './ToolMessageContainer'
 
 type AddToolResult = ReturnType<typeof useChat<MyUIMessage>>['addToolResult']
 type SendMessage = ReturnType<typeof useChat<MyUIMessage>>['sendMessage']
@@ -16,42 +17,45 @@ type PlayChapterToolMessageProps = {
 }
 
 export const PlayChapterToolMessage: FC<PlayChapterToolMessageProps> = ({ part, addToolResult }) => {
-  const onCancelClick = () => {
-    addToolResult({
-      tool: 'playChapter',
-      toolCallId: part.toolCallId,
-      output: { status: PlayChapterOutputStatus.Cancelled },
-    })
-  }
-  if (part.state === 'input-available')
+  if (part.state === 'input-available' || part.state === 'input-streaming') {
+    const onCancelClick = () => {
+      addToolResult({
+        tool: 'playChapter',
+        toolCallId: part.toolCallId,
+        output: { status: PlayChapterOutputStatus.Cancelled },
+      })
+    }
     return (
-      <div>
-        Playing the test...
-        <button className="text-xl" onClick={onCancelClick}>
+      <ToolMessageContainer status="waiting" title="Playing the test...">
+        <button className="text-lg" onClick={onCancelClick}>
           Cancel
         </button>
-      </div>
+      </ToolMessageContainer>
     )
+  }
 
   if (part.state === 'output-available') {
     const output = part.output as MyUITools['playChapter']['output']
 
     // Handle ERROR status..
     if (output.status === PlayChapterOutputStatus.Error) {
-      return <div>There was an error starting the test (retry).</div>
+      return <ToolMessageContainer status="error" title="There was an error starting the test" />
+    }
+
+    if (output.status === PlayChapterOutputStatus.Cancelled) {
+      return <ToolMessageContainer status="error" title="Test run cancelled" />
     }
 
     if (output.status === PlayChapterOutputStatus.Completed) {
       const run = output.run as ChapterRun
-      return <ChapterRunSummary run={run} />
-    }
-    if (output.status === PlayChapterOutputStatus.Cancelled) {
-      return <div>Chapter run cancelled.</div>
+      return (
+        <ToolMessageContainer status="success" title="Test run completed" details={<ChapterRunSummary run={run} />} />
+      )
     }
   }
 
   if (part.state === 'output-error') {
-    return <div key={part.toolCallId}>Error: {part.errorText}</div>
+    return <ToolMessageContainer status="error" title={`Error: ${part.errorText}`} />
   }
   return null
 }
@@ -94,7 +98,7 @@ const ChapterRunSummary: FC<ChapterRunSummaryProps> = memo(
     const completionTimeSeconds = Math.floor((run.completionTime % 60000) / 1000)
 
     return (
-      <div className="rounded-lg border border-green-200 bg-white p-6 text-green-900">
+      <div className="rounded-lg border border-green-200 bg-white p-3 text-black">
         <div className="mb-4">
           <h3 className="flex items-center gap-2 text-xl font-bold text-green-800">
             <Trophy className="size-6" />
