@@ -106,6 +106,8 @@ const Chat: FC<Props> = ({ transitionStatus, chat, onStartTestClick }) => {
               </div>
             </div>
           ))}
+
+          {status === 'submitted' && <Spinner />}
         </section>
 
         {/* Input form */}
@@ -166,7 +168,12 @@ type TextMessageProps = {
 }
 
 const TextMessage: FC<TextMessageProps> = ({ messageId, role, text }) => {
-  if (role === 'user') return <div className="prose-sm lg:prose rounded-lg bg-blue-500 p-4 !text-white">{text}</div>
+  if (role === 'user')
+    return (
+      <div className="prose-sm lg:prose rounded-lg bg-blue-500 p-4 !text-white">
+        <p>{text}</p>
+      </div>
+    )
 
   // Only the assistant and system messages get the markdown treatment
   return (

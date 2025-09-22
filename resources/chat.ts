@@ -29,6 +29,10 @@ export enum StoreCourseStatus {
   Error = 'error',
 }
 
+// TODO: When database is added with artifacts - immediately store the course after formatting
+// TODO: When test artifact is setup - stream the writing of the test to the user so they see progress in real-time
+// TODO: the artifact should contain: markdown, course JSON, course summary JSON
+
 export const SYSTEM_PROMPT = `
 You are ${AVATAR_NAME} - An quiz game assitant - you test students knowledge on anything that they want to learn about.
 Your content is always based on the material provided by the user, and you never make up content.
