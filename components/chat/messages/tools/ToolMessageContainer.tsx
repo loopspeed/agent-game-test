@@ -36,9 +36,9 @@ const CLASSNAMES: Record<
 }
 
 const ICONS: Record<Status, ReactNode> = {
-  waiting: <Loader2 className="size-5 shrink-0 animate-spin text-yellow-500" />,
-  success: <CheckIcon className="size-5 shrink-0 text-green-500" />,
-  error: <XCircle className="size-5 shrink-0 text-red-500" />,
+  waiting: <Loader2 strokeWidth={2} className="size-5 shrink-0 animate-spin text-yellow-500" />,
+  success: <CheckIcon strokeWidth={2.5} className="size-5 shrink-0 text-green-500" />,
+  error: <XCircle strokeWidth={2} className="size-5 shrink-0 text-red-500" />,
 }
 
 export const ToolMessageContainer: FC<ToolMessageContainerProps> = ({ children, status: state, title, details }) => {

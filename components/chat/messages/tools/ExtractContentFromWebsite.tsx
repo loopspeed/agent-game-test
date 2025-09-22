@@ -9,19 +9,21 @@ type ExtractContentToolMessageProps = {
 }
 
 export const ExtractContentFromWebsiteToolMessage: FC<ExtractContentToolMessageProps> = memo(({ part }) => {
-  if (part.state === 'input-streaming' || part.state === 'input-available')
-    return <ToolMessageContainer status="waiting" title="Extracting content from website..." />
+  const input = part?.input as MyUITools['extractContentFromWebsite']['input']
+  const url = input?.url ?? 'website'
+
+  if (part.state === 'input-streaming' || part.state === 'input-available') {
+    return <ToolMessageContainer status="waiting" title={`Extracting content from ${url}...`} />
+  }
 
   if (part.state === 'output-available') {
-    const output = part.output as MyUITools['extractContentFromWebsite']['output']
-    const title = output?.title ?? 'Untitled'
-
-    return <ToolMessageContainer status="success" title={`Successfully extracted content for "${title}"`} />
+    // const output = part.output as MyUITools['extractContentFromWebsite']['output']
+    return <ToolMessageContainer status="success" title={`Successfully extracted content from "${url}"`} />
   }
 
   if (part.state === 'output-error') {
     return (
-      <ToolMessageContainer status="error" title="Failed to extract content">
+      <ToolMessageContainer status="error" title={`Failed to extract content from ${url}`}>
         {part.errorText}
       </ToolMessageContainer>
     )

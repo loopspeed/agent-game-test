@@ -10,12 +10,12 @@ type FormatTestForGameToolMessageProps = {
 
 export const FormatTestForGameToolMessage: FC<FormatTestForGameToolMessageProps> = memo(({ part }) => {
   if (part.state === 'input-streaming' || part.state === 'input-available')
-    return <ToolMessageContainer status="waiting" title="Formatting test for the game..." />
+    return <ToolMessageContainer status="waiting" title="Formatting test for playing..." />
 
   if (part.state === 'output-available') {
     const output = part.output as MyUITools['formatTestForGame']['output']
     const course = output.course
-    return <ToolMessageContainer status="success" title={`"${course.title}" is ready for playing`} />
+    return <ToolMessageContainer status="success" title={`"${course.title}" is ready to play!`} />
   }
 
   if (part.state === 'output-error') {

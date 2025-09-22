@@ -13,7 +13,7 @@ import {
 } from 'ai'
 import { z } from 'zod'
 
-import { CourseSchema, CourseSummarySchema } from '@/model/content'
+import { Course, CourseSchema, CourseSummarySchema } from '@/model/content'
 import { ChapterRunSchema } from '@/model/game'
 
 const AVATAR_NAME = 'TestOwl' // TODO: this will change
@@ -37,7 +37,7 @@ MISSION
 - Onboard the player, gather a testing topic, author a quiz-based course, play it and then summarise results.
 
 TOOL USAGE
-  1) extractContentFromWebsite({ url }) — fetches and cleans HTML text, returns { title, text }.
+  1) extractContentFromWebsite({ url }) — fetches and cleans HTML text, returns { url, title, text }.
   2) authorTestMarkdown({ title, text, url }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown test outline with chapters, summaries, questions, answers and source passages.
   3a) formatTestForGame({ url, markdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema. Always pass the source URL to maintain provenance.
   3b) storeCourse({ course }) — saves the Course JSON to the frontend state - always call this AFTER formatting the course is complete.
@@ -55,8 +55,8 @@ ERROR HANDLING
 - If fetching fails or content is insufficient/noisy, politely ask the user for another URL or alternative text.
 
 REVISTING COURSES
-If a users asks for their saved courses or previous courses, call getCourses() - this will render custom cards in the UI for them to interact with.
-Do not summarise the courses yourself - simply ask if they want to create a new one.
+If a users asks for their saved courses or previous courses, call 'getCourses()' - this will render custom cards in the UI for them to interact with.
+Do not summarise the output yourself - simply ask if they want to start a test or create a new one.
 
 STYLE & TONE
 - Be concise, fun, and use UK English. Only request one action per turn and keep your responses brief.
@@ -102,7 +102,7 @@ const TEST_AUTHORING_SYSTEM_PROMPT = `
 // Helper to extract material from a webpage (no JavaScript). Returns the
 // cleaned text, page title and word count.  Truncates very long pages to
 // prevent overloading subsequent steps.
-async function extractContentFromUrl(url: string): Promise<{ title: string; text: string }> {
+async function extractContentFromUrl(url: string): Promise<{ url: string; title: string; text: string }> {
   const res = await fetch(url, { redirect: 'follow' })
   if (!res.ok) throw new Error(`Fetch failed: ${res.status}`)
   const html = await res.text()
@@ -116,7 +116,7 @@ async function extractContentFromUrl(url: string): Promise<{ title: string; text
   const title = (titleMatch?.[1] ?? new URL(url).hostname).trim()
   const wordCount = text.split(/\s+/).length
   console.warn('[DEBUG] extractContentFromUrl: wordCount', wordCount)
-  return { title, text }
+  return { url, title, text }
 }
 
 async function authorTest({
@@ -129,37 +129,11 @@ async function authorTest({
   text: string
   writer: UIMessageStreamWriter
 }): Promise<string> {
-  // const reasoningId = generateId()
-  // writer.write({ type: 'reasoning-start', id: reasoningId })
-  // writer.write({
-  //   type: 'reasoning-delta',
-  //   delta: 'Understanding the material...',
-  //   id: reasoningId,
-  // })
-  //   writer.write({
-  //   type: 'reasoning-delta',
-  //   delta: '\nPackaging it up...',
-  //   id: reasoningId,
-  // })
-  // writer.write({ type: 'reasoning-end', id: reasoningId })
-
-  let input = text
+  const startTime = performance.now()
 
   // Summarise if source text is very long
-  if (input.length > 50_000) {
-    console.warn('[DEBUG] authorCourse: input too long, summarising...')
-    // TODO: REVIEW THIS _ NOT CHECKED
-    const { object: summaryObj } = await generateObject({
-      model: openai('gpt-4o-mini'),
-      temperature: 0.2,
-      schema: z.object({ summary: z.string().max(4000) }),
-      messages: [
-        { role: 'system', content: 'Return JSON with a concise "summary" field (<= 4000 characters). No commentary.' },
-        { role: 'user', content: `Summarise the following content for course creation:\n\n${input}` },
-      ],
-    })
-    input = summaryObj.summary
-    console.warn('[DEBUG] authorCourse: summarised length', input.length)
+  if (text.length > 50_000) {
+    console.warn('[DEBUG] authorCourse: input more than 50k chars - might need summarising...')
   }
 
   // Generate Markdown test
@@ -167,25 +141,37 @@ async function authorTest({
     model: openai('gpt-5'),
     temperature: 0.2,
     system: TEST_AUTHORING_SYSTEM_PROMPT,
-    prompt: `Title: ${title}\n\nUrl: ${url}\n\nSource Text:\n${input}\n\n`,
+    prompt: `Title: ${title}\n\nUrl: ${url}\n\nSource Text:\n${text}\n\n`,
   })
+
+  const endTime = performance.now()
+  console.warn(`authorTest completed in ${((endTime - startTime) / 1000).toFixed(2)}s`)
 
   return courseMarkdown
 }
 
 // Helper to format the Markdown into a Course JSON object.  Ensures the
 // output validates against CourseSchema.  Uses gpt-4o-mini for cost control.
-async function formatTestForGame({ markdown, url }: { markdown: string; url?: string; writer: UIMessageStreamWriter }) {
+async function formatTestForGame({
+  markdown,
+  url,
+}: {
+  markdown: string
+  url?: string
+  writer: UIMessageStreamWriter
+}): Promise<{ course: Course }> {
+  const startTime = performance.now()
+
   const FORMAT_COURSE_SYSTEM_PROMPT = `Convert the content into a JSON object that validates CourseSchema.
-  Remove any numbers (e.g "1.") or letters (e.g "a.") that sit in front of questions and answers.
+  Remove any numbers or letters (e.g "1." or "a)") that sit in front of questions and answers.
   Retain Chapter numbers.
   Follow the exact content provided to you.
-  ${url ? `The course URL should be set to: ${url}` : ''}
+  ${!!url ? `Set the course URL to: ${url}` : ''}
   `
 
   const { object: course } = await generateObject({
     model: openai('gpt-5-mini'),
-    temperature: 0.2,
+    temperature: 0.1,
     schema: CourseSchema,
     messages: [
       {
@@ -196,6 +182,9 @@ async function formatTestForGame({ markdown, url }: { markdown: string; url?: st
     ],
   })
 
+  const endTime = performance.now()
+  console.warn(`formatTestForGame completed in ${((endTime - startTime) / 1000).toFixed(2)}s`)
+
   return { course }
 }
 
@@ -203,9 +192,9 @@ async function formatTestForGame({ markdown, url }: { markdown: string; url?: st
 export const tools = (writer: UIMessageStreamWriter) => ({
   // Server-side tool: fetches HTML and extracts text
   extractContentFromWebsite: tool({
-    description: 'Fetch textual content from a webpage. Returns title and text.',
+    description: 'Fetch textual content from a webpage. Returns url, title and text.',
     inputSchema: z.object({ url: z.url() }),
-    outputSchema: z.object({ title: z.string(), text: z.string() }),
+    outputSchema: z.object({ title: z.string(), text: z.string(), url: z.string() }),
     execute: async ({ url }: { url: string }) => {
       return extractContentFromUrl(url)
     },

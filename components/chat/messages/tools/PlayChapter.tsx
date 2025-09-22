@@ -18,7 +18,7 @@ type PlayChapterToolMessageProps = {
 }
 
 export const PlayChapterToolMessage: FC<PlayChapterToolMessageProps> = ({ part, addToolResult }) => {
-  if (part.state === 'input-available' || part.state === 'input-streaming') {
+  if (part.state === 'input-available') {
     const onCancelClick = () => {
       addToolResult({
         tool: 'playChapter',
@@ -102,7 +102,7 @@ const ChapterRunSummary: FC<ChapterRunSummaryProps> = memo(
       <div className="rounded-lg border border-green-200 bg-white p-3 text-black">
         <div className="mb-4">
           <h3 className="flex items-center gap-2 text-xl font-bold text-green-800">
-            <Trophy className="size-6" />
+            <Trophy className="size-6 shrink-0" />
             Chapter Completed!
           </h3>
           <p className="text-green-700">
@@ -113,18 +113,19 @@ const ChapterRunSummary: FC<ChapterRunSummaryProps> = memo(
         {/* Overall Stats */}
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="rounded bg-white p-2 text-center">
-            <div className="text-2xl font-bold text-green-600">{run.points}</div>
-            <div className="text-sm text-green-600">Points</div>
+            <div className="text-2xl font-bold text-green-600">
+              {correctAnswers}/{totalQuestions}
+            </div>
+            <div className="text-sm text-green-600">Correct</div>
           </div>
           <div className="rounded bg-white p-2 text-center">
             <div className="text-2xl font-bold text-green-600">{accuracy}%</div>
             <div className="text-sm text-green-600">Accuracy</div>
           </div>
+
           <div className="rounded bg-white p-2 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {correctAnswers}/{totalQuestions}
-            </div>
-            <div className="text-sm text-green-600">Correct</div>
+            <div className="text-2xl font-bold text-green-600">{run.points}</div>
+            <div className="text-sm text-green-600">Points</div>
           </div>
           <div className="rounded bg-white p-2 text-center">
             <div className="text-2xl font-bold text-green-600">

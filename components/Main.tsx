@@ -92,6 +92,7 @@ const Main: FC<Props> = ({ initialMessages = [] }) => {
           // Set active course and chapter
           const { success, error } = setActiveCourse({ courseId, chapterId })
           if (!success) throw error
+          console.warn('[DEBUG] playChapter: set active course and chapter. Going to the level.')
           goToStage(Stage.Level)
         } catch (error) {
           console.error('[ERROR] playChapter failed', error)

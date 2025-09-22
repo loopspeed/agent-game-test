@@ -12,7 +12,7 @@ import z from 'zod'
 import { SYSTEM_PROMPT, tools } from '@/resources/chat'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 5 * 60 * 1000 // 5 mins
+export const maxDuration = 300 // 5 minutes
 
 // HOW TO PERSIST BY VERCEL:
 // https://github.com/vercel-labs/ai-sdk-persistence-db/blob/main/app/page.tsx
@@ -32,16 +32,15 @@ export async function POST(req: Request) {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
       const result = streamText({
-        model: openai('gpt-4o'),
+        model: openai('gpt-5'),
         system: SYSTEM_PROMPT,
         messages: convertToModelMessages(messages),
         tools: tools(writer), // pass message writer into tools for writing custom data parts
-        stopWhen: [stepCountIs(4)], // or when fetched courses (e.g getCourses tool returns results)
-
+        stopWhen: [stepCountIs(5)], // or when fetched courses (e.g getCourses tool returns results)
         // Log each step of the agentic loop for debugging
         async onStepFinish(event) {
           try {
-            console.warn('[DEBUG] Step finished', event)
+            console.warn('[DEBUG] onStepFinish', event)
           } catch (err) {
             console.warn('[DEBUG] onStepFinish error', err)
           }
@@ -50,7 +49,7 @@ export async function POST(req: Request) {
         async onFinish(event) {
           try {
             const { finishReason } = event
-            console.warn('[DEBUG] Conversation finished', { finishReason })
+            console.warn('[DEBUG] onFinish', { finishReason })
           } catch (err) {
             console.warn('[DEBUG] onFinish error', err)
           }

@@ -20,12 +20,12 @@ function GameContent() {
 
   useLayoutEffect(() => {
     // Redirect to player setup if user hasn't set up their player yet
-    if (!hasHydratedUser || !!stage) return
-    if (!hasSetupPlayer) {
-      goToStage(Stage.PlayerSetup)
-    } else {
-      goToStage(Stage.Chat)
-    }
+    if (!hasHydratedUser) return
+    if (!hasSetupPlayer) goToStage(Stage.PlayerSetup)
+
+    if (!!stage) return
+    // If user has setup player, go to chat stage
+    if (hasSetupPlayer) goToStage(Stage.Chat)
   }, [goToStage, stage, hasSetupPlayer, hasHydratedUser])
 
   if (!hasHydratedChat || !hasHydratedUser) return null
