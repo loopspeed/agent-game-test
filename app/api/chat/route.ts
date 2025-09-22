@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   const stream = createUIMessageStream({
     execute: ({ writer }) => {
       const result = streamText({
-        model: openai('gpt-5'),
+        model: openai('gpt-5-mini'),
         system: SYSTEM_PROMPT,
         messages: convertToModelMessages(messages),
         tools: tools(writer), // pass message writer into tools for writing custom data parts
