@@ -1,6 +1,6 @@
 'use server'
 
-import { and, eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { revalidateTag, unstable_cache } from 'next/cache'
 import postgres from 'postgres'
@@ -8,7 +8,8 @@ import postgres from 'postgres'
 import { PlayerColour, PlayerShape } from '@/lib/types/player'
 import { generateUUID } from '@/utils/helpers'
 
-import { type User, user, type UserUpdate } from './schema'
+import { chat, message, testArtifact, type Chat, type DBMessage, type TestArtifact, type User, user, type UserUpdate } from './schema'
+import type { Course } from '@/model/content'
 import { generateHashedPassword } from './utils'
 
 // biome-ignore lint: non-null asserted to surface helpful error on missing env
@@ -108,5 +109,124 @@ export async function updateUser(id: string, updates: UserUpdate) {
   } catch (error) {
     console.error('[DB] updateUser error', error)
     throw new Error('Failed to update user')
+  }
+}
+
+// CHAT QUERIES
+export async function createChat(userId: string, title: string, opts?: { visibility?: 'public' | 'private'; lastContext?: unknown | null; createdAt?: Date }) {
+  try {
+    const createdAt = opts?.createdAt ?? new Date()
+    const visibility = opts?.visibility ?? 'private'
+    const res = await db
+      .insert(chat)
+      .values({ userId, title, createdAt, visibility, lastContext: opts?.lastContext ?? null })
+      .returning()
+    // Invalidate cached chat data
+    revalidateTag('chat')
+    return res[0]
+  } catch (error) {
+    console.error('[DB] createChat error', error)
+    throw new Error('Failed to create chat')
+  }
+}
+
+export async function getChatById(id: string): Promise<Chat | null> {
+  try {
+    const [row] = await db.select().from(chat).where(eq(chat.id, id))
+    return row ?? null
+  } catch (error) {
+    console.error('[DB] getChatById error', error)
+    throw new Error('Failed to get chat by id')
+  }
+}
+
+export async function getChatsForUser(userId: string): Promise<Chat[]> {
+  try {
+    const rows = await db.select().from(chat).where(eq(chat.userId, userId)).orderBy(desc(chat.createdAt))
+    return rows
+  } catch (error) {
+    console.error('[DB] getChatsForUser error', error)
+    throw new Error('Failed to get chats for user')
+  }
+}
+
+// MESSAGE QUERIES
+export async function getMessagesForChat(chatId: string): Promise<DBMessage[]> {
+  try {
+    const rows = await db.select().from(message).where(eq(message.chatId, chatId)).orderBy(message.createdAt)
+    return rows
+  } catch (error) {
+    console.error('[DB] getMessagesForChat error', error)
+    throw new Error('Failed to get messages for chat')
+  }
+}
+
+export async function createMessage(
+  chatId: string,
+  role: string,
+  parts: unknown,
+  opts?: { createdAt?: Date }
+): Promise<DBMessage> {
+  try {
+    const createdAt = opts?.createdAt ?? new Date()
+    const [row] = await db
+      .insert(message)
+      .values({ chatId, role, parts, createdAt })
+      .returning()
+    revalidateTag('message')
+    return row
+  } catch (error) {
+    console.error('[DB] createMessage error', error)
+    throw new Error('Failed to create message')
+  }
+}
+
+// TEST ARTIFACT QUERIES
+export async function createTestArtifact(
+  chatId: string,
+  markdown: string,
+  playable: Course,
+  opts?: { createdAt?: Date }
+): Promise<TestArtifact> {
+  try {
+    const createdAt = opts?.createdAt ?? new Date()
+    const [row] = await db
+      .insert(testArtifact)
+      .values({ chatId, createdAt, markdown, playable })
+      .returning()
+    revalidateTag('artifact')
+    return row
+  } catch (error) {
+    console.error('[DB] createTestArtifact error', error)
+    throw new Error('Failed to create test artifact')
+  }
+}
+
+export async function getLatestTestArtifact(chatId: string): Promise<TestArtifact | null> {
+  try {
+    const [row] = await db
+      .select()
+      .from(testArtifact)
+      .where(eq(testArtifact.chatId, chatId))
+      .orderBy(desc(testArtifact.createdAt))
+      .limit(1)
+    return row ?? null
+  } catch (error) {
+    console.error('[DB] getLatestTestArtifact error', error)
+    throw new Error('Failed to get latest test artifact')
+  }
+}
+
+export async function getTestArtifactsForChat(chatId: string): Promise<TestArtifact[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(testArtifact)
+      .where(eq(testArtifact.chatId, chatId))
+      .orderBy(desc(testArtifact.createdAt))
+    return rows
+  } catch (error) {
+    console.error('[DB] getTestArtifactsForChat error', error)
+    throw new Error('Failed to get test artifacts for chat')
   }
 }
