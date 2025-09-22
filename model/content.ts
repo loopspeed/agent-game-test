@@ -28,6 +28,7 @@ export const ChapterSchema = z.object({
 
 export const CourseSchema = z.object({
   id: z.string().describe('Unique identifier for the course'),
+  url: z.string().optional().describe('URL used for content'),
   title: z.string().describe('Course title'),
   description: z.string().describe('Course description'),
   chapters: z.array(ChapterSchema).min(1).describe('Array of chapters in the course'),

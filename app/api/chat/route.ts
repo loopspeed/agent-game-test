@@ -12,13 +12,13 @@ import z from 'zod'
 import { SYSTEM_PROMPT, tools } from '@/resources/chat'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 120
+export const maxDuration = 5 * 60 * 1000 // 5 mins
 
 // HOW TO PERSIST BY VERCEL:
 // https://github.com/vercel-labs/ai-sdk-persistence-db/blob/main/app/page.tsx
 
 const RequestSchema = z.object({
-  messages: z.array(z.any()), // Use z.any() to accept any message structure
+  messages: z.array(z.any()), // Use z.any<>() to accept any message structure
 })
 
 export async function POST(req: Request) {

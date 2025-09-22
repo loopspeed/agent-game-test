@@ -38,8 +38,8 @@ MISSION
 
 TOOL USAGE
   1) extractContentFromWebsite({ url }) — fetches and cleans HTML text, returns { title, text }.
-  2) authorTestMarkdown({ title, sourceText }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown test outline with chapters, summaries, questions, answers and source passages.
-  3a) formatTestForGame({ markdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema.
+  2) authorTestMarkdown({ title, text, url }) — takes the extracted text (or user-provided notes) and creates a concise, reviewable Markdown test outline with chapters, summaries, questions, answers and source passages.
+  3a) formatTestForGame({ url, markdown }) — converts the Markdown into a strict Course JSON object conforming to CourseSchema. Always pass the source URL to maintain provenance.
   3b) storeCourse({ course }) — saves the Course JSON to the frontend state - always call this AFTER formatting the course is complete.
   4) playChapter({ courseId, chapterId }) — passes the Course JSON to the frontend to set state and begin the test (playable as a game). On completion it returns a status and a summary of the run.
   5) getCourses() — tool that retrieves stored courses. Returns array of CourseSummary. These are presented the the user in the UI and can be interacted with. After calling 'getCourses', wait for the user to select a course or create a new one. Do NOT summarize the output.
@@ -70,6 +70,8 @@ const TEST_AUTHORING_SYSTEM_PROMPT = `
   Return ONLY the Markdown content without any HTML comments.
   
   It must contain:
+  - A title that reflects the content
+  - URL for the source material (if provided)
   - 1 or more chapters
   - 4 or more questions per chapter
   - Each question has 2-4 choices (one correct, others plausible incorrect answers), summaries and sources.
@@ -78,9 +80,10 @@ const TEST_AUTHORING_SYSTEM_PROMPT = `
   Ensure balanced difficulty, no duplicates, and all content must be grounded in the source (except for incorrect answers which should sound plausible and often similar to the correct answer).
   Discard and ignore content that is not relevant to the title/topic: such as ads, cookies, legal information, navigation, or unrelated links.
 
-  Here is an example of the COURSE-MD format:
+  Here is an example of the format:
   
   # Course Title
+  Url: <source url if provided>
 
   ## Chapter 1: Title
 
@@ -118,32 +121,33 @@ async function extractContentFromUrl(url: string): Promise<{ title: string; text
 
 async function authorTest({
   title,
-  sourceText,
-  writer,
+  text,
+  url,
 }: {
   title: string
-  sourceText: string
+  url?: string
+  text: string
   writer: UIMessageStreamWriter
 }): Promise<string> {
-  const reasoningId = generateId()
-  writer.write({ type: 'reasoning-start', id: reasoningId })
+  // const reasoningId = generateId()
+  // writer.write({ type: 'reasoning-start', id: reasoningId })
+  // writer.write({
+  //   type: 'reasoning-delta',
+  //   delta: 'Understanding the material...',
+  //   id: reasoningId,
+  // })
+  //   writer.write({
+  //   type: 'reasoning-delta',
+  //   delta: '\nPackaging it up...',
+  //   id: reasoningId,
+  // })
+  // writer.write({ type: 'reasoning-end', id: reasoningId })
 
-  writer.write({
-    type: 'reasoning-delta',
-    delta: 'Understanding the material...',
-    id: reasoningId,
-  })
-
-  let input = sourceText
+  let input = text
 
   // Summarise if source text is very long
   if (input.length > 50_000) {
-    writer.write({
-      type: 'reasoning-delta',
-      delta: '\nShortening long text...',
-      id: reasoningId,
-    })
-
+    console.warn('[DEBUG] authorCourse: input too long, summarising...')
     // TODO: REVIEW THIS _ NOT CHECKED
     const { object: summaryObj } = await generateObject({
       model: openai('gpt-4o-mini'),
@@ -158,48 +162,25 @@ async function authorTest({
     console.warn('[DEBUG] authorCourse: summarised length', input.length)
   }
 
-  setTimeout(() => {
-    writer.write({
-      type: 'reasoning-delta',
-      delta: '\nProducing chapters and questions...',
-      id: reasoningId,
-    })
-  }, 2000)
-
   // Generate Markdown test
   const { text: courseMarkdown } = await generateText({
     model: openai('gpt-5'),
     temperature: 0.2,
     system: TEST_AUTHORING_SYSTEM_PROMPT,
-    prompt: `Title: ${title}\n\nSource Text:\n${input}\n\n`,
+    prompt: `Title: ${title}\n\nUrl: ${url}\n\nSource Text:\n${input}\n\n`,
   })
-
-  writer.write({
-    type: 'reasoning-delta',
-    delta: '\nPackaging it up...',
-    id: reasoningId,
-  })
-  writer.write({ type: 'reasoning-end', id: reasoningId })
 
   return courseMarkdown
 }
 
 // Helper to format the Markdown into a Course JSON object.  Ensures the
 // output validates against CourseSchema.  Uses gpt-4o-mini for cost control.
-async function formatTestForGame({ markdown, writer }: { markdown: string; writer: UIMessageStreamWriter }) {
-  const reasoningId = generateId()
-  writer.write({ type: 'reasoning-start', id: reasoningId })
-  writer.write({
-    type: 'reasoning-delta',
-    delta: 'Converting Markdown into structured JSON for the game...',
-    id: reasoningId,
-  })
-  writer.write({ type: 'reasoning-end', id: reasoningId })
-
+async function formatTestForGame({ markdown, url }: { markdown: string; url?: string; writer: UIMessageStreamWriter }) {
   const FORMAT_COURSE_SYSTEM_PROMPT = `Convert the content into a JSON object that validates CourseSchema.
   Remove any numbers (e.g "1.") or letters (e.g "a.") that sit in front of questions and answers.
   Retain Chapter numbers.
   Follow the exact content provided to you.
+  ${url ? `The course URL should be set to: ${url}` : ''}
   `
 
   const { object: course } = await generateObject({
@@ -234,20 +215,24 @@ export const tools = (writer: UIMessageStreamWriter) => ({
     description: 'Create a concise, reviewable test in Markdown from source text.',
     inputSchema: z.object({
       title: z.string(),
-      sourceText: z.string(),
+      text: z.string(),
+      url: z.string().optional(),
     }),
     outputSchema: z.string(),
-    execute: async ({ title, sourceText }: { title: string; sourceText: string }) => {
-      return authorTest({ title, sourceText, writer })
+    execute: async ({ title, text, url }: { title: string; text: string; url?: string }) => {
+      return authorTest({ title, text, url, writer })
     },
   }),
   // Server-side tool: format Markdown into Course JSON
   formatTestForGame: tool({
     description: 'Convert Markdown into a Course JSON object conforming to CourseSchema.',
-    inputSchema: z.object({ markdown: z.string() }),
+    inputSchema: z.object({
+      markdown: z.string(),
+      url: z.string().optional(),
+    }),
     outputSchema: z.object({ course: CourseSchema }),
-    execute: async ({ markdown }: { markdown: string }) => {
-      return formatTestForGame({ markdown, writer })
+    execute: async ({ markdown, url }: { markdown: string; url?: string }) => {
+      return formatTestForGame({ markdown, url, writer })
     },
   }),
   // Client-side tools
