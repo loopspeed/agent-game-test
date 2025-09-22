@@ -55,70 +55,53 @@ const Chat: FC<Props> = ({ transitionStatus, chat, onStartTestClick }) => {
           {messages.map((message) => (
             // Message row
             <div
+              id={message.id}
               key={message.id}
               className={twJoin(`message flex w-full`, message.role === 'user' ? 'justify-end' : 'justify-start')}>
               {/* Message bubble */}
               <div className="max-w-4/5">
                 {message.parts.map((part, i) => {
+                  const key = `${message.id}-part-${i}`
+
                   if (part.type === 'reasoning') {
                     return (
-                      <div key={message.id + '-part-' + i} className="animate-pulse text-white/50">
+                      <div key={key} className="animate-pulse text-white/50">
                         <MemoizedMarkdown id={message.id} content={part.text} />
                       </div>
                     )
                   }
 
                   if (part.type === 'text')
-                    return (
-                      <TextMessage
-                        key={`${message.id}-${i}`}
-                        messageId={message.id + '-part-' + i}
-                        role={message.role}
-                        text={part.text}
-                      />
-                    )
+                    return <TextMessage key={key} messageId={key} role={message.role} text={part.text} />
 
                   if (part.type === 'dynamic-tool') return null // Skip dynamic-tool parts
 
                   // Custom UI for specific tools
                   if (part.type === 'tool-extractContentFromWebsite') {
-                    return <ExtractContentFromWebsiteToolMessage key={`${message.id}-${i}`} part={part} />
+                    return <ExtractContentFromWebsiteToolMessage key={key} part={part} />
                   }
 
                   if (part.type === 'tool-formatTestForGame') {
-                    return <FormatTestForGameToolMessage key={`${message.id}-${i}`} part={part} />
+                    return <FormatTestForGameToolMessage key={key} part={part} />
                   }
 
                   if (part.type === 'tool-storeCourse') {
-                    return <StoreCourseToolMessage key={`${message.id}-${i}`} part={part} />
+                    return <StoreCourseToolMessage key={key} part={part} />
                   }
 
                   if (part.type === 'tool-authorTestMarkdown') {
-                    return <AuthorCourseToolMessage key={`${message.id}-${i}`} part={part} />
+                    return <AuthorCourseToolMessage key={key} part={part} />
                   }
 
                   if (part.type === 'tool-playChapter') {
-                    return (
-                      <PlayChapterToolMessage
-                        key={`${message.id}-${i}`}
-                        part={part}
-                        addToolResult={chat.addToolResult}
-                      />
-                    )
+                    return <PlayChapterToolMessage key={key} part={part} addToolResult={chat.addToolResult} />
                   }
 
                   if (part.type === 'tool-getCourses')
-                    return (
-                      <GetCoursesToolMessage
-                        key={`${message.id}-${i}`}
-                        part={part}
-                        onStartTestClick={onStartTestClick}
-                      />
-                    )
+                    return <GetCoursesToolMessage key={key} part={part} onStartTestClick={onStartTestClick} />
 
                   // Catch-all for any other tool messages
-                  if (part.type.includes('tool-'))
-                    return <DebuggingToolMessage key={`${message.id}-${i}`} part={part} />
+                  if (part.type.includes('tool-')) return <DebuggingToolMessage key={key} part={part} />
                 })}
               </div>
             </div>

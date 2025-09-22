@@ -1,5 +1,4 @@
 'use client'
-import { usePrevious } from '@mantine/hooks'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 
@@ -13,7 +12,6 @@ const useNavigation = () => {
   const { push } = useRouter()
   const searchParams = useSearchParams()
   const stage = searchParams.get('stage') as Stage | null
-  const prevStage = usePrevious(stage)
 
   const goToStage = useCallback(
     (stage: Stage) => {
@@ -22,7 +20,7 @@ const useNavigation = () => {
     [push],
   )
 
-  return { stage, goToStage, prevStage }
+  return { stage, goToStage }
 }
 
 export default useNavigation
