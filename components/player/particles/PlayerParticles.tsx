@@ -58,6 +58,7 @@ type Props = {
   timeMultiplier: RefObject<number>
   playerShape: PlayerShape
   playerColour: PlayerColour
+  isInSetup?: boolean
 }
 
 export const ORB_RADIUS = 0.25 as const
@@ -71,6 +72,7 @@ const PlayerParticles: FC<Props> = ({
   scoreEvents = [],
   playerShape = PlayerShape.ORB,
   playerColour = PlayerColour.TEAL,
+  isInSetup = false,
 }) => {
   const dpr = useThree((s) => s.viewport.dpr)
   const performance = useThree((s) => s.performance).current
@@ -234,7 +236,7 @@ const PlayerParticles: FC<Props> = ({
     }
   }, [renderer, textureSize, seeds, playerShape])
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     if (
       !pointsShaderMaterial.current ||
       !gpuCompute.current ||
@@ -270,6 +272,11 @@ const PlayerParticles: FC<Props> = ({
       velocityVariable.current,
     ).texture
     pointsShaderMaterial.current.uScoreAmount = emotionAmount.current.value
+
+    if (isInSetup && points.current) {
+      points.current.rotation.x += delta * 0.5
+      points.current.rotation.y += delta * 0.5
+    }
   })
 
   return (

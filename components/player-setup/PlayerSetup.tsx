@@ -1,17 +1,22 @@
+'use client'
 import { useGSAP } from '@gsap/react'
-import { type FC } from 'react'
+import { type FC,useState } from 'react'
 import { type TransitionStatus } from 'react-transition-group'
 
 import ChoosePlayer from '@/components/player-setup/PlayerCarousel'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 import { useUserStore } from '@/hooks/useUserStore'
-import { PlayerColour, PlayerShape } from '@/model/player'
+import { getPlayerShapes, PLAYER_OBJECTS, PlayerColour, PlayerShape } from '@/model/player'
 
 type Props = { transitionStatus: TransitionStatus }
 
 const PlayerSetup: FC<Props> = ({ transitionStatus }) => {
   const { goToStage } = useNavigation()
   const { colour, shape, setColour, setShape, setHasSetupPlayer } = useUserStore()
+
+  const [activeIndex, setActiveIndex] = useState(0)
+  const playerShapes = getPlayerShapes()
+  const activeShape = PLAYER_OBJECTS[playerShapes[activeIndex]].label
 
   const handlePlayerSelection = (selectedShape: PlayerShape) => {
     setShape(selectedShape)
@@ -33,7 +38,7 @@ const PlayerSetup: FC<Props> = ({ transitionStatus }) => {
       <h1>Player Setup</h1>
 
       <div className="mb-8">
-        <h2 className="mb-4 text-lg">Shape: {shape}</h2>
+        <h2 className="mb-4 text-lg">Shape: {activeShape}</h2>
         <div className="flex gap-4">
           {/* {Object.values(PlayerShape).map((shapeOption) => (
             <button
@@ -51,6 +56,8 @@ const PlayerSetup: FC<Props> = ({ transitionStatus }) => {
             y={0}
             onShapeSelected={handlePlayerSelection}
             selectedColour={colour}
+            activeIndex={activeIndex}
+            onActiveIndexChange={setActiveIndex}
           />
         </div>
       </div>

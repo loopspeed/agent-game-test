@@ -189,6 +189,11 @@ const AnswerGates: FC = () => {
           isActive={currentPlayerLane === index}
         />
       ))}
+      {isSlowMo && (
+        <Html>
+          <h3 className="fixed text-white text-3xl">Hit Enter to Speed up!</h3>
+        </Html>
+      )}
     </>
   )
 }

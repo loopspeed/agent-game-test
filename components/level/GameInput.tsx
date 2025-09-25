@@ -10,6 +10,8 @@ const GameInput: FC = () => {
   const pause = useLevelStore((s) => s.pause)
   const resume = useLevelStore((s) => s.resume)
   const isPaused = useLevelStore((s) => s.isPaused)
+  const isSlowMo = useLevelStore((s) => s.isSlowMo)
+  const goFullSpeed = useLevelStore((s) => s.goFullSpeed)
 
   // Attach keyboard listeners for 4-way movement
   useEffect(() => {
@@ -41,6 +43,9 @@ const GameInput: FC = () => {
         }
         case 'Space':
         case 'Enter': {
+          if (isSlowMo) {
+            goFullSpeed()
+          }
           console.warn('[DEBUG] User hit space or enter')
           break
         }
@@ -89,7 +94,7 @@ const GameInput: FC = () => {
       window.removeEventListener('keydown', down)
       window.removeEventListener('keyup', up)
     }
-  }, [setKey, pause, resume, isPaused])
+  }, [setKey, pause, resume, isPaused, isSlowMo, goFullSpeed])
 
   // This component doesn't render anything, it just handles input
   return null

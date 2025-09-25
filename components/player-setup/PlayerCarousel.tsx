@@ -14,6 +14,8 @@ export type Props = {
   y?: number
   onShapeSelected: (shape: PlayerShape) => void
   selectedColour: PlayerColour
+  activeIndex: number
+  onActiveIndexChange: (index: number) => void
 }
 
 const PlayerCarousel: FC<Props> = ({
@@ -22,10 +24,11 @@ const PlayerCarousel: FC<Props> = ({
   y,
   onShapeSelected,
   selectedColour = PlayerColour.TEAL,
+  activeIndex,
+  onActiveIndexChange,
 }) => {
   const playerObjects = useMemo(() => getPlayerShapes(), [])
   const timeMultiplier = useRef<number>(1.0)
-  const [activeIndex, setActiveIndex] = useState<number>(0)
   const [selectedShape, setSelectedShape] = useState<PlayerShape | null>(playerObjects[0])
 
   // left/right scrolling
@@ -37,13 +40,15 @@ const PlayerCarousel: FC<Props> = ({
         case 'a':
         case 'A':
           keyEvent.preventDefault()
-          setActiveIndex((prevIndex) => (prevIndex - 1 + playerObjects.length) % playerObjects.length)
+          const newLeftIndex = (activeIndex - 1 + playerObjects.length) % playerObjects.length
+          onActiveIndexChange(newLeftIndex)
           break
         case 'ArrowRight':
         case 'd':
         case 'D':
           keyEvent.preventDefault()
-          setActiveIndex((prevIndex) => (prevIndex + 1) % playerObjects.length)
+          const newRightIndex = (activeIndex + 1) % playerObjects.length
+          onActiveIndexChange(newRightIndex)
           break
         case 'Enter':
         case ' ':
@@ -57,7 +62,7 @@ const PlayerCarousel: FC<Props> = ({
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeIndex, onShapeSelected, playerObjects, selectedShape])
+  }, [activeIndex, onActiveIndexChange, onShapeSelected, playerObjects, selectedShape])
 
   // Rotation group
   const groupRef = useRef<THREE.Group>(null)
@@ -96,6 +101,7 @@ const PlayerCarousel: FC<Props> = ({
                 timeMultiplier={timeMultiplier}
                 playerShape={playerShape}
                 playerColour={selectedColour}
+                isInSetup={true}
               />
               {/* Highlight ring */}
               {/*
@@ -119,6 +125,8 @@ const ChoosePlayer: FC<Props> = ({
   y = -5,
   onShapeSelected,
   selectedColour,
+  activeIndex,
+  onActiveIndexChange,
 }) => {
   return (
     <div className="h-[540px] w-full rounded-2xl border border-white/10 bg-black/40">
@@ -138,6 +146,8 @@ const ChoosePlayer: FC<Props> = ({
           y={y}
           onShapeSelected={onShapeSelected}
           selectedColour={selectedColour}
+          activeIndex={activeIndex}
+          onActiveIndexChange={onActiveIndexChange}
         />
       </Canvas>
       {/** TODO: deselect */}
