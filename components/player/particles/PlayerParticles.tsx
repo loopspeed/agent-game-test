@@ -7,7 +7,8 @@ import React, { type FC, type RefObject, useLayoutEffect, useMemo, useRef } from
 import { AdditiveBlending, Color, DataTexture, Points, Texture, Vector2 } from 'three'
 import { GPUComputationRenderer, type Variable } from 'three/addons/misc/GPUComputationRenderer.js'
 
-import { TEAL_PALETTE } from '@/model/player'
+import { getParticlePositions } from '@/components/player-setup/PlayerOptions'
+import { getColourPalette, PlayerColour, PlayerShape } from '@/model/player'
 import { type ScoreEvent } from '@/stores/LevelProvider'
 
 import particleFragment from './points/point.frag'
@@ -49,18 +50,28 @@ type PositionShaderUniforms = {
 const CustomShaderMaterial = shaderMaterial(INITIAL_POINTS_UNIFORMS, particleVertex, particleFragment)
 const FBOPointsShaderMaterial = extend(CustomShaderMaterial)
 
-// TODO: Pass in colour option (enum), body shape (enum)
 type Props = {
   isMobile: boolean // on mobile we use fewer particles
   movementVelocity: Vector2 // player movement velocity for particle tail effects
   isPlaying: boolean // whether the game is currently playing (not paused or in config)
-  scoreEvents: ScoreEvent[]
+  scoreEvents?: ScoreEvent[]
   timeMultiplier: RefObject<number>
+  playerShape: PlayerShape
+  playerColour: PlayerColour
 }
 
 export const ORB_RADIUS = 0.25 as const
+export const DEFAULT_SIZE = 0.25 as const
 
-const PlayerParticles: FC<Props> = ({ isMobile, movementVelocity, isPlaying, timeMultiplier, scoreEvents = [] }) => {
+const PlayerParticles: FC<Props> = ({
+  isMobile,
+  movementVelocity,
+  isPlaying,
+  timeMultiplier,
+  scoreEvents = [],
+  playerShape = PlayerShape.ORB,
+  playerColour = PlayerColour.TEAL,
+}) => {
   const dpr = useThree((s) => s.viewport.dpr)
   const performance = useThree((s) => s.performance).current
   const renderer = useThree((s) => s.gl)
@@ -79,6 +90,9 @@ const PlayerParticles: FC<Props> = ({ isMobile, movementVelocity, isPlaying, tim
 
   // Animation values
   const emotionAmount = useRef({ value: 0 }) // -1 = negative, 0 = neutral, 1 = positive
+
+  // colour palette input
+  const colourPalette = useMemo(() => getColourPalette(playerColour), [playerColour])
 
   useGSAP(() => {
     // Respond to score events for damage "explosion" effect
@@ -145,15 +159,15 @@ const PlayerParticles: FC<Props> = ({ isMobile, movementVelocity, isPlaying, tim
 
       // Colour
       const i3 = i * 3
-      const tealColorIndex = Math.floor(Math.random() * TEAL_PALETTE.length)
-      const tealColor = new Color(TEAL_PALETTE[tealColorIndex])
-      colours[i3 + 0] = tealColor.r
-      colours[i3 + 1] = tealColor.g
-      colours[i3 + 2] = tealColor.b
+      const colorIndex = Math.floor(Math.random() * colourPalette.length)
+      const selectedColor = new Color(colourPalette[colorIndex])
+      colours[i3 + 0] = selectedColor.r
+      colours[i3 + 1] = selectedColor.g
+      colours[i3 + 2] = selectedColor.b
     }
 
     return { seeds, textureUvs, colours }
-  }, [particlesCount, textureSize])
+  }, [particlesCount, textureSize, colourPalette])
 
   // ------------------
   // SIMULATION SETUP
@@ -176,6 +190,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, movementVelocity, isPlaying, tim
         textureVelocity: dtVelocity,
         textureSeed: dtSeed,
         seeds,
+        playerShape,
       })
 
       // Add variables to GPU compute
@@ -217,7 +232,7 @@ const PlayerParticles: FC<Props> = ({ isMobile, movementVelocity, isPlaying, tim
     } catch (error) {
       console.error('Error initializing GPUComputationRenderer:', error)
     }
-  }, [renderer, textureSize, seeds])
+  }, [renderer, textureSize, seeds, playerShape])
 
   useFrame(({ clock }) => {
     if (
@@ -236,12 +251,12 @@ const PlayerParticles: FC<Props> = ({ isMobile, movementVelocity, isPlaying, tim
     velocityUniforms.current.uTime.value = time
     velocityUniforms.current.uScoreAmount.value = emotionAmount.current.value
     velocityUniforms.current.uPlayerVelocity.value.copy(movementVelocity)
-    velocityUniforms.current.uTimeMultiplier.value = timeMultiplier.current
+    velocityUniforms.current.uTimeMultiplier.value = timeMultiplier!.current
 
     // Update position uniforms
     positionUniforms.current.uIsIdle.value = !isPlaying
     positionUniforms.current.uTime.value = time
-    positionUniforms.current.uTimeMultiplier.value = timeMultiplier.current
+    positionUniforms.current.uTimeMultiplier.value = timeMultiplier!.current
 
     // Compute the simulation
     gpuCompute.current.compute()
@@ -292,11 +307,13 @@ const fillTextures = ({
   textureVelocity,
   textureSeed,
   seeds,
+  playerShape,
 }: {
   texturePosition: DataTexture
   textureVelocity: DataTexture
   textureSeed: DataTexture
   seeds: Float32Array
+  playerShape: PlayerShape
 }) => {
   const posArray = texturePosition.image.data as Float32Array
   const velArray = textureVelocity.image.data as Float32Array
@@ -305,16 +322,13 @@ const fillTextures = ({
   for (let k = 0, kl = posArray.length; k < kl; k += 4) {
     const particleIndex = k / 4
 
-    // Generate random position on sphere (radius 0.3, similar to player size)
-    const u = Math.random() * 2 - 1 // random value in [-1, 1]
-    const phi = Math.random() * 2 * Math.PI // random angle in [0, 2π]
-    const radius = ORB_RADIUS
+    const { x, y, z } = getParticlePositions(playerShape)
 
-    // Convert spherical coordinates to Cartesian coordinates
-    const sqrtOneMinusU2 = Math.sqrt(1 - u * u)
-    const x = sqrtOneMinusU2 * Math.cos(phi) * radius
-    const y = sqrtOneMinusU2 * Math.sin(phi) * radius
-    const z = u * radius
+    //Generate position based on shape
+    posArray[k + 0] = x
+    posArray[k + 1] = y
+    posArray[k + 2] = z
+    posArray[k + 3] = 1.0
 
     // Position
     posArray[k + 0] = x

@@ -9,7 +9,7 @@ import { SwitchTransition, Transition } from 'react-transition-group'
 
 import Chat from '@/components/chat/Chat'
 import Level from '@/components/level/Level'
-import PlayerSetup from '@/components/playerSetup/PlayerSetup'
+import PlayerSetup from '@/components/player-setup/PlayerSetup'
 import { useChatStore } from '@/hooks/useChatStore'
 import useNavigation, { Stage } from '@/hooks/useGameNavigation'
 import { CourseSchema } from '@/model/content'
