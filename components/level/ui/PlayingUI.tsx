@@ -155,9 +155,10 @@ const QuestionIndicators: FC = () => {
 }
 
 const QuestionTimer: FC = () => {
-  const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
   const container = useRef<HTMLDivElement>(null)
   const { contextSafe } = useGSAP({ scope: container })
+  const isQuestionPhase = useLevelStore((s) => s.phase === LevelPhase.QUESTION)
+  const isSlowMo = useLevelStore((s) => s.isSlowMo)
 
   return (
     <Transition
@@ -173,15 +174,23 @@ const QuestionTimer: FC = () => {
       onExit={contextSafe(() => {
         gsap.to(container.current, { opacity: 0, y: 24, duration: 0.2 })
       })}>
-      <div ref={container} id="timer" className="absolute bottom-12 flex items-center gap-4 opacity-0">
-        <TimerIcon size={32} strokeWidth={2} />
-        <div className="relative h-2.5 w-64 overflow-hidden rounded-full bg-white/20">
-          <div
-            id="slow-mo-bar"
-            className="absolute h-full w-full origin-left bg-linear-90 from-white/30 to-white to-60% opacity-0"
-          />
+      <>
+        {isSlowMo && (
+          <h3 className="fixed right-10 bottom-10 flex size-35 flex-col justify-center rounded-full bg-black/60 px-5 pt-2 text-center text-2xl leading-tight font-semibold text-white">
+            Hit Enter to Speed up!
+          </h3>
+          
+        )}
+        <div ref={container} id="timer" className="absolute bottom-12 flex items-center gap-4 opacity-0">
+          <TimerIcon size={32} strokeWidth={2} />
+          <div className="relative h-2.5 w-64 overflow-hidden rounded-full bg-white/20">
+            <div
+              id="slow-mo-bar"
+              className="absolute h-full w-full origin-left bg-linear-90 from-white/30 to-white to-60% opacity-0"
+            />
+          </div>
         </div>
-      </div>
+      </>
     </Transition>
   )
 }

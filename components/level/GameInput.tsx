@@ -43,9 +43,6 @@ const GameInput: FC = () => {
         }
         case 'Space':
         case 'Enter': {
-          // if (isSlowMo) {
-          //   goFullSpeed()
-          // }
           console.warn('[DEBUG] User hit space or enter')
           break
         }
