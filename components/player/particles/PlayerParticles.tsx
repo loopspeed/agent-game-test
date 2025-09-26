@@ -7,7 +7,7 @@ import React, { type FC, type RefObject, useLayoutEffect, useMemo, useRef } from
 import { AdditiveBlending, Color, DataTexture, Points, Texture, Vector2 } from 'three'
 import { GPUComputationRenderer, type Variable } from 'three/addons/misc/GPUComputationRenderer.js'
 
-import { getParticlePositions } from '@/components/player-setup/PlayerOptions'
+import { createParticleBuffer, mulberry32 } from '@/components/player-setup/PlayerOptions'
 import { getColourPalette, PlayerColour, PlayerShape } from '@/model/player'
 import { type ScoreEvent } from '@/stores/LevelProvider'
 
@@ -326,10 +326,24 @@ const fillTextures = ({
   const velArray = textureVelocity.image.data as Float32Array
   const seedArray = textureSeed.image.data as Float32Array
 
+  // Each particle is 1 texel = 4 floats (RGBA)
+  const particleCount = (posArray.length / 4) | 0
+
+  const pb = createParticleBuffer(particleCount)
+
+  
+  const seedForPositions = seeds?.length ? seeds[0] >>> 0 : 0xc0ffee
+  const positionsView = pb.fill(playerShape, particleCount, mulberry32(seedForPositions))
+
+  const velRng = mulberry32((seedForPositions ^ 0x9e3779b9) >>> 0)
+
   for (let k = 0, kl = posArray.length; k < kl; k += 4) {
     const particleIndex = k / 4
+    const base = particleIndex * 3
 
-    const { x, y, z } = getParticlePositions(playerShape)
+    const x = positionsView[base + 0]
+    const y = positionsView[base + 1]
+    const z = positionsView[base + 2]
 
     //Generate position based on shape
     posArray[k + 0] = x
@@ -347,10 +361,10 @@ const fillTextures = ({
     velArray[k + 0] = (Math.random() - 0.5) * 0.5 // Small X variation
     velArray[k + 1] = (Math.random() - 0.5) * 0.5 // Small Y variation
     velArray[k + 2] = 2.0 + Math.random() * 1.0 // Initial movement toward camera (positive Z)
-    velArray[k + 3] = Math.random() // Random life between 0.0 and 1.0
+    velArray[k + 3] = velRng() // Random life between 0.0 and 1.0
 
     // Seed data - use the seed from the seeds array
-    const seed = particleIndex < seeds.length ? seeds[particleIndex] : Math.random()
+    const seed = particleIndex < seeds.length ? seeds[particleIndex] : velRng()
     seedArray[k + 0] = seed
     seedArray[k + 1] = 0.0
     seedArray[k + 2] = 0.0
